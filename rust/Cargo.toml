@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/clayo-core"]
+members = ["crates/clayo-core", "crates/clayo-pty"]
 
 [workspace.package]
 version = "1.0.6"
