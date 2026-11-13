@@ -5,6 +5,10 @@ không WebView. Nguồn yêu cầu: `RUST_PORT_PLAN.md`. Tài liệu này là h�
 dùng thấy được có một mã (`MAIN-…`, `SES-…`, `STA-…`, `ISL-…`, `TRM-…`) và một ô `[ ]`. Một giai đoạn chỉ
 xong khi các mã thuộc về nó được tick `[x]` (hoặc `[~]` = tạm hoãn đã duyệt, kèm lý do ở §6).
 
+## Progress
+
+611 mã: **599 `[x]`**, **12 `[~]`** (tạm hoãn đã duyệt: D1, D3, D4, D9, D10), **0 `[ ]` / `[c]`**. Theo vùng: MAIN 162/0, SES 116/0, STA 138/2, ISL 109/0, TRM 74/10 (`[x]`/`[~]`). Cập nhật ở giai đoạn 7c.
+
 Đã đọc toàn bộ: `src/Clayo/**` (trừ thư viện JS đã minify), `checks/*.cs` (21 file), `docs/AGENTS.md`,
 `README.md`, `scripts/*.ps1`. Phụ lục A–E (cuối file) là bản kiểm kê chi tiết theo từng vùng: bảng ánh xạ,
 danh sách hành vi kèm `file:dòng`, định dạng dữ liệu, điểm khó, và danh sách assertion của từng check.
@@ -223,6 +227,7 @@ môi trường toàn cục trong test), nên không động vào cấu hình th�
 | D11 | Dòng thời gian Codex so ở giờ địa phương. | So ở UTC. | Sửa lỗi |
 | D12 | Kết nối updater trỏ repo `YogiOnCode/Clayo` (bản C#). | Repo là hằng số build-time `CLAYO_UPDATE_REPO` (mặc định upstream `YogiOnCode/Clayo`); chủ dự án đặt nó sang repo của bản port trước bản phát hành Rust đầu tiên (nếu không, Update sẽ cài bản C# của upstream đè lên). Zip giữ bố cục để `install.ps1` hiện tại cài được. | Giữ + cấu hình |
 | D13 | Ngân sách "CPU rảnh ~0%, không timer bận" và các poll của bản gốc (git 3 s, đồng hồ 30 s, ảnh 1 s, island 50/250 ms, tick trạng thái pane 400 ms, flush 8 ms). | Git/ảnh/đồng hồ chỉ chạy khi cửa sổ hiện (như gốc), dùng `request_repaint_after` thay vì repaint liên tục. Tick trạng thái 400 ms và flush 8 ms của mỗi pane thành **deadline do output kích hoạt** (pane im lặng thì không có timer). Con trỏ nhấp nháy chỉ repaint khi cửa sổ đang focus và hiện. Island giữ poll con trỏ (vài syscall/tick). Đo trong BENCH.md. | Giữ |
+| D14 | Con trỏ thanh của terminal nhấp nháy mãi khi pane có focus (một repaint mỗi 600 ms, kể cả khi pane ngồi yên hàng giờ). | **Đề xuất (chưa duyệt).** Con trỏ vẫn nhấp nháy như bản C# (600 ms), nhưng sau 5 s không có input hay output trong pane thì đứng yên (hiện liền) và không xin repaint nữa; có hoạt động (phím, output, focus) là nhấp nháy lại. Pane rảnh = CPU 0 %. | Đổi nhỏ (đề xuất) |
 
 **Duyệt (2026-11-13):** reviewer Fable 5.2, thay mặt chủ dự án theo yêu cầu tự động hóa hoàn toàn: *APPROVED WITH
 CHANGES*. Đã áp dụng: fallback wgpu (D10), `ab_glyph` thay `fontdue`, WinHTTP thay `ureq`, font CJK + nạp font
@@ -318,12 +323,12 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-026 Default 1280x820, min 760x420 — MainWindow.xaml:6-7
 - [x] MAIN-027 Dark caption: DWMWA_USE_IMMERSIVE_DARK_MODE(20)=1, DWMWA_SYSTEMBACKDROP_TYPE(38)=3 (acrylic/transient), DWMWA_BORDER_COLOR(34)=0x00352C26 (#262C35); return values ignored; also applied to setup window — MainWindow.xaml.cs:387-428, SetupWindow.xaml.cs:71-75
 - [x] MAIN-028 On first show the window is centered on the PRIMARY monitor work area (MonitorFromPoint(0,0, DEFAULTTOPRIMARY)), size clamped to work area, SWP_NOZORDER|SWP_NOACTIVATE (works around mixed-DPI CenterScreen bug) — MainWindow.xaml.cs:487-506
-- [ ] MAIN-029 Text rendering: TextFormattingMode=Display, UseLayoutRounding — MainWindow.xaml:11-12
+- [x] MAIN-029 Text rendering: TextFormattingMode=Display, UseLayoutRounding — MainWindow.xaml:11-12 (egui pixel-snaps text)
 - [x] MAIN-030 Colors (App.xaml:12-29,73,291-303): TerminalBg #14171C, SurfaceBg #1B1F26, RaisedBg #222731, Hairline #262C35, TextPrimary #C8CDD6, TextMuted #7A828F, TextFaint #565E6B, MutedAA #8C94A1, Working #D4A24C, NeedsInput #5AA9E6, Done #6BBF8A, Failed #D2605F, Ended #5A6472, Dormant #39404B, Clay #D27556, BandGreen #6BBF8A, BandYellow #D9BE5C, BandOrange #E58C4E, BandRed #EC726C, DiffAdded #7CC596, DiffDeleted #E08480, StripRule #2E353F, LimitRule #262C35, MeterTrack #2A303A, ChipBg #1F242C, StepOn #A9B0BB, StepOff #39404B, MenuRim #323A46; footer band #171B21 — App.xaml, MainWindow.xaml:252
 - [x] MAIN-031 Fonts: UI "Segoe UI Variable Text, Segoe UI"; mono "Cascadia Mono, Consolas"; icons "Segoe Fluent Icons, Segoe MDL2 Assets"; setup headline "Segoe UI Variable Display" — App.xaml:31-32, SetupWindow.xaml:21
-- [ ] MAIN-032 Single dark theme only for the chrome (Settings has a `Theme` passed to strip/limits views, owned elsewhere) — App.xaml, MainWindow.xaml.cs:1572-1573
-- [ ] MAIN-033 Button styles: QuietButton (transparent, border Hairline, radius 4, padding 10,5, hover RaisedBg+TextPrimary, disabled TextFaint/no border); GhostButton (h30, radius 6, border #2E353F, label opacity .75 -> 1 hover, wash of fg at .08 hover/.03 pressed, 160ms cubic ease, Segoe glyph in Tag before label); AccentButton (bg #2A303A, border #3A424E, fg #E6E9EE); ClayButton (bg Clay, fg #14171C, 14 semibold, h36, radius 8, hover #DC8466, pressed #B9654A, disabled #2A2F38/#6C7480) — App.xaml:34-69,92-170,309-350
-- [ ] MAIN-034 Switch (40x20 track, clay fill when on, knob slides 20px, grows 1.12 hover) and Tick (16px box radius 4, clay tick) checkbox styles; FocusRing is clay 1px radius 9, keyboard focus only — App.xaml:77-86,175-287
+- [x] MAIN-032 Single dark theme only for the chrome (Settings has a `Theme` passed to strip/limits views, owned elsewhere) — App.xaml, MainWindow.xaml.cs:1572-1573
+- [x] MAIN-033 Button styles: QuietButton (transparent, border Hairline, radius 4, padding 10,5, hover RaisedBg+TextPrimary, disabled TextFaint/no border); GhostButton (h30, radius 6, border #2E353F, label opacity .75 -> 1 hover, wash of fg at .08 hover/.03 pressed, 160ms cubic ease, Segoe glyph in Tag before label); AccentButton (bg #2A303A, border #3A424E, fg #E6E9EE); ClayButton (bg Clay, fg #14171C, 14 semibold, h36, radius 8, hover #DC8466, pressed #B9654A, disabled #2A2F38/#6C7480) — App.xaml:34-69,92-170,309-350
+- [x] MAIN-034 Switch (40x20 track, clay fill when on, knob slides 20px, grows 1.12 hover) and Tick (16px box radius 4, clay tick) checkbox styles; FocusRing is clay 1px radius 9, keyboard focus only — App.xaml:77-86,175-287
 - [x] MAIN-035 Context menus: RaisedBg panel radius 8, rim #323A46, drop shadow, min width 176, items radius 5, hover #2D343F/#E6E9EE, gesture text #959CA8, check mark clay path, separator 1px MenuRim margin 10,4 — App.xaml:655-768
 - [x] MAIN-036 Thin scrollbar 8px, thumb #333A45 (hover #4A5462), no arrows — App.xaml:411-444
 - [x] MAIN-037 Splitter between sidebar and terminal: 7px grab band, 1px Hairline centered, hover/drag 2px Working color, cursor SizeWE — App.xaml:599-622, MainWindow.xaml:352-357
@@ -336,7 +341,7 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-042 Section header (Open/Today/Earlier): chevron rotates 90 when expanded, label 11.5 semibold + count 11 faint, padding 10,7 — App.xaml:447-498, MainWindow.xaml:121-156
 - [x] MAIN-043 Folder sub-header: margin 26,10,10,4, name 11 TextMuted + count — MainWindow.xaml:159-179
 - [x] MAIN-044 Footer: margin 14,12,14,14; LimitsView, Update button, then New session | Open | (right) gear 30px wide glyph E713 size 15 — MainWindow.xaml:252-349
-- [ ] MAIN-045 Header bar: SurfaceBg, bottom hairline, margin 14,0; status dot 7px, title (margin 10,13, 12 TextMuted), status strip, chips, Attach, Branch, ✕ — MainWindow.xaml:366-488
+- [x] MAIN-045 Header bar: SurfaceBg, bottom hairline, margin 14,0; status dot 7px, title (margin 10,13, 12 TextMuted), status strip, chips, Attach, Branch, ✕ — MainWindow.xaml:366-488
 
 #### Sidebar
 - [x] MAIN-046 Rows are sessions from both agents' transcripts (only agents with Use on are scanned), plus panes started this window without a transcript yet — MainWindow.xaml.cs:617-656,1252-1262
@@ -381,9 +386,9 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-081 Attach/Branch/✕ disabled when no pane; Branch also disabled until pane has a session id (Codex placeholder until bound) — MainWindow.xaml:468,476,485, MainWindow.xaml.cs:1319-1321,739,1169-1171
 - [x] MAIN-082 "Attach files…": multi-select OpenFileDialog "Attach files" in active pane's cwd; inserts paths at prompt, refocuses terminal — MainWindow.xaml.cs:1086-1103
 - [x] MAIN-083 "Branch from here": fork of active session (LaunchMode.Fork) in its cwd with its agent; if launcher allocated child id (Claude), record child->parent in parents.json immediately; new pane title "branch of <8 chars>" — MainWindow.xaml.cs:1105-1121
-- [ ] MAIN-084 "✕" closes active session: kill process, remove pane, notify island (notice cleared, working=false), may trigger pending update; row loses pane/status (falls to Today/Earlier); unbound Codex pane with no transcript is dropped; activates last remaining pane or shows empty state "Pick a session on the left, or start a new one." — MainWindow.xaml.cs:1123-1177, MainWindow.xaml:493-498
+- [x] MAIN-084 "✕" closes active session: kill process, remove pane, notify island (notice cleared, working=false), may trigger pending update; row loses pane/status (falls to Today/Earlier); unbound Codex pane with no transcript is dropped; activates last remaining pane or shows empty state "Pick a session on the left, or start a new one." — MainWindow.xaml.cs:1123-1177, MainWindow.xaml:493-498
 - [x] MAIN-085 Multiple panes alive simultaneously but only ONE visible at a time (others Collapsed, keep running) — MainWindow.xaml.cs:272-273,1312-1313
-- [ ] MAIN-086 Activating a pane: hides Settings if shown, MRU list update, title, enable buttons, hide empty state, paint dot, refresh git immediately, strip, images, chips, focus terminal — MainWindow.xaml.cs:1308-1331
+- [x] MAIN-086 Activating a pane: hides Settings if shown, MRU list update, title, enable buttons, hide empty state, paint dot, refresh git immediately, strip, images, chips, focus terminal — MainWindow.xaml.cs:1308-1331
 - [x] MAIN-087 New pane gets a row immediately (status Starting) under Open before its transcript exists; Codex panes (no id) get a placeholder GUID and are re-keyed once their transcript appears (start-time + folder/parent match, within 10 min, not past the next same-kind pane's start) — MainWindow.xaml.cs:1244-1298,711-741
 - [x] MAIN-088 Pane status change -> row status, header dot, island notices: NeedsInput->NeedsYou, Error->Error, Done only if previous was Working->Done, else null (clears); SessionWorking true on Working, false when leaving Working — MainWindow.xaml.cs:1270-1292
 - [x] MAIN-089 Codex pane working/done driven from transcript turn info on each refresh — MainWindow.xaml.cs:629-632
@@ -406,7 +411,7 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-102 Esc closes Settings (unless Settings has a confirm to cancel first) — MainWindow.xaml.cs:1674-1678
 - [x] MAIN-103 F2 rename, Enter open (sidebar) — MainWindow.xaml.cs:932-933
 - [x] MAIN-104 Rename: Enter commit / Esc cancel — MainWindow.xaml.cs:1208-1217
-- [ ] MAIN-105 Image overlay: Esc closes — MainWindow.xaml.cs:1455-1458
+- [x] MAIN-105 Image overlay: Esc closes — MainWindow.xaml.cs:1455-1458
 - [x] MAIN-106 Setup: Enter = Open Clayo (IsDefault) — SetupWindow.xaml:125
 
 #### Settings view
@@ -429,7 +434,7 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-119 GET `https://api.github.com/repos/YogiOnCode/Clayo/releases/latest`, User-Agent "Clayo", 15 s timeout; reads `tag_name`; errors -> null; disabled in Debug — Updater.cs:24,35-49
 - [x] MAIN-120 Newer: strip leading v/V, parse version, compare as (major, minor, max(build,0)) — Updater.cs:52-59
 - [x] MAIN-121 If settings UpdateCheck off: no request, hide button, clear offer — MainWindow.xaml.cs:1698-1704
-- [ ] MAIN-122 Found: button text "Update to X.Y.Z", tooltip "Clayo X.Y.Z is out (you have A.B.C). Clayo closes, updates and opens again, once no session is working."; Settings shows it too — MainWindow.xaml.cs:1706-1712
+- [x] MAIN-122 Found: button text "Update to X.Y.Z", tooltip "Clayo X.Y.Z is out (you have A.B.C). Clayo closes, updates and opens again, once no session is working."; Settings shows it too — MainWindow.xaml.cs:1706-1712
 - [x] MAIN-123 Click with panes open: confirm box title "Update Clayo", text "Clayo closes to update and opens again. Open sessions close and resume from the sidebar; any that are still working are waited for." OK/Cancel — MainWindow.xaml.cs:1729-1733
 - [x] MAIN-124 Then waiting: button "Update waits for running sessions", tooltip "Clayo updates as soon as no session is working. Press to call it off."; clicking again cancels and re-checks — MainWindow.xaml.cs:1722-1738
 - [x] MAIN-125 UpdateWhenIdle (called on click, every pane status change, pane close): when no pane is Working or NeedsInput -> Updater.Start(version) and Quit — MainWindow.xaml.cs:1742-1748
@@ -649,7 +654,7 @@ Paths below are relative to D:\Clayo\Clayo. Namespace in C# is `CcxShell.Core` t
 - [x] SES-014 IO/UnauthorizedAccess while counting -> (0,0), never fails setup — Agents/AgentDetector.cs:56-58
 - [x] SES-015 npm (Codex only): PATH `npm.cmd`, then `%ProgramFiles%\nodejs\npm.cmd`; null for Claude — Agents/AgentDetector.cs:60
 - [x] SES-016 Runner: UseShellExecute=false, CreateNoWindow, redirect stdout+stderr, default timeout 3000 ms, on timeout Kill(entireProcessTree) and return null; returns stdout+stderr concatenated only when ExitCode==0; Win32Exception (missing exe) -> null — Agents/AgentDetector.cs:72-94
-- [c] SES-017 Locate (cheap, no run) used at every pane launch; fallback literal "claude"/"codex" when not found — Agents/ClaudeAgent.cs:16, Agents/CodexAgent.cs:11
+- [x] SES-017 Locate (cheap, no run) used at every pane launch; fallback literal "claude"/"codex" when not found — Agents/ClaudeAgent.cs:16, Agents/CodexAgent.cs:11
 
 #### Install / sign-in helper
 - [x] SES-018 Claude install command: `irm https://claude.ai/install.ps1 | iex` — Agents/AgentHelper.cs:14
@@ -659,74 +664,74 @@ Paths below are relative to D:\Clayo\Clayo. Namespace in C# is `CcxShell.Core` t
 - [x] SES-022 PS quoting: wrap in `'...'`, double each of `'` U+2018 `‘` U+2019 `’` U+201A `‚` U+201B `‛` — Agents/AgentHelper.cs:48-57
 
 #### Launch command lines (typed into pane's PowerShell)
-- [c] SES-023 Shell: `"<full path of pwsh.exe>" -NoLogo` if pwsh.exe on PATH, else `powershell.exe -NoLogo` — Sessions/SessionLauncher.cs:30-35
-- [c] SES-024 Pane spawns the shell, waits 400 ms, then types `AgentCommand + "\r"` (once) so exit lands on a prompt — Terminal/TerminalPane.xaml.cs:445-458 (consumer)
-- [c] SES-025 Claude new: `& '<exe>' --session-id '<new guid>'[ --settings '<relay.json>']` — Agents/ClaudeAgent.cs:26,37-45
-- [c] SES-026 Claude resume: `& '<exe>' --resume '<id>'[ --settings '<relay.json>']` — Agents/ClaudeAgent.cs:28
-- [c] SES-027 Claude fork/branch: `& '<exe>' --resume '<parentId>' --fork-session --session-id '<new guid>'[ --settings '<relay.json>']` — Agents/ClaudeAgent.cs:30-31
-- [c] SES-028 Claude `--settings` file path comes from StatusRelay.WriteSettings(selfExe, askRules) each launch; omitted if null or ProcessPath unknown; user's settings.json never written — Agents/ClaudeAgent.cs:18,43
-- [c] SES-029 Ids are always PS-quoted (ids are read from transcripts: injection guard) — Agents/ClaudeAgent.cs:34, Agents/CodexAgent.cs:23
-- [c] SES-030 Codex new: `& '<exe>'` (no id, no -C; shell already in folder) — Agents/CodexAgent.cs:20,27
-- [c] SES-031 Codex resume: `& '<exe>' resume '<id>'` — Agents/CodexAgent.cs:23
-- [c] SES-032 Codex fork: `& '<exe>' fork '<parentId>'` — Agents/CodexAgent.cs:25
-- [c] SES-033 Exe path re-located on every launch (install/Locate during runtime honored) — Agents/ClaudeAgent.cs:4-5
-- [c] SES-034 Plan: Resume/Fork without non-blank sessionId -> ArgumentException — Sessions/SessionLauncher.cs:67-68
-- [c] SES-035 Plan: new guid (Guid.NewGuid, "D" format lowercase with dashes) only when agent.KnowsIdUpfront (Claude) and mode != Resume; Codex gets null — Sessions/SessionLauncher.cs:75
-- [c] SES-036 Plan.ExpectedSessionId: Resume -> the given id; New/Fork -> the new guid (null for Codex, never the parent's) — Sessions/SessionLauncher.cs:87-88
-- [c] SES-037 LaunchPlan fields: ShellCommandLine, WorkingDirectory, AgentCommand, ExpectedSessionId, Agent — Sessions/SessionLauncher.cs:17-22
-- [c] SES-038 Resume cwd = row.Folder if it exists, else the app's current folder — MainWindow.xaml.cs:948
-- [c] SES-039 Pane fallback titles: new `new · <folder leaf>`; fork `branch of <first 8 chars of parent id>`; resume = row name — MainWindow.xaml.cs:1028,1120,949
+- [x] SES-023 Shell: `"<full path of pwsh.exe>" -NoLogo` if pwsh.exe on PATH, else `powershell.exe -NoLogo` — Sessions/SessionLauncher.cs:30-35
+- [x] SES-024 Pane spawns the shell, waits 400 ms, then types `AgentCommand + "\r"` (once) so exit lands on a prompt — Terminal/TerminalPane.xaml.cs:445-458 (consumer)
+- [x] SES-025 Claude new: `& '<exe>' --session-id '<new guid>'[ --settings '<relay.json>']` — Agents/ClaudeAgent.cs:26,37-45
+- [x] SES-026 Claude resume: `& '<exe>' --resume '<id>'[ --settings '<relay.json>']` — Agents/ClaudeAgent.cs:28
+- [x] SES-027 Claude fork/branch: `& '<exe>' --resume '<parentId>' --fork-session --session-id '<new guid>'[ --settings '<relay.json>']` — Agents/ClaudeAgent.cs:30-31
+- [x] SES-028 Claude `--settings` file path comes from StatusRelay.WriteSettings(selfExe, askRules) each launch; omitted if null or ProcessPath unknown; user's settings.json never written — Agents/ClaudeAgent.cs:18,43
+- [x] SES-029 Ids are always PS-quoted (ids are read from transcripts: injection guard) — Agents/ClaudeAgent.cs:34, Agents/CodexAgent.cs:23
+- [x] SES-030 Codex new: `& '<exe>'` (no id, no -C; shell already in folder) — Agents/CodexAgent.cs:20,27
+- [x] SES-031 Codex resume: `& '<exe>' resume '<id>'` — Agents/CodexAgent.cs:23
+- [x] SES-032 Codex fork: `& '<exe>' fork '<parentId>'` — Agents/CodexAgent.cs:25
+- [x] SES-033 Exe path re-located on every launch (install/Locate during runtime honored) — Agents/ClaudeAgent.cs:4-5
+- [x] SES-034 Plan: Resume/Fork without non-blank sessionId -> ArgumentException — Sessions/SessionLauncher.cs:67-68
+- [x] SES-035 Plan: new guid (Guid.NewGuid, "D" format lowercase with dashes) only when agent.KnowsIdUpfront (Claude) and mode != Resume; Codex gets null — Sessions/SessionLauncher.cs:75
+- [x] SES-036 Plan.ExpectedSessionId: Resume -> the given id; New/Fork -> the new guid (null for Codex, never the parent's) — Sessions/SessionLauncher.cs:87-88
+- [x] SES-037 LaunchPlan fields: ShellCommandLine, WorkingDirectory, AgentCommand, ExpectedSessionId, Agent — Sessions/SessionLauncher.cs:17-22
+- [x] SES-038 Resume cwd = row.Folder if it exists, else the app's current folder — MainWindow.xaml.cs:948
+- [x] SES-039 Pane fallback titles: new `new · <folder leaf>`; fork `branch of <first 8 chars of parent id>`; resume = row name — MainWindow.xaml.cs:1028,1120,949
 
 #### Environment
-- [c] SES-040 At app start, remove from own process env: CLAUDECODE, CLAUDE_CODE_CHILD_SESSION, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, CLAUDE_CODE_MESSAGING_SOCKET, CLAUDE_CODE_MESSAGING_TOKEN, CLAUDE_PID (children inherit the scrubbed block); ANTHROPIC_*, CLAUDE_EFFORT left alone — Sessions/SessionLauncher.cs:48-63, App.xaml.cs:22
+- [x] SES-040 At app start, remove from own process env: CLAUDECODE, CLAUDE_CODE_CHILD_SESSION, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, CLAUDE_CODE_MESSAGING_SOCKET, CLAUDE_CODE_MESSAGING_TOKEN, CLAUDE_PID (children inherit the scrubbed block); ANTHROPIC_*, CLAUDE_EFFORT left alone — Sessions/SessionLauncher.cs:48-63, App.xaml.cs:22
 
 #### Claude session list
-- [c] SES-041 Root: `%USERPROFILE%\.claude\projects` (UserProfile special folder) — does NOT honor CLAUDE_CONFIG_DIR (only detector does; docs/AGENTS.md:75 matches this) — Sessions/SessionStore.cs:66-71
-- [c] SES-042 No root -> empty list — Sessions/SessionStore.cs:77
-- [c] SES-043 Enumerate `*.jsonl` recursively; skip files whose parent dir name is `subagents` (case-insens.) — Sessions/SessionStore.cs:82,91-92
-- [c] SES-044 Empty (0 byte) or missing file -> removed from cache/no row — Sessions/SessionStore.cs:98-102
-- [c] SES-045 Cache invalidation: (size, LastWriteTimeUtc) equal -> reuse — Sessions/SessionStore.cs:105-106
-- [c] SES-046 Parse failure (IO/permission, e.g. mid-write) keeps old row and re-queues file for next scan — Sessions/SessionStore.cs:109-114
-- [c] SES-047 Result sorted by LastActivity descending — Sessions/SessionStore.cs:119
-- [c] SES-048 Head: first 40 lines; skip empty/non-JSON; first `cwd`, first `sessionId`; preview = first `type=="user"` line with non-empty extracted text, shortened to 120; break when all 3 found — Sessions/SessionStore.cs:133-153
-- [c] SES-049 User text extraction: skip if `isMeta:true`; `message.content` string -> Clean; array -> first block `type=="text"` with non-empty Clean(text) — Sessions/SessionStore.cs:259-284
-- [c] SES-050 Clean: Trim; if starts with `<` and contains `>` -> ""; if starts with "Caveat:" -> "" — Sessions/SessionStore.cs:286-293
-- [c] SES-051 Shorten: collapse all whitespace runs to single space; if > max chars, cut to max, TrimEnd, append `…` (U+2026) — Sessions/SessionStore.cs:295-299
-- [c] SES-052 Tail: last 96 KiB; if not at 0, discard first partial line; only lines containing `"ai-title"` or `"last-prompt"` are parsed; last `type=="ai-title"` -> `aiTitle`, last `type=="last-prompt"` -> `lastPrompt` — Sessions/SessionStore.cs:188-239
-- [c] SES-053 AiTitle = Shorten(Clean(title), 90) or null; LastPrompt = Shorten(Clean(prompt), 120) or null — Sessions/SessionStore.cs:234-238
-- [c] SES-054 SessionId fallback = file name without extension — Sessions/SessionStore.cs:161
-- [c] SES-055 ProjectDir fallback (no cwd) = mangled folder name (display only), else "(unknown)" — Sessions/SessionStore.cs:163-168
-- [c] SES-056 Preview placeholder "(no prompt yet)" — Sessions/SessionStore.cs:175
-- [c] SES-057 LastActivity (Claude) = file LastWriteTime (local) — Sessions/SessionStore.cs:178
-- [c] SES-058 ProjectName = last path segment of ProjectDir (trim `\`/`/`), else ProjectDir — Sessions/SessionStore.cs:23-25
+- [x] SES-041 Root: `%USERPROFILE%\.claude\projects` (UserProfile special folder) — does NOT honor CLAUDE_CONFIG_DIR (only detector does; docs/AGENTS.md:75 matches this) — Sessions/SessionStore.cs:66-71 (D2: the port honours CLAUDE_CONFIG_DIR)
+- [x] SES-042 No root -> empty list — Sessions/SessionStore.cs:77
+- [x] SES-043 Enumerate `*.jsonl` recursively; skip files whose parent dir name is `subagents` (case-insens.) — Sessions/SessionStore.cs:82,91-92
+- [x] SES-044 Empty (0 byte) or missing file -> removed from cache/no row — Sessions/SessionStore.cs:98-102
+- [x] SES-045 Cache invalidation: (size, LastWriteTimeUtc) equal -> reuse — Sessions/SessionStore.cs:105-106
+- [x] SES-046 Parse failure (IO/permission, e.g. mid-write) keeps old row and re-queues file for next scan — Sessions/SessionStore.cs:109-114
+- [x] SES-047 Result sorted by LastActivity descending — Sessions/SessionStore.cs:119
+- [x] SES-048 Head: first 40 lines; skip empty/non-JSON; first `cwd`, first `sessionId`; preview = first `type=="user"` line with non-empty extracted text, shortened to 120; break when all 3 found — Sessions/SessionStore.cs:133-153
+- [x] SES-049 User text extraction: skip if `isMeta:true`; `message.content` string -> Clean; array -> first block `type=="text"` with non-empty Clean(text) — Sessions/SessionStore.cs:259-284
+- [x] SES-050 Clean: Trim; if starts with `<` and contains `>` -> ""; if starts with "Caveat:" -> "" — Sessions/SessionStore.cs:286-293
+- [x] SES-051 Shorten: collapse all whitespace runs to single space; if > max chars, cut to max, TrimEnd, append `…` (U+2026) — Sessions/SessionStore.cs:295-299
+- [x] SES-052 Tail: last 96 KiB; if not at 0, discard first partial line; only lines containing `"ai-title"` or `"last-prompt"` are parsed; last `type=="ai-title"` -> `aiTitle`, last `type=="last-prompt"` -> `lastPrompt` — Sessions/SessionStore.cs:188-239
+- [x] SES-053 AiTitle = Shorten(Clean(title), 90) or null; LastPrompt = Shorten(Clean(prompt), 120) or null — Sessions/SessionStore.cs:234-238
+- [x] SES-054 SessionId fallback = file name without extension — Sessions/SessionStore.cs:161
+- [x] SES-055 ProjectDir fallback (no cwd) = mangled folder name (display only), else "(unknown)" — Sessions/SessionStore.cs:163-168
+- [x] SES-056 Preview placeholder "(no prompt yet)" — Sessions/SessionStore.cs:175
+- [x] SES-057 LastActivity (Claude) = file LastWriteTime (local) — Sessions/SessionStore.cs:178
+- [x] SES-058 ProjectName = last path segment of ProjectDir (trim `\`/`/`), else ProjectDir — Sessions/SessionStore.cs:23-25
 
 #### Codex session list
-- [c] SES-059 Home: `%CODEX_HOME%` if non-empty else `%USERPROFILE%\.codex`; sessions dir = `<home>\sessions` — Sessions/CodexSessionStore.cs:26-31
-- [c] SES-060 Enumerate `rollout-*.jsonl` recursively under sessions; any path not under `<sessions>\` or not named `rollout-*` ignored (watcher covers whole home) — Sessions/CodexSessionStore.cs:42,50-51
-- [c] SES-061 Size 0/missing -> drop; cache key = size only (resume keeps old mtime) — Sessions/CodexSessionStore.cs:17-19,53-62
-- [c] SES-062 Unparseable -> keep old row, re-queue — Sessions/CodexSessionStore.cs:64-69
-- [c] SES-063 Titles re-read every scan from `<home>\session_index.jsonl`; last line per id wins; title = Shorten(Clean(thread_name), 90); ids case-insensitive — Sessions/CodexSessionStore.cs:76-102
-- [c] SES-064 Line 0 must be `type=="session_meta"` with `payload`, and `payload.id` non-null, else not a session — Sessions/CodexSessionStore.cs:118-128
-- [c] SES-065 ParentId = `payload.forked_from_id` — Sessions/CodexSessionStore.cs:125
-- [c] SES-066 Started = `payload.timestamp` parsed (DateTimeOffset -> local) else file mtime — Sessions/CodexSessionStore.cs:126
-- [c] SES-067 Preview: lines 1..60 until first UserText found; Codex's own `<environment_context>` etc. dropped by Clean — Sessions/CodexSessionStore.cs:133-138
-- [c] SES-068 Model/effort from first `turn_context` in the head (only scanned while preview not yet found); overridden by tail's last turn_context — Sessions/CodexSessionStore.cs:136-144
-- [c] SES-069 ProjectDir = payload.cwd else directory of file — Sessions/CodexSessionStore.cs:151
-- [c] SES-070 LastActivity = last parseable line's timestamp in the 96 KiB tail, else Started (not file mtime) — Sessions/CodexSessionStore.cs:154,236
-- [c] SES-071 LastPrompt = Shorten(last UserText in tail, 120) — Sessions/CodexSessionStore.cs:153,250
-- [c] SES-072 Turn: last of event_msg payload.type task_started->Working, task_complete->Done, turn_aborted->Stopped — Sessions/CodexSessionStore.cs:243-245
-- [c] SES-073 Status (strip) built only if context window >0 or model known: SessionStatus(id, model, cwd, used, size, percent, effort ?? "", fiveHour, sevenDay, updated = last ?? started) — Sessions/CodexSessionStore.cs:158-163
-- [c] SES-074 Context: Baseline=12000; window<=12000 -> (used, window, window>0?100:0); else size=window-12000, mine=max(0,used-12000), left=round_away_from_zero(clamp((size-mine)*100/size,0,100)), percent=100-left — Sessions/CodexSessionStore.cs:169-183
-- [c] SES-075 token_count: used = info.last_token_usage.total_tokens; size = info.model_context_window; rate_limits.primary/secondary with used_percent (double, floored to int), window_minutes (300 -> five-hour, 10080 -> seven-day, others ignored), resets_at (unix s, optional) — Sessions/CodexSessionStore.cs:279-299
-- [c] SES-076 Sorted by LastActivity desc — Sessions/CodexSessionStore.cs:78
+- [x] SES-059 Home: `%CODEX_HOME%` if non-empty else `%USERPROFILE%\.codex`; sessions dir = `<home>\sessions` — Sessions/CodexSessionStore.cs:26-31
+- [x] SES-060 Enumerate `rollout-*.jsonl` recursively under sessions; any path not under `<sessions>\` or not named `rollout-*` ignored (watcher covers whole home) — Sessions/CodexSessionStore.cs:42,50-51
+- [x] SES-061 Size 0/missing -> drop; cache key = size only (resume keeps old mtime) — Sessions/CodexSessionStore.cs:17-19,53-62
+- [x] SES-062 Unparseable -> keep old row, re-queue — Sessions/CodexSessionStore.cs:64-69
+- [x] SES-063 Titles re-read every scan from `<home>\session_index.jsonl`; last line per id wins; title = Shorten(Clean(thread_name), 90); ids case-insensitive — Sessions/CodexSessionStore.cs:76-102
+- [x] SES-064 Line 0 must be `type=="session_meta"` with `payload`, and `payload.id` non-null, else not a session — Sessions/CodexSessionStore.cs:118-128
+- [x] SES-065 ParentId = `payload.forked_from_id` — Sessions/CodexSessionStore.cs:125
+- [x] SES-066 Started = `payload.timestamp` parsed (DateTimeOffset -> local) else file mtime — Sessions/CodexSessionStore.cs:126
+- [x] SES-067 Preview: lines 1..60 until first UserText found; Codex's own `<environment_context>` etc. dropped by Clean — Sessions/CodexSessionStore.cs:133-138
+- [x] SES-068 Model/effort from first `turn_context` in the head (only scanned while preview not yet found); overridden by tail's last turn_context — Sessions/CodexSessionStore.cs:136-144
+- [x] SES-069 ProjectDir = payload.cwd else directory of file — Sessions/CodexSessionStore.cs:151
+- [x] SES-070 LastActivity = last parseable line's timestamp in the 96 KiB tail, else Started (not file mtime) — Sessions/CodexSessionStore.cs:154,236
+- [x] SES-071 LastPrompt = Shorten(last UserText in tail, 120) — Sessions/CodexSessionStore.cs:153,250
+- [x] SES-072 Turn: last of event_msg payload.type task_started->Working, task_complete->Done, turn_aborted->Stopped — Sessions/CodexSessionStore.cs:243-245
+- [x] SES-073 Status (strip) built only if context window >0 or model known: SessionStatus(id, model, cwd, used, size, percent, effort ?? "", fiveHour, sevenDay, updated = last ?? started) — Sessions/CodexSessionStore.cs:158-163
+- [x] SES-074 Context: Baseline=12000; window<=12000 -> (used, window, window>0?100:0); else size=window-12000, mine=max(0,used-12000), left=round_away_from_zero(clamp((size-mine)*100/size,0,100)), percent=100-left — Sessions/CodexSessionStore.cs:169-183
+- [x] SES-075 token_count: used = info.last_token_usage.total_tokens; size = info.model_context_window; rate_limits.primary/secondary with used_percent (double, floored to int), window_minutes (300 -> five-hour, 10080 -> seven-day, others ignored), resets_at (unix s, optional) — Sessions/CodexSessionStore.cs:279-299
+- [x] SES-076 Sorted by LastActivity desc — Sessions/CodexSessionStore.cs:78
 
 #### Watching
-- [c] SES-077 FileSystemWatcher filter `*.jsonl`, recursive, NotifyFilter LastWrite|FileName|Size; Claude watches `projects` root, Codex watches whole `home` (for session_index renames) — Sessions/SessionStore.cs:305-310, Sessions/CodexSessionStore.cs:333-338
-- [c] SES-078 Each Changed/Created/Deleted/Renamed event: add FullPath (and OldFullPath on rename) to ChangedFiles; (re)arm one-shot debounce of 600 ms; when it fires raise `Changed` (bg thread) -> UI RefreshSessions — Sessions/SessionStore.cs:313-321, Sessions/CodexSessionStore.cs:339-345, MainWindow.xaml.cs:344
-- [c] SES-079 Watcher Error (buffer overflow): AddAll -> next scan enumerates everything; re-arm 600 ms — Sessions/SessionStore.cs:325-329
-- [c] SES-080 ChangedFiles.Take(watching): returns (all = _all || !watching, paths) then clears; sets _all = !watching. Starts _all=true, so first scan after watcher starts is a full scan — Sessions/ChangedFiles.cs:11,22-31
-- [c] SES-081 Full scan also drops cache entries no longer on disk; partial scan handles deleted files via fi.Exists==false — Sessions/SessionStore.cs:83-85,98
-- [c] SES-082 StartWatching no-op if root missing or already watching; StopWatching disposes watcher+timer — Sessions/SessionStore.cs:303,332-338
+- [x] SES-077 FileSystemWatcher filter `*.jsonl`, recursive, NotifyFilter LastWrite|FileName|Size; Claude watches `projects` root, Codex watches whole `home` (for session_index renames) — Sessions/SessionStore.cs:305-310, Sessions/CodexSessionStore.cs:333-338
+- [x] SES-078 Each Changed/Created/Deleted/Renamed event: add FullPath (and OldFullPath on rename) to ChangedFiles; (re)arm one-shot debounce of 600 ms; when it fires raise `Changed` (bg thread) -> UI RefreshSessions — Sessions/SessionStore.cs:313-321, Sessions/CodexSessionStore.cs:339-345, MainWindow.xaml.cs:344
+- [x] SES-079 Watcher Error (buffer overflow): AddAll -> next scan enumerates everything; re-arm 600 ms — Sessions/SessionStore.cs:325-329
+- [x] SES-080 ChangedFiles.Take(watching): returns (all = _all || !watching, paths) then clears; sets _all = !watching. Starts _all=true, so first scan after watcher starts is a full scan — Sessions/ChangedFiles.cs:11,22-31
+- [x] SES-081 Full scan also drops cache entries no longer on disk; partial scan handles deleted files via fi.Exists==false — Sessions/SessionStore.cs:83-85,98
+- [x] SES-082 StartWatching no-op if root missing or already watching; StopWatching disposes watcher+timer — Sessions/SessionStore.cs:303,332-338
 
 #### Sidebar (consumer logic, MainWindow)
 - [x] SES-083 Scan Claude (if UseClaude) + Codex (if UseCodex); tag rows `CC`/`CX` only when both enabled — MainWindow.xaml.cs:623-626, SessionRow.AgentTag
@@ -749,24 +754,24 @@ Paths below are relative to D:\Clayo\Clayo. Namespace in C# is `CcxShell.Core` t
 - [x] SES-100 Codex pane status from transcript each refresh: `pane.ShowTurn(info.Turn, info.LastActivity)` — MainWindow.xaml.cs:629-632
 
 #### Open-pane transcript tail (doc / pages / image chips)
-- [c] SES-101 Each refresh, each open pane with a transcript file: TranscriptTail(folder=pane cwd, since=pane OpenedAt, codex) created once and Read(file) — MainWindow.xaml.cs:661-686
-- [c] SES-102 First read starts at max(0, len - 512 KiB); if mid-file the first (partial) line is skipped — Sessions/TranscriptTail.cs:18,59-64,77
-- [c] SES-103 Only whole lines consumed (up to last `\n`); offset advances; partial last line re-read later — Sessions/TranscriptTail.cs:71-74
-- [c] SES-104 File switch (different path, case-insens.) resets offset — Sessions/TranscriptTail.cs:59
-- [c] SES-105 Lines considered only if containing `.md`/`.html` (case-insens.) or a prompt marker — Sessions/TranscriptTail.cs:87-97
-- [c] SES-106 Claude prompt marker: contains `"type":"user"` and not `"tool_result"` and not `"isMeta":true`; Codex: contains `"role":"user"` and CodexSessionStore.UserText(line) non-null — Sessions/TranscriptTail.cs:92-96,109
-- [c] SES-107 PromptAt = line `timestamp` (UTC) if >= since; earlier prompts ignored (image chip cleared only by new prompts) — Sessions/TranscriptTail.cs:105-109
-- [c] SES-108 Docs from before pane opened still count (resumed session shows its last doc if file still exists) — Sessions/TranscriptTail.cs:103-104
-- [c] SES-109 Claude paths: assistant `message.content[]` blocks `type=="tool_use"`, name Write/Edit/MultiEdit, `input.file_path` — Sessions/TranscriptTail.cs:131-142
-- [c] SES-110 Codex paths: `payload.item.type=="FileChange"` -> each key of `payload.item.changes`; plus regex `\*\*\* (?:Add|Update) File: ((?:[^\\"]|\\.)+?)\\n` on raw line, captured group JSON-unescaped — Sessions/TranscriptTail.cs:147-167
-- [c] SES-111 Path resolution: relative to pane folder; `.md` inside folder (prefix match on full path + `\`, case-insens.) and File.Exists -> Doc (latest wins); else `.html` inside `<folder>\.clayo\pages\` and exists -> page (move to end of list, PageWrites++) — Sessions/TranscriptTail.cs:113-127,170-179
-- [c] SES-112 Read returns true iff a doc or page was seen in this read — Sessions/TranscriptTail.cs:52,81
+- [x] SES-101 Each refresh, each open pane with a transcript file: TranscriptTail(folder=pane cwd, since=pane OpenedAt, codex) created once and Read(file) — MainWindow.xaml.cs:661-686
+- [x] SES-102 First read starts at max(0, len - 512 KiB); if mid-file the first (partial) line is skipped — Sessions/TranscriptTail.cs:18,59-64,77
+- [x] SES-103 Only whole lines consumed (up to last `\n`); offset advances; partial last line re-read later — Sessions/TranscriptTail.cs:71-74
+- [x] SES-104 File switch (different path, case-insens.) resets offset — Sessions/TranscriptTail.cs:59
+- [x] SES-105 Lines considered only if containing `.md`/`.html` (case-insens.) or a prompt marker — Sessions/TranscriptTail.cs:87-97
+- [x] SES-106 Claude prompt marker: contains `"type":"user"` and not `"tool_result"` and not `"isMeta":true`; Codex: contains `"role":"user"` and CodexSessionStore.UserText(line) non-null — Sessions/TranscriptTail.cs:92-96,109
+- [x] SES-107 PromptAt = line `timestamp` (UTC) if >= since; earlier prompts ignored (image chip cleared only by new prompts) — Sessions/TranscriptTail.cs:105-109
+- [x] SES-108 Docs from before pane opened still count (resumed session shows its last doc if file still exists) — Sessions/TranscriptTail.cs:103-104
+- [x] SES-109 Claude paths: assistant `message.content[]` blocks `type=="tool_use"`, name Write/Edit/MultiEdit, `input.file_path` — Sessions/TranscriptTail.cs:131-142
+- [x] SES-110 Codex paths: `payload.item.type=="FileChange"` -> each key of `payload.item.changes`; plus regex `\*\*\* (?:Add|Update) File: ((?:[^\\"]|\\.)+?)\\n` on raw line, captured group JSON-unescaped — Sessions/TranscriptTail.cs:147-167
+- [x] SES-111 Path resolution: relative to pane folder; `.md` inside folder (prefix match on full path + `\`, case-insens.) and File.Exists -> Doc (latest wins); else `.html` inside `<folder>\.clayo\pages\` and exists -> page (move to end of list, PageWrites++) — Sessions/TranscriptTail.cs:113-127,170-179
+- [x] SES-112 Read returns true iff a doc or page was seen in this read — Sessions/TranscriptTail.cs:52,81
 - [x] SES-113 A newly written page auto-opens unless it was from the first (history) read; open doc viewer follows newest doc; `PageFolder.HideFromGit` called — MainWindow.xaml.cs:671-683
 
 #### Pasted images (panefiles.cs)
-- [c] SES-114 Claude root = `%CLAUDE_CODE_TMPDIR%` or %TEMP%, + `\claude`; session images dir = `<root>\<any project>\<sessionId>\images` (first match) — Terminal/PastedImages.cs:21-38
-- [c] SES-115 Since(dir, sinceUtc, pattern="*"): image ext (.png .jpg .jpeg .gif .webp .bmp), mtime > since, ordered by numeric file stem (non-numeric last) then mtime; missing dir -> [] — Terminal/PastedImages.cs:41-53
-- [c] SES-116 Codex pasted images: `%TEMP%\codex-clipboard-*` — Terminal/PastedImages.cs:17
+- [x] SES-114 Claude root = `%CLAUDE_CODE_TMPDIR%` or %TEMP%, + `\claude`; session images dir = `<root>\<any project>\<sessionId>\images` (first match) — Terminal/PastedImages.cs:21-38
+- [x] SES-115 Since(dir, sinceUtc, pattern="*"): image ext (.png .jpg .jpeg .gif .webp .bmp), mtime > since, ordered by numeric file stem (non-numeric last) then mtime; missing dir -> [] — Terminal/PastedImages.cs:41-53
+- [x] SES-116 Codex pasted images: `%TEMP%\codex-clipboard-*` — Terminal/PastedImages.cs:17
 
 ### 3. DATA FORMATS
 
@@ -1239,21 +1244,21 @@ Files read in full: src/Status/{StatusRelay,StatusStore,StatusStrip,StatusStripV
 - [x] STA-123 Card/Ask state is not persisted (cards open state reset each open) — src/Settings/SettingsPane.xaml.cs:215-217
 
 #### Settings model
-- [c] STA-124 Load never fails: missing/unreadable/broken/non-object file => all defaults; per key fallback on wrong type; unknown keys ignored — src/Settings/ClayoSettings.cs:73-135
-- [c] STA-125 reserveAt accepted only if int32 in {0,70,80,90}, else 0 — src/Settings/ClayoSettings.cs:53,118-119
-- [c] STA-126 Enums (theme, defaultAgent) parsed by name case-insensitively, numbers/unknown => default — src/Settings/ClayoSettings.cs:104-107
-- [c] STA-127 Paths: empty string or non-string => null — src/Settings/ClayoSettings.cs:90-93
-- [c] STA-128 Lists (askGroupsOn, askOff): array of non-empty strings without commas, distinct, ordinal sorted, kept internally as comma string; non-array => default "" — src/Settings/ClayoSettings.cs:96-101
-- [c] STA-129 NewSessionKind: !useCodex => Claude; !useClaude => Codex; else defaultAgent (Ask => null => ask each time) — src/Settings/ClayoSettings.cs:56-64
-- [c] STA-130 Save: write `settings.json.tmp` indented then rename over; IO errors swallowed — src/Settings/ClayoSettings.cs:138-183
-- [c] STA-131 Start at login is NOT in settings.json (Run key) — src/Settings/ClayoSettings.cs:13-14
+- [x] STA-124 Load never fails: missing/unreadable/broken/non-object file => all defaults; per key fallback on wrong type; unknown keys ignored — src/Settings/ClayoSettings.cs:73-135
+- [x] STA-125 reserveAt accepted only if int32 in {0,70,80,90}, else 0 — src/Settings/ClayoSettings.cs:53,118-119
+- [x] STA-126 Enums (theme, defaultAgent) parsed by name case-insensitively, numbers/unknown => default — src/Settings/ClayoSettings.cs:104-107
+- [x] STA-127 Paths: empty string or non-string => null — src/Settings/ClayoSettings.cs:90-93
+- [x] STA-128 Lists (askGroupsOn, askOff): array of non-empty strings without commas, distinct, ordinal sorted, kept internally as comma string; non-array => default "" — src/Settings/ClayoSettings.cs:96-101
+- [x] STA-129 NewSessionKind: !useCodex => Claude; !useClaude => Codex; else defaultAgent (Ask => null => ask each time) — src/Settings/ClayoSettings.cs:56-64
+- [x] STA-130 Save: write `settings.json.tmp` indented then rename over; IO errors swallowed — src/Settings/ClayoSettings.cs:138-183
+- [x] STA-131 Start at login is NOT in settings.json (Run key) — src/Settings/ClayoSettings.cs:13-14
 
 #### AskRules / Codex
-- [c] STA-132 Group "publishing" "Publishing" "Pushing, tags, releases, anything that changes GitHub." icon U+EA18 — src/Settings/AskRules.cs:25
-- [c] STA-133 Rules (id / label / line / Claude patterns / Codex prefixes): push "Push code" "git push" [`git push*`,`git -C * push*`] [git push]; tags "Tags" "git tag: making or moving a version tag" [`git tag*`,`git -C * tag*`] [git tag]; releases "Releases" "gh release: drafting or publishing one" [`gh release*`] [gh release]; merge "Merge pull requests" "gh pr merge" [`gh pr merge*`] [gh pr merge]; repo "Repo settings" "Renaming, deleting, rulesets" [`gh repo edit*`,`gh repo delete*`,`gh repo rename*`,`gh ruleset*`] [gh repo edit][gh repo delete][gh repo rename][gh ruleset]; secrets "Secrets" "gh secret" [`gh secret*`] [gh secret]; workflows "Workflows" "gh workflow: running or turning one on or off" [`gh workflow*`] [gh workflow]; api "Other GitHub changes" "gh api calls that write" [`gh api *-X*`,`gh api *--method*`,`gh api *-f *`,`gh api *-F *`,`gh api *--field*`,`gh api *--raw-field*`,`gh api *--input*`] [gh api] — src/Settings/AskRules.cs:27-46
-- [c] STA-134 Default: every group off (askGroupsOn ""), every rule ticked (askOff ""); new groups arrive off, new rules arrive ticked — src/Settings/ClayoSettings.cs:44-50
-- [c] STA-135 ClaudeAsk = for each ticked rule of each on group, each pattern p => `Bash(p)` then `PowerShell(p)` (interleaved per pattern) — src/Settings/AskRules.cs:57-58
-- [c] STA-136 Codex `clayo.rules` at `<CODEX_HOME or ~/.codex>\rules\clayo.rules`; exists only if alsoForCodex && ≥1 ticked rule in an on group; written/rewritten (only if differs)/deleted on every settings change and at startup; Codex home not created if missing — src/Settings/AskRules.cs:60-106, src/MainWindow.xaml.cs:313,326,581
+- [x] STA-132 Group "publishing" "Publishing" "Pushing, tags, releases, anything that changes GitHub." icon U+EA18 — src/Settings/AskRules.cs:25
+- [x] STA-133 Rules (id / label / line / Claude patterns / Codex prefixes): push "Push code" "git push" [`git push*`,`git -C * push*`] [git push]; tags "Tags" "git tag: making or moving a version tag" [`git tag*`,`git -C * tag*`] [git tag]; releases "Releases" "gh release: drafting or publishing one" [`gh release*`] [gh release]; merge "Merge pull requests" "gh pr merge" [`gh pr merge*`] [gh pr merge]; repo "Repo settings" "Renaming, deleting, rulesets" [`gh repo edit*`,`gh repo delete*`,`gh repo rename*`,`gh ruleset*`] [gh repo edit][gh repo delete][gh repo rename][gh ruleset]; secrets "Secrets" "gh secret" [`gh secret*`] [gh secret]; workflows "Workflows" "gh workflow: running or turning one on or off" [`gh workflow*`] [gh workflow]; api "Other GitHub changes" "gh api calls that write" [`gh api *-X*`,`gh api *--method*`,`gh api *-f *`,`gh api *-F *`,`gh api *--field*`,`gh api *--raw-field*`,`gh api *--input*`] [gh api] — src/Settings/AskRules.cs:27-46
+- [x] STA-134 Default: every group off (askGroupsOn ""), every rule ticked (askOff ""); new groups arrive off, new rules arrive ticked — src/Settings/ClayoSettings.cs:44-50
+- [x] STA-135 ClaudeAsk = for each ticked rule of each on group, each pattern p => `Bash(p)` then `PowerShell(p)` (interleaved per pattern) — src/Settings/AskRules.cs:57-58
+- [~] STA-136 Codex `clayo.rules` at `<CODEX_HOME or ~/.codex>\rules\clayo.rules`; exists only if alsoForCodex && ≥1 ticked rule in an on group; written/rewritten (only if differs)/deleted on every settings change and at startup; Codex home not created if missing — src/Settings/AskRules.cs:60-106, src/MainWindow.xaml.cs:313,326,581 (D1)
 - [x] STA-137 Settings › General intro "How Clayo starts and what the window's close button does." — Settings/SettingsPane.xaml:248
 - [x] STA-138 Settings › Island page heading "Screenshots" and intro "Send a screenshot to a session: the island asks which one, and the image lands in its prompt, ready for your question." — Settings/SettingsPane.xaml:534-536
 - [x] STA-139 Settings section headings "Coming later", "Where it shows", "Per session", "Ask before" — Settings/SettingsPane.xaml:317,360,412,498
@@ -1844,55 +1849,55 @@ Abbreviations: TP = Terminal/TerminalPane.xaml.cs, TH = Assets/terminal.html, MW
 ### 2. BEHAVIORS
 
 #### Process lifecycle / environment
-- [ ] TRM-001 The pane spawns a shell, not the agent: `"<pwsh.exe full path>" -NoLogo` if pwsh.exe is on PATH, else `powershell.exe -NoLogo`. When claude exits you land at a prompt — Sessions/SessionLauncher.cs:30-35
-- [ ] TRM-002 ~400 ms after the pty starts, it types `AgentCommand + "\r"` once, so PowerShell does not eat the first characters — TP:446-459
-- [ ] TRM-003 The pty starts only when the view reports "ready" with its cols/rows (defaults 80x24; values <1 become 80/24) — TP:264-278, ConPty.cs:132-133
-- [ ] TRM-004 Working directory: `plan.WorkingDirectory` if it exists, else null (inherit Clayo's cwd) — ConPty.cs:188
-- [ ] TRM-005 Environment: the child inherits Clayo's own process environment (lpEnvironment = NULL, CREATE_UNICODE_ENVIRONMENT). Nothing is added. TERM and COLORTERM are not set by Clayo — ConPty.cs:186-187
-- [ ] TRM-006 Before any spawn, Clayo deletes these from its own environment: CLAUDECODE, CLAUDE_CODE_CHILD_SESSION, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, CLAUDE_CODE_MESSAGING_SOCKET, CLAUDE_CODE_MESSAGING_TOKEN, CLAUDE_PID. ANTHROPIC_* and CLAUDE_EFFORT are kept — SessionLauncher.cs:48-63
-- [ ] TRM-007 The session id is allocated up front (new GUID) for New and Fork when the agent supports it. Resume uses the existing id — SessionLauncher.cs:75-88; TP:113
-- [ ] TRM-008 Prefill text (e.g. from "open with prompt") is typed once, without Enter, at the first quiet moment (Done, or 1.5 s of silence for a Codex pane with a known turn), only if output arrived after the command was typed — TP:139,150,469-474
-- [ ] TRM-009 When the shell exits: pending output is flushed, status becomes Exited, the idle timer stops, and a dim gray line `[shell exited]` (SGR 38;5;244) is printed after "\r\n". No auto-restart — TP:424-430, TH:182-184
-- [ ] TRM-010 If the spawn fails: status Exited, and the notice "Couldn't start the shell: <msg>" is printed in the terminal — TP:437-442
-- [ ] TRM-011 If the view fails to load: the text "Couldn't load the terminal: <msg>" replaces the pane, and other panes keep running — TP:177-183
-- [ ] TRM-012 If the renderer crashes (RenderProcessExited): the page reloads automatically. On the new "ready", the pty is not restarted: the viewer state is reset and the pty is resized to the same size, which forces a ConPTY repaint — TP:232-236, 268-274
-- [ ] TRM-013 Closing a pane: TerminateProcess(exit 0) first, then ClosePseudoConsole, stream disposal and handle closing on a background task (ClosePseudoConsole can block before Win11 24H2). The WebView is disposed (it otherwise leaked ~140 MB/pane) — ConPty.cs:249-290, TP:685-698
-- [ ] TRM-014 The read loop keeps reading to EOF even after dispose (ClosePseudoConsole waits for its output to be drained) but drops the data. Exited is not raised after dispose — ConPty.cs:207-225
+- [x] TRM-001 The pane spawns a shell, not the agent: `"<pwsh.exe full path>" -NoLogo` if pwsh.exe is on PATH, else `powershell.exe -NoLogo`. When claude exits you land at a prompt — Sessions/SessionLauncher.cs:30-35
+- [x] TRM-002 ~400 ms after the pty starts, it types `AgentCommand + "\r"` once, so PowerShell does not eat the first characters — TP:446-459
+- [x] TRM-003 The pty starts only when the view reports "ready" with its cols/rows (defaults 80x24; values <1 become 80/24) — TP:264-278, ConPty.cs:132-133
+- [x] TRM-004 Working directory: `plan.WorkingDirectory` if it exists, else null (inherit Clayo's cwd) — ConPty.cs:188
+- [x] TRM-005 Environment: the child inherits Clayo's own process environment (lpEnvironment = NULL, CREATE_UNICODE_ENVIRONMENT). Nothing is added. TERM and COLORTERM are not set by Clayo — ConPty.cs:186-187
+- [x] TRM-006 Before any spawn, Clayo deletes these from its own environment: CLAUDECODE, CLAUDE_CODE_CHILD_SESSION, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, CLAUDE_CODE_MESSAGING_SOCKET, CLAUDE_CODE_MESSAGING_TOKEN, CLAUDE_PID. ANTHROPIC_* and CLAUDE_EFFORT are kept — SessionLauncher.cs:48-63
+- [x] TRM-007 The session id is allocated up front (new GUID) for New and Fork when the agent supports it. Resume uses the existing id — SessionLauncher.cs:75-88; TP:113
+- [x] TRM-008 Prefill text (e.g. from "open with prompt") is typed once, without Enter, at the first quiet moment (Done, or 1.5 s of silence for a Codex pane with a known turn), only if output arrived after the command was typed — TP:139,150,469-474
+- [x] TRM-009 When the shell exits: pending output is flushed, status becomes Exited, the idle timer stops, and a dim gray line `[shell exited]` (SGR 38;5;244) is printed after "\r\n". No auto-restart — TP:424-430, TH:182-184
+- [x] TRM-010 If the spawn fails: status Exited, and the notice "Couldn't start the shell: <msg>" is printed in the terminal — TP:437-442
+- [~] TRM-011 If the view fails to load: the text "Couldn't load the terminal: <msg>" replaces the pane, and other panes keep running — TP:177-183 (D10)
+- [~] TRM-012 If the renderer crashes (RenderProcessExited): the page reloads automatically. On the new "ready", the pty is not restarted: the viewer state is reset and the pty is resized to the same size, which forces a ConPTY repaint — TP:232-236, 268-274 (D10)
+- [x] TRM-013 Closing a pane: TerminateProcess(exit 0) first, then ClosePseudoConsole, stream disposal and handle closing on a background task (ClosePseudoConsole can block before Win11 24H2). The WebView is disposed (it otherwise leaked ~140 MB/pane) — ConPty.cs:249-290, TP:685-698
+- [x] TRM-014 The read loop keeps reading to EOF even after dispose (ClosePseudoConsole waits for its output to be drained) but drops the data. Exited is not raised after dispose — ConPty.cs:207-225
 
 #### Rendering / font / theme
-- [ ] TRM-015 Font: `"Cascadia Code", "Cascadia Mono", Consolas, monospace`, 13 px, lineHeight 1.25, letterSpacing 0 — TH:82-85
-- [ ] TRM-016 Cursor: bar, blinking. Cursor color #d4a24c, cursorAccent #14171c — TH:86-87,102-103
-- [ ] TRM-017 Scrollback: 5000 lines (20000 cost ~29 MB/pane) — TH:88-90
-- [ ] TRM-018 Theme: background #14171c, foreground #c8cdd6, selectionBackground #2f3947, black (ANSI 0) #14171c, brightBlack (ANSI 8) #5a6472 — TH:99-106
-- [ ] TRM-019 The other ANSI colors are xterm.js 6 defaults (Tango), from the vendored xterm.js DEFAULT_ANSI_COLORS: red #cc0000, green #4e9a06, yellow #c4a000, blue #3465a4, magenta #75507b, cyan #06989a, white #d3d7cf; brightRed #ef2929, brightGreen #8ae234, brightYellow #fce94f, brightBlue #729fcf, brightMagenta #ad7fa8, brightCyan #34e2e2, brightWhite #eeeeec. Indexes 16–255 are the standard xterm 6x6x6 cube plus a 24-step gray ramp. Truecolor is supported. "Claude Code paints its own colours" — Assets/xterm/xterm.js (DEFAULT_ANSI_COLORS), TH:98
-- [ ] TRM-020 Scrollbar (xterm-drawn): slider #333a45, hover/active #464f5d — TH:107-110
-- [ ] TRM-021 Terminal padding: 10px top, 4px right, 6px bottom, 12px left. Page background #14171c — TH:12-26
-- [ ] TRM-022 The pane/host background is #14171C before load (no white flash) — TerminalPane.xaml:5,7
-- [ ] TRM-023 The WebView is forced to a dark color scheme. Zoom, the status bar and the default context menu are off. Browser accelerators (F5, Ctrl+P…) are off in release; F12 devtools work in debug only — TP:203-211, 228
+- [x] TRM-015 Font: `"Cascadia Code", "Cascadia Mono", Consolas, monospace`, 13 px, lineHeight 1.25, letterSpacing 0 — TH:82-85
+- [x] TRM-016 Cursor: bar, blinking. Cursor color #d4a24c, cursorAccent #14171c — TH:86-87,102-103 (the bar rests solid after 5 s idle: D14)
+- [x] TRM-017 Scrollback: 5000 lines (20000 cost ~29 MB/pane) — TH:88-90
+- [x] TRM-018 Theme: background #14171c, foreground #c8cdd6, selectionBackground #2f3947, black (ANSI 0) #14171c, brightBlack (ANSI 8) #5a6472 — TH:99-106
+- [x] TRM-019 The other ANSI colors are xterm.js 6 defaults (Tango), from the vendored xterm.js DEFAULT_ANSI_COLORS: red #cc0000, green #4e9a06, yellow #c4a000, blue #3465a4, magenta #75507b, cyan #06989a, white #d3d7cf; brightRed #ef2929, brightGreen #8ae234, brightYellow #fce94f, brightBlue #729fcf, brightMagenta #ad7fa8, brightCyan #34e2e2, brightWhite #eeeeec. Indexes 16–255 are the standard xterm 6x6x6 cube plus a 24-step gray ramp. Truecolor is supported. "Claude Code paints its own colours" — Assets/xterm/xterm.js (DEFAULT_ANSI_COLORS), TH:98
+- [x] TRM-020 Scrollbar (xterm-drawn): slider #333a45, hover/active #464f5d — TH:107-110
+- [x] TRM-021 Terminal padding: 10px top, 4px right, 6px bottom, 12px left. Page background #14171c — TH:12-26
+- [x] TRM-022 The pane/host background is #14171C before load (no white flash) — TerminalPane.xaml:5,7
+- [x] TRM-023 The WebView is forced to a dark color scheme. Zoom, the status bar and the default context menu are off. Browser accelerators (F5, Ctrl+P…) are off in release; F12 devtools work in debug only — TP:203-211, 228 (egui zoom off; devtools: D10)
 
 #### Input / keys
-- [ ] TRM-024 Every keystroke is sent as UTF-8 bytes (xterm onData → TextEncoder). Mouse reports, focus reports and bracketed-paste payloads go as raw bytes (onBinary, char & 0xFF) — TH:349-358
-- [ ] TRM-025 Key → VT encoding is xterm.js's default (arrows, F-keys, Alt as an ESC prefix, Ctrl+letter → C0, application cursor mode, etc.). Clayo customizes only the keys below — TH:401-419
-- [ ] TRM-026 Ctrl+C (also Ctrl+Shift+C; any Ctrl without Alt/Meta and code KeyC) with a terminal selection: copies the selection to the clipboard as text, clears the selection, and sends nothing to the child. The next Ctrl+C interrupts — TH:402-408
-- [ ] TRM-027 Ctrl+C with no selection: falls through to xterm and sends ^C (0x03) to the child — TH:403,418
-- [ ] TRM-028 Ctrl+V (also Ctrl+Shift+V): xterm does not send ^V. The host is asked (`paste`) to handle clipboard files, and the browser's native paste runs, which xterm turns into a text paste (bracketed if the app enabled mode 2004, CRLF/LF → CR) — TH:409-417
-- [ ] TRM-029 Host side of Ctrl+V: does nothing if the clipboard has text or has no file drop list. Otherwise, each image file (png/jpg/jpeg/gif/webp/bmp) is written as a bracketed paste `ESC[200~<path>ESC[201~` plus a space, so Claude and Codex turn it into an `[Image #n]` attachment. Other files are typed as plain text: space-separated, double-quoted if the path contains a space, with one trailing space and no Enter — TP:342-368, 374
-- [ ] TRM-030 In a Codex pane, each image pasted that way is remembered in `CodexImages` (path, now) for the image chip — TP:353
-- [ ] TRM-031 A raw bitmap on the clipboard (not a file) is not handled by Clayo. Ctrl+V does not send ^V, so the agent's own image-paste key must be used (e.g. Claude Code's Alt+V passes through as ESC v). *Inference: there is no code path for bitmap clipboard data* — TH:409-417, TP:344
-- [ ] TRM-032 Shift+Enter, Ctrl+Enter and Alt+Enter are not special-cased. xterm defaults apply: Shift+Enter → "\r" (same as Enter), Alt+Enter → ESC "\r". Ctrl+Shift+other is not special-cased — TH:401-419
-- [ ] TRM-033 Right-click: no context menu (disabled), no paste on right-click. xterm's rightClickSelectsWord is false on Windows — TP:203
-- [ ] TRM-034 Dropping a file or link on the pane does not navigate (AllowExternalDrop=false). Drop-to-insert is handled elsewhere (island/MainWindow) — TP:195
-- [ ] TRM-035 Keys typed while a question or error is showing "answer" it (status can leave NeedsInput/Error), except sequences longer than 2 bytes that start with `ESC [` (arrows, focus reports, mouse reports). A bare ESC, Enter or a digit does answer — TP:284-292, 517
-- [ ] TRM-036 In a Codex pane with a known turn, answering a NeedsInput sets status to Working right away — TP:291
+- [x] TRM-024 Every keystroke is sent as UTF-8 bytes (xterm onData → TextEncoder). Mouse reports, focus reports and bracketed-paste payloads go as raw bytes (onBinary, char & 0xFF) — TH:349-358
+- [x] TRM-025 Key → VT encoding is xterm.js's default (arrows, F-keys, Alt as an ESC prefix, Ctrl+letter → C0, application cursor mode, etc.). Clayo customizes only the keys below — TH:401-419
+- [x] TRM-026 Ctrl+C (also Ctrl+Shift+C; any Ctrl without Alt/Meta and code KeyC) with a terminal selection: copies the selection to the clipboard as text, clears the selection, and sends nothing to the child. The next Ctrl+C interrupts — TH:402-408
+- [x] TRM-027 Ctrl+C with no selection: falls through to xterm and sends ^C (0x03) to the child — TH:403,418
+- [x] TRM-028 Ctrl+V (also Ctrl+Shift+V): xterm does not send ^V. The host is asked (`paste`) to handle clipboard files, and the browser's native paste runs, which xterm turns into a text paste (bracketed if the app enabled mode 2004, CRLF/LF → CR) — TH:409-417
+- [x] TRM-029 Host side of Ctrl+V: does nothing if the clipboard has text or has no file drop list. Otherwise, each image file (png/jpg/jpeg/gif/webp/bmp) is written as a bracketed paste `ESC[200~<path>ESC[201~` plus a space, so Claude and Codex turn it into an `[Image #n]` attachment. Other files are typed as plain text: space-separated, double-quoted if the path contains a space, with one trailing space and no Enter — TP:342-368, 374
+- [x] TRM-030 In a Codex pane, each image pasted that way is remembered in `CodexImages` (path, now) for the image chip — TP:353
+- [x] TRM-031 A raw bitmap on the clipboard (not a file) is not handled by Clayo. Ctrl+V does not send ^V, so the agent's own image-paste key must be used (e.g. Claude Code's Alt+V passes through as ESC v). *Inference: there is no code path for bitmap clipboard data* — TH:409-417, TP:344
+- [x] TRM-032 Shift+Enter, Ctrl+Enter and Alt+Enter are not special-cased. xterm defaults apply: Shift+Enter → "\r" (same as Enter), Alt+Enter → ESC "\r". Ctrl+Shift+other is not special-cased — TH:401-419
+- [x] TRM-033 Right-click: no context menu (disabled), no paste on right-click. xterm's rightClickSelectsWord is false on Windows — TP:203
+- [x] TRM-034 Dropping a file or link on the pane does not navigate (AllowExternalDrop=false). Drop-to-insert is handled elsewhere (island/MainWindow) — TP:195
+- [x] TRM-035 Keys typed while a question or error is showing "answer" it (status can leave NeedsInput/Error), except sequences longer than 2 bytes that start with `ESC [` (arrows, focus reports, mouse reports). A bare ESC, Enter or a digit does answer — TP:284-292, 517
+- [x] TRM-036 In a Codex pane with a known turn, answering a NeedsInput sets status to Working right away — TP:291
 
 #### Selection / copy
-- [ ] TRM-037 Selection uses xterm defaults: drag selects, double-click selects a word, triple-click selects a line, Shift+click extends, Alt+drag makes a column (block) selection, and Shift+drag forces a selection while the app has mouse reporting on. Selection color #2f3947 — TH:104 (rest xterm defaults)
-- [ ] TRM-038 Copy is done only by Ctrl+C (or Ctrl+Shift+C) with a selection. There is no copy-on-select and no right-click copy. The selection is cleared after copying — TH:403-407
+- [x] TRM-037 Selection uses xterm defaults: drag selects, double-click selects a word, triple-click selects a line, Shift+click extends, Alt+drag makes a column (block) selection, and Shift+drag forces a selection while the app has mouse reporting on. Selection color #2f3947 — TH:104 (rest xterm defaults)
+- [x] TRM-038 Copy is done only by Ctrl+C (or Ctrl+Shift+C) with a selection. There is no copy-on-select and no right-click copy. The selection is cleared after copying — TH:403-407
 
 #### Resize
-- [ ] TRM-039 The view fits cols/rows to the container (FitAddon). The resize is debounced 60 ms after the last ResizeObserver callback, and "r" is sent only when cols/rows changed — TH:360-378
-- [ ] TRM-040 The host ignores a resize while the window is minimized (a false 124→105 col reflow was seen) and ignores a same-size resize. Otherwise it calls ResizePseudoConsole and records `_resizedAt` — TP:297-309
-- [ ] TRM-041 Output within 500 ms after a resize, or within 250 ms after a key, does not count as "work" (it is a repaint or echo) but does reset the quiet timer — TP:387-388, 396-402
+- [x] TRM-039 The view fits cols/rows to the container (FitAddon). The resize is debounced 60 ms after the last ResizeObserver callback, and "r" is sent only when cols/rows changed — TH:360-378
+- [x] TRM-040 The host ignores a resize while the window is minimized (a false 124→105 col reflow was seen) and ignores a same-size resize. Otherwise it calls ResizePseudoConsole and records `_resizedAt` — TP:297-309
+- [x] TRM-041 Output within 500 ms after a resize, or within 250 ms after a key, does not count as "work" (it is a repaint or echo) but does reset the quiet timer — TP:387-388, 396-402
 - [x] TRM-042 Dragging the doc-split grip resizes the terminal through the same debounce — TH:325-341
 
 #### Links
@@ -1900,22 +1905,22 @@ Abbreviations: TP = Terminal/TerminalPane.xaml.cs, TH = Assets/terminal.html, MW
 - [x] TRM-044 The host opens only absolute http/https URIs (file: and other schemes are dropped) with ShellExecute — TP:326-331
 - [x] TRM-045 Plain-text URLs (no OSC 8) are not linkified (the web-links addon is not loaded) — TH:69-71
 - [x] TRM-046 Links in a doc: http(s) only, same confirm, open in the browser. Other links do nothing (default is prevented) — TH:274-280
-- [~] TRM-047 Links in a page: same confirm, http(s) only. `#anchor` links scroll inside the page — TH:314-316, Assets/pages/clayo-page.js:457-471
-- [ ] TRM-048 New windows are never opened inside Clayo. Top navigation outside `https://ccx.assets/` is cancelled. Frame navigation other than `about:` (srcdoc) is cancelled — TP:217-230
+- [~] TRM-047 Links in a page: same confirm, http(s) only. `#anchor` links scroll inside the page — TH:314-316, Assets/pages/clayo-page.js:457-471 (D3)
+- [x] TRM-048 New windows are never opened inside Clayo. Top navigation outside `https://ccx.assets/` is cancelled. Frame navigation other than `about:` (srcdoc) is cancelled — TP:217-230
 
 #### Focus
-- [ ] TRM-049 On load the terminal takes focus. After a chip click, a viewer close, a pane switch, closing the image viewer or attaching files, focus returns to the terminal (`FocusTerminal` = view focus plus a focus message) — TH:380-384, 176-178, 291; MW:1102,1330,1467,1485,1502,1661
-- [ ] TRM-050 Focus in/out reports (CSI I/O) are sent by xterm when the app enables mode 1004. They do not count as an answer — TH:354, TP:517
+- [x] TRM-049 On load the terminal takes focus. After a chip click, a viewer close, a pane switch, closing the image viewer or attaching files, focus returns to the terminal (`FocusTerminal` = view focus plus a focus message) — TH:380-384, 176-178, 291; MW:1102,1330,1467,1485,1502,1661
+- [x] TRM-050 Focus in/out reports (CSI I/O) are sent by xterm when the app enables mode 1004. They do not count as an answer — TH:354, TP:517
 
 #### Visibility / perf
-- [ ] TRM-051 A hidden pane (another session picked, Settings open, window in the tray) drops its WebGL renderer and recreates it when shown again. A pane hidden before its page was ready is told after "ready". On WebGL context loss it falls back to the DOM renderer — TP:163,266; TH:118-137
-- [ ] TRM-052 Output is batched: pty reads are added to a buffer under a lock, and the first read schedules an 8 ms dispatcher timer at Normal priority (not Background, so key echo is not delayed, issue #21). The whole buffer is posted as one base64 message, so a redraw split over several reads paints in one go (no flicker) — TP:411-421, 155-159, 581-592
+- [x] TRM-051 A hidden pane (another session picked, Settings open, window in the tray) drops its WebGL renderer and recreates it when shown again. A pane hidden before its page was ready is told after "ready". On WebGL context loss it falls back to the DOM renderer — TP:163,266; TH:118-137 (DOM fallback: D10)
+- [x] TRM-052 Output is batched: pty reads are added to a buffer under a lock, and the first read schedules an 8 ms dispatcher timer at Normal priority (not Background, so key echo is not delayed, issue #21). The whole buffer is posted as one base64 message, so a redraw split over several reads paints in one go (no flicker) — TP:411-421, 155-159, 581-592 (parsed on the read thread, one repaint per frame: D13)
 
 #### Status detection (drives the sidebar dot, island, notifications)
-- [c] TRM-053 The output stream is scanned per chunk. `ESC[1C` is replaced with a space (ConPTY sends spaces as cursor moves). A carry of (max marker len − 1) = 16 bytes joins markers split across reads — TP:497-508, 538-550
-- [c] TRM-054 "API Error:" → Error. "Do you want to" → NeedsInput. "Would you like to" → NeedsInput in Codex panes only. Error has priority over the ask markers. A scan hit resets `answered` and records askedAt (local time) — TP:481-488, 403-409
-- [c] TRM-055 Idle timer, every 400 ms: if Exited, skip. If a Codex turn is known: only type the prefill after 1.5 s of quiet. Else: burst = chunks counted as work in the last 900 ms (the queue keeps the last 12). NeedsInput/Error stay until answered. burst ≥ 3 → Working. Quiet > 1500 ms → Done (and type the prefill). Otherwise unchanged — TP:128-151, 523-531
-- [c] TRM-056 Codex panes, once the transcript reports a turn: Working/Done comes from the transcript (`FromTurn`). Exited never changes. NeedsInput stays unless answered and the transcript line is newer than the question — TP:563-579
+- [x] TRM-053 The output stream is scanned per chunk. `ESC[1C` is replaced with a space (ConPTY sends spaces as cursor moves). A carry of (max marker len − 1) = 16 bytes joins markers split across reads — TP:497-508, 538-550
+- [x] TRM-054 "API Error:" → Error. "Do you want to" → NeedsInput. "Would you like to" → NeedsInput in Codex panes only. Error has priority over the ask markers. A scan hit resets `answered` and records askedAt (local time) — TP:481-488, 403-409
+- [x] TRM-055 Idle timer, every 400 ms: if Exited, skip. If a Codex turn is known: only type the prefill after 1.5 s of quiet. Else: burst = chunks counted as work in the last 900 ms (the queue keeps the last 12). NeedsInput/Error stay until answered. burst ≥ 3 → Working. Quiet > 1500 ms → Done (and type the prefill). Otherwise unchanged — TP:128-151, 523-531
+- [x] TRM-056 Codex panes, once the transcript reports a turn: Working/Done comes from the transcript (`FromTurn`). Exited never changes. NeedsInput stays unless answered and the transcript line is newer than the question — TP:563-579
 
 #### Image chip (pane header; MW logic using TP state)
 - [x] TRM-057 The page reports the set of `[Image #n]` tags visible on the bottom screen (rows baseY..baseY+rows, not scrollback), 250 ms after output is parsed, and only when the set changes (comma-joined, sorted) — TH:198-228, TP:320-324
@@ -1933,22 +1938,22 @@ Abbreviations: TP = Terminal/TerminalPane.xaml.cs, TH = Assets/terminal.html, MW
 - [x] TRM-067 The split grip (8 px over the left border, col-resize, amber 2 px line on hover/drag) sets the doc width to 20–80%. The width is kept for the next open within this page load — TH:31-36, 325-341
 - [x] TRM-068 Follow edits: on every transcript change, if the doc is open, the current Doc is shown again if its path or mtime changed (an Edit reaches the transcript before the file). The same doc keeps its scroll position; a different doc starts at the top — MW:658-669, TP:613-617, TH:261-264
 - [x] TRM-069 Files over 2 MB show "*<name> is too big to show here.*". A read error shows "*Couldn't read <name>: <msg>*" — TP:603-629
-- [~] TRM-070 Rendered with marked (GFM) in a sandboxed frame with no scripts, CSP `default-src 'none'; style-src 'unsafe-inline'; img-src https: data:` (remote https images load). Raw `<pre>` with escaped text is the fallback if marked is missing — TH:60-62, 238-249, 269
+- [~] TRM-070 Rendered with marked (GFM) in a sandboxed frame with no scripts, CSP `default-src 'none'; style-src 'unsafe-inline'; img-src https: data:` (remote https images load). Raw `<pre>` with escaped text is the fallback if marked is missing — TH:60-62, 238-249, 269 (D4)
 - [x] TRM-071 Doc CSS: body 14px/1.6 Segoe UI, padding 18 24 40, bg #14171c, fg #c8cdd6. h1–h4 #eceef1 (lh 1.3, margin 1.4em 0 .5em). h1/h2 have a bottom border #262c35. Links #d4a24c. Code 12.5px Cascadia Code on #1b1f26 with radius 3. pre #1b1f26, padding 10 12. blockquote: left border 3px #333a45, color #7a828f. Table cells: border #262c35, padding 4 10. Images max-width 100%. hr #262c35. Bar: 12px Segoe UI #7a828f, border #262c35, button hover bg #222731 — TH:38-45, 243-248
 - [x] TRM-072 Closing the viewer (✕) tells the host (`mdclosed`) and refocuses the terminal. A host-side close (`mdclose`) does the same without telling the host back — TH:285-292, TP:315-318, 636-641
 
 #### HTML pages
-- [ ] TRM-073 What: a single HTML file an agent writes at `<project>/.clayo/pages/<name>.html` (report/dashboard/slides), using clayo-page.css/js. Charts are JSON in `<script type="application/json" class="chart">` (Chart.js: bar/line/area/pie/doughnut/scatter, stacked/horizontal, xLabel/yLabel). Diagrams are `<pre class="mermaid">`. Tables are sortable with `data-sortable`. Decks use `.deck > .slide` (16:9) — Assets/pages/page-guide.md:1-153
-- [c] TRM-074 Detection (TT): an .html Write/Edit (or Codex patch/FileChange) inside `<folder>\.clayo\pages\`. A page written again moves to the end. `Pages` lists each one once, newest last. PageWrites counts every write — TT:118-125
+- [x] TRM-073 What: a single HTML file an agent writes at `<project>/.clayo/pages/<name>.html` (report/dashboard/slides), using clayo-page.css/js. Charts are JSON in `<script type="application/json" class="chart">` (Chart.js: bar/line/area/pie/doughnut/scatter, stacked/horizontal, xLabel/yLabel). Diagrams are `<pre class="mermaid">`. Tables are sortable with `data-sortable`. Decks use `.deck > .slide` (16:9) — Assets/pages/page-guide.md:1-153 (in the default browser with the page assets, D3)
+- [x] TRM-074 Detection (TT): an .html Write/Edit (or Codex patch/FileChange) inside `<folder>\.clayo\pages\`. A page written again moves to the end. `Pages` lists each one once, newest last. PageWrites counts every write — TT:118-125
 - [x] TRM-075 A new page write after the first transcript read opens the page in the viewer automatically. A page from history (the first read) only appears in the chip. On a page write, `.clayo/` is appended to `.git/info/exclude` of the enclosing repo (searched upward). If the page is open and the file still exists, it is shown again on change (mtime) — MW:663-677, Pages/PageFolder.cs:15-32
 - [x] TRM-076 Page chip: visible when any page is known. Tooltip: "<name>\n<path>\nClick to see it here, again to close it. Right-click for the session's other pages." Click toggles. The right-click menu lists the session's existing pages, newest first, with the open one checked — MW:1489-1515
-- [~] TRM-077 The page shows in the same panel as the doc (one at a time). The same page again keeps its scroll y and slide (reported by the page via postMessage `place`, debounced 150 ms). A different page starts at the top — TH:294-323, clayo-page.js:433-453
-- [c] TRM-078 Sealing: a CSP meta is inserted straight after the doctype (or at offset 0 if there is none), so the page cannot comment it out. CSP = `default-src 'none'; script-src 'unsafe-inline' https://ccx.assets https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src` (same list)`; img-src data: blob: https://ccx.assets; font-src data: https://ccx.assets; connect-src 'none'; form-action 'none'`. `href|src = "./clayo-page.css|js"` (either quote style, optional ./) is rewritten to `https://ccx.assets/pages/clayo-page.(css|js)`. Nothing else is touched — Pages/PageHtml.cs:43-81
-- [~] TRM-079 Frame sandbox: `allow-scripts` only (opaque origin; it cannot reach the host, files or the network). The doc frame is `allow-same-origin` with no scripts — TH:60-66
-- [~] TRM-080 Over 5 MB: a dark note "<name> is too big to show here." A read error: "Couldn't read <name>: <msg>" (HTML-encoded, on #14171c, color #7a828f) — TP:643-677
-- [~] TRM-081 Page runtime: dark/light via `light-dark()` tokens (Clayo forces dark). Charts and Mermaid redraw on theme change. Decks: ←/→/↑/↓/PgUp/PgDn/Space/Home/End and nav buttons, with a "n / N" counter. Tables: numeric columns right-aligned, header click or Enter/Space sorts ascending then descending — clayo-page.js:337-431, 480-482; clayo-page.css:1-184
-- [ ] TRM-082 Not wired in the C# code: page-guide.md and templates/ are shipped in Assets, but no code copies them into `.clayo/templates` or tells the agent about them. The PageHtml doc mentions `clayo --page-check`, but no such CLI handler exists in src — grep of src (no hits)
-- [ ] TRM-083 IME composition (Vietnamese Telex, CJK IMEs): preedit shown at the cursor, candidate window placed at the cursor cell, committed text sent as UTF-8 (xterm.js behavior) — Assets/xterm/xterm.js (composition helper)
+- [~] TRM-077 The page shows in the same panel as the doc (one at a time). The same page again keeps its scroll y and slide (reported by the page via postMessage `place`, debounced 150 ms). A different page starts at the top — TH:294-323, clayo-page.js:433-453 (D3)
+- [~] TRM-078 Sealing: a CSP meta is inserted straight after the doctype (or at offset 0 if there is none), so the page cannot comment it out. CSP = `default-src 'none'; script-src 'unsafe-inline' https://ccx.assets https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src` (same list)`; img-src data: blob: https://ccx.assets; font-src data: https://ccx.assets; connect-src 'none'; form-action 'none'`. `href|src = "./clayo-page.css|js"` (either quote style, optional ./) is rewritten to `https://ccx.assets/pages/clayo-page.(css|js)`. Nothing else is touched — Pages/PageHtml.cs:43-81 (D3: sealed for the browser copy)
+- [~] TRM-079 Frame sandbox: `allow-scripts` only (opaque origin; it cannot reach the host, files or the network). The doc frame is `allow-same-origin` with no scripts — TH:60-66 (D3)
+- [~] TRM-080 Over 5 MB: a dark note "<name> is too big to show here." A read error: "Couldn't read <name>: <msg>" (HTML-encoded, on #14171c, color #7a828f) — TP:643-677 (D3)
+- [~] TRM-081 Page runtime: dark/light via `light-dark()` tokens (Clayo forces dark). Charts and Mermaid redraw on theme change. Decks: ←/→/↑/↓/PgUp/PgDn/Space/Home/End and nav buttons, with a "n / N" counter. Tables: numeric columns right-aligned, header click or Enter/Space sorts ascending then descending — clayo-page.js:337-431, 480-482; clayo-page.css:1-184 (D3)
+- [~] TRM-082 Not wired in the C# code: page-guide.md and templates/ are shipped in Assets, but no code copies them into `.clayo/templates` or tells the agent about them. The PageHtml doc mentions `clayo --page-check`, but no such CLI handler exists in src — grep of src (no hits) (D9)
+- [x] TRM-083 IME composition (Vietnamese Telex, CJK IMEs): preedit shown at the cursor, candidate window placed at the cursor cell, committed text sent as UTF-8 (xterm.js behavior) — Assets/xterm/xterm.js (composition helper)
 - [x] TRM-084 Viewer tooltips: grip "Drag to resize", Split "Half and half", Full "Fill the pane", ✕ "Back to the terminal" — Assets/terminal.html:52-57
 
 ### 3. HARD POINTS
