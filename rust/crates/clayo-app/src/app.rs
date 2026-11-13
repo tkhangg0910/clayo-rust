@@ -4,6 +4,8 @@
 //! sessions thread ([`crate::model`]), and pane events are handled in `App::logic`, which
 //! eframe keeps calling while the window is hidden. Closing the window only hides it.
 
+use crate::doc_view::{self, DocViewer};
+use crate::image_chip::ImageChip;
 use crate::island_host::{Host, IslandCmd};
 use crate::model::{self, lock, Job, Model, Shared};
 use crate::pane::{AppEvent, Pane, Ticker, Waker};
@@ -217,6 +219,12 @@ enum Action {
     OpenSetup,
     Update,
     UpdateConfirmed,
+    /// The doc chip: the viewer opens on the session's newest doc, or closes.
+    ToggleDoc,
+    /// A link clicked in the terminal or a doc: asked about first.
+    AskLink(String),
+    /// A page the session wrote, in the default browser (PORTING.md D3).
+    OpenPage(std::path::PathBuf),
     Quit,
 }
 
@@ -271,6 +279,16 @@ pub struct ClayoApp {
     pending_start: Option<String>,
     updater: Updater,
     update: UpdateState,
+    /// The doc viewers' render cache (one for every pane).
+    md_cache: egui_commonmark::CommonMarkCache,
+    /// Numbers each doc a viewer shows, so a different one starts at the top.
+    doc_seq: u64,
+    /// "Open this link in your browser?" for this link.
+    confirm_link: Option<String>,
+    /// The pane whose page chip is flashing, since when.
+    page_flash: Option<(u64, std::time::Instant)>,
+    /// The image chip's thumbnails and full-size view.
+    image_chip: ImageChip,
 }
 
 impl ClayoApp {
@@ -294,6 +312,7 @@ impl ClayoApp {
             Arc::new(std::sync::Mutex::new(Model::new(&data, settings.use_claude, settings.use_codex)));
         let ctx = cc.egui_ctx.clone();
         let jobs = model::start_worker(model.clone(), move || ctx.request_repaint());
+        crate::image_chip::start_poll(model.clone(), cc.egui_ctx.clone());
         let reveal = Arc::new(AtomicBool::new(false));
         let revealer = Revealer { flag: reveal.clone(), ctx: cc.egui_ctx.clone() };
         let home = std::env::var("USERPROFILE").unwrap_or_default();
@@ -313,7 +332,8 @@ impl ClayoApp {
             island.greet();
         }
         crate::mark("island");
-        // Screenshots are kept a week.
+        // Screenshots and browser copies of pages are kept a week.
+        crate::pages_open::prune(clayo_core::pages::copies_dir(&data));
         let shots = clayo_core::screenshots::dir(&data);
         let _ = std::thread::Builder::new().name("prune shots".into()).spawn(move || {
             let before = std::time::SystemTime::now() - clayo_core::screenshots::KEEP_FOR;
@@ -395,6 +415,11 @@ impl ClayoApp {
             pending_start: None,
             updater,
             update: UpdateState::default(),
+            md_cache: Default::default(),
+            doc_seq: 0,
+            confirm_link: None,
+            page_flash: None,
+            image_chip: ImageChip::default(),
         };
         // Opening Clayo in a folder lands you in a live session there (once setup is done).
         if let Some(folder) = start.folder {
@@ -899,6 +924,22 @@ impl ClayoApp {
                 Action::OpenSetup => self.show_setup(ctx),
                 Action::Update => self.update_clicked(),
                 Action::UpdateConfirmed => self.update_confirmed(),
+                Action::ToggleDoc => self.toggle_doc(),
+                Action::OpenPage(page) => {
+                    if let Some(p) = self.active_pane() {
+                        p.shared.pages_seen();
+                    }
+                    self.page_flash = None;
+                    crate::pages_open::open(clayo_core::pages::copies_dir(&self.data), &page);
+                    self.focus_terminal = true;
+                }
+                Action::AskLink(uri) => {
+                    // Web links only: a file: or other scheme would run something (TP:326-331).
+                    self.confirm_link = clayo_core::doc::web_link(&uri).map(str::to_string);
+                    if self.confirm_link.is_none() {
+                        self.focus_terminal = true;
+                    }
+                }
                 Action::Quit => self.quit(ctx),
             }
         }
@@ -928,6 +969,71 @@ impl ClayoApp {
         if resp.should_close() {
             self.update.confirming = false;
         }
+    }
+
+    /// "Open this link in your browser?\n\n<uri>" (OK / Cancel), as the C# page's confirm();
+    /// either way the terminal has the focus after.
+    fn link_confirm(&mut self, ctx: &egui::Context) {
+        let Some(uri) = self.confirm_link.clone() else { return };
+        let mut done = false;
+        let resp = egui::Modal::new(Id::NULL.with("link-confirm")).frame(popup_frame(8, MENU_RIM).inner_margin(20)).show(ctx, |ui| {
+            ui.set_max_width(440.0);
+            let text = clayo_core::doc::confirm_text(&uri);
+            ui.add(egui::Label::new(egui::RichText::new(text).font(ui_font(12.5)).color(TEXT_PRIMARY)).wrap());
+            ui.add_space(16.0);
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if ghost_button(ui, None, "Cancel", false, Some(80.0)).clicked() {
+                    done = true;
+                }
+                ui.add_space(8.0);
+                if ghost_button(ui, None, "OK", true, Some(80.0)).clicked() {
+                    #[cfg(windows)]
+                    win::shell::open(&uri);
+                    done = true;
+                }
+            });
+        });
+        if done || resp.should_close() {
+            self.confirm_link = None;
+            self.focus_terminal = true;
+        }
+    }
+
+    /// The page chip's colour while a page written since its last click waits (PORTING.md D3:
+    /// it flashes rather than opening a browser by itself): amber, blinking for 1.5 s.
+    fn page_flash(&mut self, ctx: &egui::Context, pane: Option<u64>, new_page: bool) -> Option<Color32> {
+        let pane = pane.filter(|_| new_page)?;
+        let since = match self.page_flash {
+            Some((p, at)) if p == pane => at,
+            _ => {
+                let now = std::time::Instant::now();
+                self.page_flash = Some((pane, now));
+                now
+            }
+        };
+        const BLINK: std::time::Duration = std::time::Duration::from_millis(250);
+        let t = since.elapsed();
+        if t >= BLINK * 6 {
+            return Some(WORKING);
+        }
+        let n = t.as_millis() / BLINK.as_millis();
+        ctx.request_repaint_after(BLINK * (n as u32 + 1) - t);
+        n.is_multiple_of(2).then_some(WORKING)
+    }
+
+    /// The doc chip (MainWindow.DocChip_Click): closes the viewer, or opens it on the
+    /// session's newest doc; the terminal keeps the focus.
+    fn toggle_doc(&mut self) {
+        self.doc_seq += 1;
+        let seq = self.doc_seq;
+        let Some(pane) = self.active.and_then(|id| self.panes.iter_mut().find(|p| p.id() == id)) else { return };
+        if pane.doc.take().is_none() {
+            let w = pane.shared.written();
+            if let Some(doc) = w.doc {
+                pane.doc = Some(DocViewer::open(&doc, &pane.cwd, w.generation, seq));
+            }
+        }
+        self.focus_terminal = true;
     }
 
     // ------------------------------------------------------------------ drawing
@@ -1417,6 +1523,10 @@ impl ClayoApp {
             None => (None, String::new(), false),
         };
         let has_pane = active.is_some();
+        let active_id = active.map(Pane::id);
+        let written = active.map(|p| p.shared.written()).unwrap_or_default();
+        let (images, images_added) = active.map(|p| p.shared.take_images()).unwrap_or_default();
+        let front = ui.ctx().input(|i| i.focused);
         let inner = rect.shrink2(Vec2::new(14.0, 0.0));
         dot(p, Pos2::new(inner.left() + 3.5, inner.center().y), status_color(sidebar::status_key(status)));
         // Right to left: ✕, Branch from here, Attach files…, then (later phases) the image, page
@@ -1442,7 +1552,39 @@ impl ClayoApp {
                 self.actions.push(Action::Attach);
             }
             ui.add_space(6.0);
-            // Slot: doc, page and images chips (phase 7).
+            // The chips, in the strip's quiet style; the details are in the tooltips.
+            ui.spacing_mut().item_spacing.x = 2.0;
+            self.image_chip.chip(ui, &images, images_added, front);
+            self.image_chip.pictures.keep(&images, self.image_chip.big.as_deref());
+            let pages: Vec<&std::path::PathBuf> = written.pages.iter().filter(|p| p.is_file()).collect();
+            if let Some(page) = written.pages.first() {
+                let tip = format!(
+                    "{}\n{}\nClick to see it here, again to close it. Right-click for the session's other pages.",
+                    file_name(page),
+                    page.display()
+                );
+                let tint = self.page_flash(ui.ctx(), active_id, written.new_page);
+                let chip = chip_button(ui, '\u{E9D2}', None, tint).on_hover_text(tip);
+                if chip.clicked() {
+                    self.actions.push(Action::OpenPage(page.clone()));
+                }
+                // The session's pages, the newest first, each opening in the browser.
+                chip.context_menu(|ui| {
+                    ui.set_min_width(176.0);
+                    for p in &pages {
+                        if menu_item(ui, &file_name(p), None, None, true).clicked() {
+                            self.actions.push(Action::OpenPage((*p).clone()));
+                            ui.close();
+                        }
+                    }
+                });
+            }
+            if let Some(doc) = &written.doc {
+                let tip = format!("{}\n{}\nClick to read it here, again to close it.", file_name(doc), doc.display());
+                if chip_button(ui, '\u{F000}', None, None).on_hover_text(tip).clicked() {
+                    self.actions.push(Action::ToggleDoc);
+                }
+            }
             title_right = ui.min_rect().left();
         });
         let x = inner.left() + 7.0 + 10.0;
@@ -1465,28 +1607,65 @@ impl ClayoApp {
             return;
         };
         let font = self.font.clone();
-        let focus_now = std::mem::take(&mut self.focus_terminal);
         let list_focus = self.list_focus;
+        self.doc_seq += 1;
+        let seq = self.doc_seq;
         let pane = &mut self.panes[i];
-        let (resp, out) = ui
-            .push_id(widget::view_id(pane.id()), |ui| widget::show(ui, &pane.shared.term, &mut pane.view, &font, true))
-            .inner;
-        if focus_now || (!resp.has_focus() && !list_focus && ctx.memory(|m| m.focused().is_none())) {
-            resp.request_focus();
+        // An open viewer follows the session's newest doc and its edits.
+        if let Some(v) = pane.doc.as_mut() {
+            let w = pane.shared.written();
+            v.follow(w.doc.as_deref(), w.generation, &pane.cwd, &mut self.md_cache, seq);
         }
-        if resp.has_focus() {
-            self.list_focus = false;
+        let (term_rect, doc_rect) = match &pane.doc {
+            Some(v) => doc_view::layout(rect, v.mode, pane.doc_share),
+            None => (Some(rect), rect),
+        };
+        let mut links = Vec::new();
+        let mut paste = false;
+        // In full mode the viewer covers the terminal, which keeps its size and is not drawn.
+        if let Some(term_rect) = term_rect {
+            let focus_now = std::mem::take(&mut self.focus_terminal);
+            let (resp, out) = ui
+                .scope_builder(UiBuilder::new().max_rect(term_rect), |ui| {
+                    ui.push_id(widget::view_id(pane.id()), |ui| widget::show(ui, &pane.shared.term, &mut pane.view, &font, true))
+                        .inner
+                })
+                .inner;
+            if focus_now || (!resp.has_focus() && !list_focus && ctx.memory(|m| m.focused().is_none())) {
+                resp.request_focus();
+            }
+            if resp.has_focus() {
+                self.list_focus = false;
+            }
+            for bytes in &out.input {
+                pane.shared.type_keys(bytes);
+            }
+            if let Some(size) = out.resized {
+                pane.shared.resize(size);
+            }
+            if let Some(text) = out.copy {
+                ctx.copy_text(text);
+            }
+            links.extend(out.link);
+            paste = out.paste_requested;
         }
-        for bytes in &out.input {
-            pane.shared.type_keys(bytes);
+        if let Some(v) = pane.doc.as_mut() {
+            let out = doc_view::show(ui, doc_rect, rect, v, &mut pane.doc_share, &mut self.md_cache);
+            if out.close {
+                pane.doc = None;
+            }
+            if out.close || out.focus_terminal {
+                self.focus_terminal = true;
+            }
+            links.extend(out.links);
         }
-        if let Some(size) = out.resized {
-            pane.shared.resize(size);
+        for link in links {
+            self.actions.push(Action::AskLink(link));
         }
-        if let Some(text) = out.copy {
-            ctx.copy_text(text);
+        if self.image_chip.big_view(ui, rect).focus_terminal {
+            self.focus_terminal = true;
         }
-        if out.paste_requested {
+        if paste {
             let p = &self.panes[i];
             self.paste(p);
         }
@@ -1676,6 +1855,10 @@ fn main_hwnd(cc: &eframe::CreationContext<'_>) -> isize {
     0
 }
 
+fn file_name(p: &std::path::Path) -> String {
+    p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default()
+}
+
 fn clamp_sidebar(w: f32, total: f32) -> f32 {
     let max = SIDEBAR_MAX.min(total - SPLITTER_W - TERMINAL_MIN).max(SIDEBAR_MIN);
     w.clamp(SIDEBAR_MIN, max)
@@ -1826,6 +2009,7 @@ impl eframe::App for ClayoApp {
         self.splitter(ui, split, full.width());
         ui.scope_builder(UiBuilder::new().max_rect(term), |ui| self.draw_terminal_side(ui));
         self.update_confirm(&ctx);
+        self.link_confirm(&ctx);
         self.run_actions(&ctx, frame);
         self.set_visibility();
         // Ages ("3 min ago") and the Today bucket move with the clock, and the strip's and the

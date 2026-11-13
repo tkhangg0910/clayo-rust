@@ -9,7 +9,7 @@ use egui::{
 };
 use std::sync::Arc;
 
-const fn hex(rgb: u32) -> Color32 {
+pub const fn hex(rgb: u32) -> Color32 {
     Color32::from_rgb((rgb >> 16) as u8, (rgb >> 8) as u8, rgb as u8)
 }
 
@@ -304,6 +304,29 @@ pub fn switch(ui: &mut Ui, on: &mut bool) -> Response {
         let x = rect.left() + 10.0 + 20.0 * t;
         let knob = if *on { TERMINAL_BG } else { MUTED_AA };
         p.circle_filled(Pos2::new(x, rect.center().y), 6.0 * grow, knob);
+    }
+    resp.on_hover_cursor(CursorIcon::PointingHand)
+}
+
+/// A pane header chip (MainWindow.xaml:399-428): QuietButton with no border, padding 7,5, a
+/// 14 px Segoe glyph and maybe a 12 px count 5 px after it; `tint` colours it (a flash).
+pub fn chip_button(ui: &mut Ui, glyph: char, count: Option<&str>, tint: Option<Color32>) -> Response {
+    let g = ui.painter().layout_no_wrap(glyph.to_string(), icon_font(14.0), TEXT_MUTED);
+    let c = count.map(|c| ui.painter().layout_no_wrap(c.to_string(), ui_font(12.0), TEXT_MUTED));
+    let w = g.size().x + c.as_ref().map_or(0.0, |c| 5.0 + c.size().x);
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(w + 14.0, 26.0), Sense::click());
+    if ui.is_rect_visible(rect) {
+        let hovered = resp.hovered();
+        if hovered {
+            ui.painter().rect_filled(rect, 4, RAISED_BG);
+        }
+        let color = tint.unwrap_or(if hovered { TEXT_PRIMARY } else { TEXT_MUTED });
+        let x = rect.left() + 7.0;
+        let gw = g.size().x;
+        ui.painter().galley(Pos2::new(x, rect.center().y - g.size().y / 2.0), g, color);
+        if let Some(c) = c {
+            ui.painter().galley(Pos2::new(x + gw + 5.0, rect.center().y - c.size().y / 2.0), c, color);
+        }
     }
     resp.on_hover_cursor(CursorIcon::PointingHand)
 }

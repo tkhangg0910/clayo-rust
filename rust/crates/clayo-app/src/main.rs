@@ -3,9 +3,12 @@
 
 mod app;
 mod fonts;
+mod image_chip;
 mod island_host;
+mod doc_view;
 mod model;
 mod pane;
+mod pages_open;
 mod setup_window;
 mod status;
 mod status_view;

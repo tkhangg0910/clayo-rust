@@ -10,6 +10,7 @@ use chrono::Utc;
 use clayo_core::agent::AgentKind;
 use clayo_core::launch::LaunchPlan;
 use clayo_core::pane_status::{PaneStatus, PaneStatusTracker};
+use clayo_core::sessions::tail::TranscriptTail;
 use clayo_core::sessions::TurnState;
 use clayo_pty::{PtyConfig, PtyEvent, PtyProcess};
 use clayo_term::widget::ViewState;
@@ -61,6 +62,15 @@ pub struct PaneShared {
     /// Screenshots sent to a Codex pane (path, when), for the image chip (phase 7): Codex
     /// reads them where they are, so nothing else records them.
     pub codex_images: Mutex<Vec<(PathBuf, chrono::DateTime<Utc>)>>,
+    /// When the pane opened: older prompts and images are not this pane's.
+    pub opened_at: chrono::DateTime<Utc>,
+    /// The pane's working folder; docs and pages count only inside it.
+    pub cwd: PathBuf,
+    pub codex: bool,
+    /// What the session wrote, read off its transcript by the sessions thread.
+    pub files: Mutex<PaneFiles>,
+    /// The images in its prompt, as the image poll last saw them.
+    pub images: Mutex<crate::image_chip::Pasted>,
     waker: Waker,
     ticker: Ticker,
 }
@@ -162,6 +172,78 @@ impl PaneShared {
     }
 }
 
+/// What an open pane's transcript says the session wrote (the doc, page and image chips).
+#[derive(Default)]
+pub struct PaneFiles {
+    pub tail: Option<TranscriptTail>,
+    /// Bumped on every read: an open viewer looks at its file again then (an Edit reaches the
+    /// transcript before the file changes, so a later read is what sees the new text).
+    pub generation: u64,
+    /// A page was written since the chip was last clicked, after the first (history) read.
+    pub new_page: bool,
+}
+
+impl PaneShared {
+    /// Reads what the transcript gained (MainWindow.RefreshSessions:661-683). A page written
+    /// now keeps the project's pages out of git and makes the chip flash; one from the
+    /// session's history only shows in the chip.
+    pub fn read_transcript(&self, file: &std::path::Path) {
+        let Ok(mut f) = self.files.lock() else { return };
+        let history = f.tail.is_none();
+        let tail = f.tail.get_or_insert_with(|| TranscriptTail::new(&self.cwd, self.opened_at, self.codex));
+        let pages = tail.page_writes();
+        tail.read(file);
+        if tail.page_writes() != pages {
+            clayo_core::pages::hide_from_git(&self.cwd);
+            if !history {
+                f.new_page = true;
+            }
+        }
+        f.generation += 1;
+    }
+
+    /// The newest doc the session wrote, its pages newest first, and the read count.
+    pub fn written(&self) -> Written {
+        let f = self.files.lock().unwrap_or_else(|e| e.into_inner());
+        let mut w = Written { new_page: f.new_page, generation: f.generation, ..Written::default() };
+        if let Some(t) = f.tail.as_ref() {
+            w.doc = t.doc().map(PathBuf::from);
+            w.pages = t.pages().iter().rev().cloned().collect();
+        }
+        w
+    }
+
+    /// When you last sent a prompt here, else when the pane opened: older images are gone.
+    pub fn images_since(&self) -> chrono::DateTime<Utc> {
+        let at = self.files.lock().ok().and_then(|f| f.tail.as_ref().and_then(TranscriptTail::prompt_at));
+        at.filter(|a| *a > self.opened_at).unwrap_or(self.opened_at)
+    }
+
+    /// The images in the prompt, and whether one came since the last look (which this clears).
+    pub fn take_images(&self) -> (Vec<(PathBuf, u32)>, bool) {
+        let mut i = self.images.lock().unwrap_or_else(|e| e.into_inner());
+        (i.list.clone(), std::mem::take(&mut i.added))
+    }
+
+    /// The page chip was clicked: it stops flashing.
+    pub fn pages_seen(&self) {
+        if let Ok(mut f) = self.files.lock() {
+            f.new_page = false;
+        }
+    }
+}
+
+/// A snapshot of [`PaneFiles`] for one frame.
+#[derive(Default)]
+pub struct Written {
+    pub doc: Option<PathBuf>,
+    /// Newest first.
+    pub pages: Vec<PathBuf>,
+    /// A page written since the chip was last clicked: the chip flashes.
+    pub new_page: bool,
+    pub generation: u64,
+}
+
 /// A pane the UI owns.
 pub struct Pane {
     pub shared: Arc<PaneShared>,
@@ -171,6 +253,10 @@ pub struct Pane {
     pub title: String,
     pub status: PaneStatus,
     pub view: ViewState,
+    /// The doc viewer, while open.
+    pub doc: Option<crate::doc_view::DocViewer>,
+    /// The viewer's share of the pane in split mode, kept for its next opening (TH:325-341).
+    pub doc_share: f32,
 }
 
 impl Pane {
@@ -208,6 +294,11 @@ impl Pane {
             session_id: Mutex::new(plan.expected_session_id.clone()),
             insert_on_done: Mutex::new(None),
             codex_images: Mutex::new(Vec::new()),
+            opened_at: now,
+            cwd: PathBuf::from(&plan.working_directory),
+            codex: plan.agent == AgentKind::Codex,
+            files: Mutex::new(PaneFiles::default()),
+            images: Mutex::new(Default::default()),
             waker: waker.clone(),
             ticker: ticker.clone(),
         });
@@ -275,6 +366,8 @@ impl Pane {
             title,
             status: if exited { PaneStatus::Exited } else { PaneStatus::Starting },
             view: ViewState::default(),
+            doc: None,
+            doc_share: 0.5,
         }
     }
 

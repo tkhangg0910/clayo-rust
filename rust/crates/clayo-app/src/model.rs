@@ -136,6 +136,20 @@ pub fn start_worker(model: Shared, changed: impl Fn() + Send + 'static) -> Sende
                 let x = if use_codex { codex.scan() } else { Vec::new() };
                 let roots = claude.root_exists() || codex.root_exists();
                 lock(&model).apply_scan(c, x, roots);
+                // Each open pane's transcript, from where the last read stopped, off the lock.
+                let reads: Vec<(Arc<PaneShared>, std::path::PathBuf)> = {
+                    let m = lock(&model);
+                    m.panes
+                        .iter()
+                        .filter_map(|p| {
+                            let file = m.sidebar.by_pane(p.id)?.info.as_ref()?.file.clone()?;
+                            Some((p.clone(), file))
+                        })
+                        .collect()
+                };
+                for (pane, file) in reads {
+                    pane.read_transcript(&file);
+                }
                 changed();
             }
             claude.stop_watching();

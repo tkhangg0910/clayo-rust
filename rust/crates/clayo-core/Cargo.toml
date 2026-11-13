@@ -10,6 +10,7 @@ regex.workspace = true
 chrono.workspace = true
 uuid.workspace = true
 notify.workspace = true
+pulldown-cmark = { version = "0.13", default-features = false }
 
 [target.'cfg(windows)'.dependencies]
 winreg.workspace = true

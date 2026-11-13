@@ -60,6 +60,15 @@ pub fn set_window_icon(hwnd: isize) {
     }
 }
 
+/// Opens a web link or a file with its default program (the browser for both here), as
+/// Process.Start with UseShellExecute did. The caller checks what it opens.
+pub fn open(target: &str) {
+    use windows::Win32::UI::Shell::ShellExecuteW;
+    use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+    // SAFETY: valid wide strings that outlive the call; no owner window.
+    unsafe { ShellExecuteW(None, &HSTRING::from("open"), &HSTRING::from(target), PCWSTR::null(), PCWSTR::null(), SW_SHOWNORMAL) };
+}
+
 /// Our own top-level window with this title, if there is one.
 pub fn find_own_window(title: &str) -> Option<isize> {
     // SAFETY: valid wide string; no class filter.
