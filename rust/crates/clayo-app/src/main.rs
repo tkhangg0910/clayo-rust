@@ -9,6 +9,7 @@ mod doc_view;
 mod model;
 mod pane;
 mod pages_open;
+mod settings_page;
 mod setup_window;
 mod status;
 mod status_view;

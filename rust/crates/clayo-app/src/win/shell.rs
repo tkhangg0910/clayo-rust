@@ -63,10 +63,26 @@ pub fn set_window_icon(hwnd: isize) {
 /// Opens a web link or a file with its default program (the browser for both here), as
 /// Process.Start with UseShellExecute did. The caller checks what it opens.
 pub fn open(target: &str) {
+    let _ = try_open(target);
+}
+
+/// [`open`], false when Windows found nothing to open it with (or it failed).
+fn try_open(target: &str) -> bool {
     use windows::Win32::UI::Shell::ShellExecuteW;
     use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
     // SAFETY: valid wide strings that outlive the call; no owner window.
-    unsafe { ShellExecuteW(None, &HSTRING::from("open"), &HSTRING::from(target), PCWSTR::null(), PCWSTR::null(), SW_SHOWNORMAL) };
+    let r = unsafe { ShellExecuteW(None, &HSTRING::from("open"), &HSTRING::from(target), PCWSTR::null(), PCWSTR::null(), SW_SHOWNORMAL) };
+    // ShellExecute's documented success: a value above 32.
+    r.0 as isize > 32
+}
+
+/// An agent's own file in whatever opens it; a `.rules` file often has no app, so then
+/// Explorer shows it selected (SettingsPane.OpenFile).
+pub fn open_file_or_select(path: &std::path::Path) {
+    if !try_open(&path.to_string_lossy()) {
+        use std::os::windows::process::CommandExt;
+        let _ = std::process::Command::new("explorer.exe").raw_arg(format!("/select,\"{}\"", path.display())).spawn();
+    }
 }
 
 /// Our own top-level window with this title, if there is one.

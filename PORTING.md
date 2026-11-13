@@ -410,10 +410,10 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-106 Setup: Enter = Open Clayo (IsDefault) — SetupWindow.xaml:125
 
 #### Settings view
-- [ ] MAIN-107 Settings replaces the terminal side (over header + panes), panes hidden but running; popups closed; Refresh(settings, screenshotKeyTaken, updateTo) — MainWindow.xaml.cs:1645-1654, MainWindow.xaml:502
+- [x] MAIN-107 Settings replaces the terminal side (over header + panes), panes hidden but running; popups closed; Refresh(settings, screenshotKeyTaken, updateTo) — MainWindow.xaml.cs:1645-1654, MainWindow.xaml:502
 - [x] MAIN-108 Leaving Settings returns to active pane focus; picking/starting a session also leaves Settings — MainWindow.xaml.cs:1657-1662,1311
-- [ ] MAIN-109 On settings change: save settings.json, sync Codex ask rules, refresh strip, reserve check, notify island, re-show screenshot-key status; toggling UpdateCheck triggers a check (or clears offer) — MainWindow.xaml.cs:319-332
-- [ ] MAIN-110 Settings' "setup" request opens setup window; its Update request = Update button — MainWindow.xaml.cs:316-318
+- [x] MAIN-109 On settings change: save settings.json, sync Codex ask rules, refresh strip, reserve check, notify island, re-show screenshot-key status; toggling UpdateCheck triggers a check (or clears offer) — MainWindow.xaml.cs:319-332
+- [x] MAIN-110 Settings' "setup" request opens setup window; its Update request = Update button — MainWindow.xaml.cs:316-318
 
 #### Close / quit / reveal
 - [x] MAIN-111 Window X only hides (sessions keep running; island brings it back) — MainWindow.xaml.cs:1754-1761
@@ -1202,41 +1202,41 @@ Files read in full: src/Status/{StatusRelay,StatusStore,StatusStrip,StatusStripV
 - [x] STA-088 Footer Chips: two columns 8px gap; card radius 8, pad 10/7, border band alpha .30, bg band alpha .08; long name (11.5) left + pct (15) right; "resets in {reset}" below — src/Status/StatusStripView.cs:208,271-297
 
 #### Settings page (SettingsPane)
-- [ ] STA-089 Header "Settings" with close × (tooltip "Close (Esc)", name "Close settings") -> back to previous session — src/Settings/SettingsPane.xaml:204-217, .cs:572
-- [ ] STA-090 Nav (188px column): General, Status bar, Security, ─, Agents (opens setup window; nav check snaps back to visible page), Island — src/Settings/SettingsPane.xaml:227-238, .cs:555-570
-- [ ] STA-091 Refresh on every open: all controls from settings; cards closed (open if only 1 group — currently 1, so Publishing starts open); Your own rules closed; Codex confirm hidden — src/Settings/SettingsPane.xaml.cs:63-101
-- [ ] STA-092 Any change saves immediately (`SettingsChanged` -> Save + SyncCodex + redraw + WarnReserve) — src/MainWindow.xaml.cs:318-332
-- [ ] STA-093 Clicking anywhere on a switch row toggles the switch (unless disabled or pointer on switch) — src/Settings/SettingsPane.xaml.cs:183-188
-- [ ] STA-094 Switch state label "On"/"Off" beside every switch — src/Settings/SettingsPane.xaml.cs:103,146-147,156,197-198,328
-- [ ] STA-095 General › Start at login (not in settings.json; HKCU Run key via LoginStartup); disabled in dev builds with extra text "Only the installed Clayo can change this."; text "Clayo starts hidden; the island greets you." — src/Settings/SettingsPane.xaml:253-266, .cs:92-109
-- [ ] STA-096 General › Close button (info only): "Closing the window keeps sessions running. Quit Clayo from the gear menu or the island to end them." — src/Settings/SettingsPane.xaml:267-276
-- [ ] STA-097 General › Updates: title "Clayo {x.y.z}"; link "What's new in this version" (opens release URL) when no newer; else "Clayo {v} is out." + Update button; while waiting "Clayo {v} installs as soon as no session is working." + button "Call off" — src/Settings/SettingsPane.xaml.cs:164-178
-- [ ] STA-098 General › Check for updates switch (updateCheck, default on): "Once at start and every 12 hours, from GitHub. Updating is always your click." Turning on checks at once; off forgets earlier finding — src/Settings/SettingsPane.xaml:299-313, src/MainWindow.xaml.cs:321-323
-- [ ] STA-099 General › Coming later: "Island — Where it sits, what it announces, how long notices stay." with "Later" tag, dashed rim — src/Settings/SettingsPane.xaml:317-335
-- [ ] STA-100 Status bar intro: "Live session info drawn by Clayo itself, not the terminal. Colours follow how full each limit is." — src/Settings/SettingsPane.xaml:341-342
-- [ ] STA-101 Status bar › Theme segmented: Numbers | Bars | Rings | Chips (default Numbers) — "How the numbers are drawn, in the pane header and the sidebar footer." — src/Settings/SettingsPane.xaml:349-355, .cs:37-38
-- [ ] STA-102 Where it shows › "Show in the pane header" (statusHeader, default on): "Model, branch, context and effort beside the session title." — src/Settings/SettingsPane.xaml:364-376
-- [ ] STA-103 Where it shows › "Show limits in the sidebar footer" (statusFooter, default on): "The 5-hour and 7-day limits are account-wide, so they sit above New session. Off moves them into the pane header." — src/Settings/SettingsPane.xaml:377-391
-- [ ] STA-104 Fields › Per session ticks: Model (statusModel), Branch and diff (statusBranch), Context used (statusContext), Effort (statusEffort), all default on; disabled (kept ticked) when header off with note "Pane header is off" — src/Settings/SettingsPane.xaml:411-418, .cs:199,201
-- [ ] STA-105 Fields › Account ticks: 5-hour limit (statusFiveHour), 7-day limit (statusSevenDay), default on; disabled when header AND footer off; note "Both placements are off" / when only footer off "Shown in the pane header while the footer is off" — src/Settings/SettingsPane.xaml:419-424, .cs:200,202-204
-- [ ] STA-106 Reserve › "Warn near a limit" segmented Off | 70% | 80% | 90% (reserveAt, default 0=Off): "Past this much of a limit, the island says so once and the limit turns red. Prompts still go through." — src/Settings/SettingsPane.xaml:432-443, .cs:39-40
-- [ ] STA-107 Reserve ticks 5-hour limit (reserveFiveHour) / 7-day limit (reserveSevenDay), default on; disabled when reserve Off — src/Settings/SettingsPane.xaml:451-452, .cs:206
-- [ ] STA-108 Segment style: radius 6, border Hairline, checked bg #24D27556 + border Clay #D27556 + TextPrimary text — src/Settings/SettingsPane.xaml:146-172
-- [ ] STA-109 Security intro: "What sessions Clayo starts have to ask you before they do it." — src/Settings/SettingsPane.xaml:463-464
-- [ ] STA-110 Security agents box (shown only if useCodex): CC row "Claude Code — Only sessions Clayo starts." (only if useClaude); CX row switch "Also apply to Codex" (alsoForCodex, default off), text (BandYellow) "Applies to Codex outside Clayo too." + " Turning it on asks you once." when off — src/Settings/SettingsPane.xaml:467-496, .cs:323-332
-- [ ] STA-111 Turning Codex on shows modal "Also ask in Codex?" / "Codex can't keep this inside Clayo. It will also ask in Codex sessions you start outside Clayo. Turn it off here any time." Buttons Cancel (focused, Esc) / "Turn on for Codex"; turning off needs no confirm — src/Settings/SettingsPane.xaml:576-593, .cs:391-442
-- [ ] STA-112 "Ask before" cards: one per group; header icon, title, line, state text ("Off" | "On" | "On · {n} of {total}"), switch, chevron (E70E open / E70D closed; name "Hide|Show {Title} rules"); header click toggles open — src/Settings/SettingsPane.xaml.cs:219-265,314-318,334-347
-- [ ] STA-113 Group switch writes askGroupsOn; group off keeps its rule list visible but disabled — src/Settings/SettingsPane.xaml.cs:345,384-389
-- [ ] STA-114 Rule row: tick (Label, help = Line), mono 11px line text, CC/CX chips; api row line: codex-only => "every gh api call"; Codex gets it => "{Line} · Codex: every gh api call" — src/Settings/SettingsPane.xaml.cs:267-294,356-359
-- [ ] STA-115 Chips: CC visible if useClaude, CX if useCodex; opacity 1 if active else 0.4; line opacity 0.6 when group off — src/Settings/SettingsPane.xaml.cs:360-364
-- [ ] STA-116 CC tooltip "Claude: asks first"/"Claude: runs without asking"; CX tooltip "Codex: runs without asking" | "Codex: Also apply to Codex is off" | "Codex: asks before every gh api call" (api) | "Codex: asks first" — src/Settings/SettingsPane.xaml.cs:365-369
-- [ ] STA-117 Ask footer text: all groups off "Off. Only your own rules apply."; codex-only & AlsoForCodex off "Codex asks once Also apply to Codex is on. Your own rules still apply."; else "Applies to sessions you start from now on. Your own rules still apply." — src/Settings/SettingsPane.xaml.cs:372-374
-- [ ] STA-118 "Your own rules" (read-only tag) collapsible; closed header counts "Claude {n} · Codex {m}" or "None"; per agent section CC "Claude Code"/CX "Codex" with "Open file" link (#E39A7E), problem line, rows — src/Settings/SettingsPane.xaml:506-527, .cs:459-505
-- [ ] STA-119 Own rule row: decision pill (allow #9FD3B1 on #246BBF8A; deny/forbidden #EC9C99 on #29D2605F; ask/prompt/other #9CCBEF on #295AA9E6), mono rule text with tooltip, note in NeedsInput #5AA9E6 — src/Settings/SettingsPane.xaml.cs:507-546
-- [ ] STA-120 Open file: shell-open; on failure `explorer.exe /select,"path"` — src/Settings/SettingsPane.xaml.cs:549-553
-- [ ] STA-121 Island page: "Send a screenshot with Ctrl+Alt+S" (screenshotHotkey, default on), text normally "Take a screenshot (Win+Shift+S), then press Ctrl+Alt+S: the island asks which session it is for."; if hotkey taken "Another app has Ctrl+Alt+S, so the shortcut is off. Close that app's shortcut, then switch this off and on." — src/Settings/SettingsPane.xaml:540-552, .cs:144-151
-- [ ] STA-122 Island page: "Offer to send every new screenshot" (screenshotOffer, default off): "The island asks each time you take one with Win+Shift+S, without the shortcut. Not while Clayo is in front." — src/Settings/SettingsPane.xaml:553-567
-- [ ] STA-123 Card/Ask state is not persisted (cards open state reset each open) — src/Settings/SettingsPane.xaml.cs:215-217
+- [x] STA-089 Header "Settings" with close × (tooltip "Close (Esc)", name "Close settings") -> back to previous session — src/Settings/SettingsPane.xaml:204-217, .cs:572
+- [x] STA-090 Nav (188px column): General, Status bar, Security, ─, Agents (opens setup window; nav check snaps back to visible page), Island — src/Settings/SettingsPane.xaml:227-238, .cs:555-570
+- [x] STA-091 Refresh on every open: all controls from settings; cards closed (open if only 1 group — currently 1, so Publishing starts open); Your own rules closed; Codex confirm hidden — src/Settings/SettingsPane.xaml.cs:63-101
+- [x] STA-092 Any change saves immediately (`SettingsChanged` -> Save + SyncCodex + redraw + WarnReserve) — src/MainWindow.xaml.cs:318-332
+- [x] STA-093 Clicking anywhere on a switch row toggles the switch (unless disabled or pointer on switch) — src/Settings/SettingsPane.xaml.cs:183-188
+- [x] STA-094 Switch state label "On"/"Off" beside every switch — src/Settings/SettingsPane.xaml.cs:103,146-147,156,197-198,328
+- [x] STA-095 General › Start at login (not in settings.json; HKCU Run key via LoginStartup); disabled in dev builds with extra text "Only the installed Clayo can change this."; text "Clayo starts hidden; the island greets you." — src/Settings/SettingsPane.xaml:253-266, .cs:92-109
+- [x] STA-096 General › Close button (info only): "Closing the window keeps sessions running. Quit Clayo from the gear menu or the island to end them." — src/Settings/SettingsPane.xaml:267-276
+- [x] STA-097 General › Updates: title "Clayo {x.y.z}"; link "What's new in this version" (opens release URL) when no newer; else "Clayo {v} is out." + Update button; while waiting "Clayo {v} installs as soon as no session is working." + button "Call off" — src/Settings/SettingsPane.xaml.cs:164-178
+- [x] STA-098 General › Check for updates switch (updateCheck, default on): "Once at start and every 12 hours, from GitHub. Updating is always your click." Turning on checks at once; off forgets earlier finding — src/Settings/SettingsPane.xaml:299-313, src/MainWindow.xaml.cs:321-323
+- [x] STA-099 General › Coming later: "Island — Where it sits, what it announces, how long notices stay." with "Later" tag, dashed rim — src/Settings/SettingsPane.xaml:317-335
+- [x] STA-100 Status bar intro: "Live session info drawn by Clayo itself, not the terminal. Colours follow how full each limit is." — src/Settings/SettingsPane.xaml:341-342
+- [x] STA-101 Status bar › Theme segmented: Numbers | Bars | Rings | Chips (default Numbers) — "How the numbers are drawn, in the pane header and the sidebar footer." — src/Settings/SettingsPane.xaml:349-355, .cs:37-38
+- [x] STA-102 Where it shows › "Show in the pane header" (statusHeader, default on): "Model, branch, context and effort beside the session title." — src/Settings/SettingsPane.xaml:364-376
+- [x] STA-103 Where it shows › "Show limits in the sidebar footer" (statusFooter, default on): "The 5-hour and 7-day limits are account-wide, so they sit above New session. Off moves them into the pane header." — src/Settings/SettingsPane.xaml:377-391
+- [x] STA-104 Fields › Per session ticks: Model (statusModel), Branch and diff (statusBranch), Context used (statusContext), Effort (statusEffort), all default on; disabled (kept ticked) when header off with note "Pane header is off" — src/Settings/SettingsPane.xaml:411-418, .cs:199,201
+- [x] STA-105 Fields › Account ticks: 5-hour limit (statusFiveHour), 7-day limit (statusSevenDay), default on; disabled when header AND footer off; note "Both placements are off" / when only footer off "Shown in the pane header while the footer is off" — src/Settings/SettingsPane.xaml:419-424, .cs:200,202-204
+- [x] STA-106 Reserve › "Warn near a limit" segmented Off | 70% | 80% | 90% (reserveAt, default 0=Off): "Past this much of a limit, the island says so once and the limit turns red. Prompts still go through." — src/Settings/SettingsPane.xaml:432-443, .cs:39-40
+- [x] STA-107 Reserve ticks 5-hour limit (reserveFiveHour) / 7-day limit (reserveSevenDay), default on; disabled when reserve Off — src/Settings/SettingsPane.xaml:451-452, .cs:206
+- [x] STA-108 Segment style: radius 6, border Hairline, checked bg #24D27556 + border Clay #D27556 + TextPrimary text — src/Settings/SettingsPane.xaml:146-172
+- [x] STA-109 Security intro: "What sessions Clayo starts have to ask you before they do it." — src/Settings/SettingsPane.xaml:463-464
+- [x] STA-110 Security agents box (shown only if useCodex): CC row "Claude Code — Only sessions Clayo starts." (only if useClaude); CX row switch "Also apply to Codex" (alsoForCodex, default off), text (BandYellow) "Applies to Codex outside Clayo too." + " Turning it on asks you once." when off — src/Settings/SettingsPane.xaml:467-496, .cs:323-332
+- [~] STA-111 Turning Codex on shows modal "Also ask in Codex?" / "Codex can't keep this inside Clayo. It will also ask in Codex sessions you start outside Clayo. Turn it off here any time." Buttons Cancel (focused, Esc) / "Turn on for Codex"; turning off needs no confirm — src/Settings/SettingsPane.xaml:576-593, .cs:391-442 — not ported per D1 (the switch is locked; nothing to confirm)
+- [x] STA-112 "Ask before" cards: one per group; header icon, title, line, state text ("Off" | "On" | "On · {n} of {total}"), switch, chevron (E70E open / E70D closed; name "Hide|Show {Title} rules"); header click toggles open — src/Settings/SettingsPane.xaml.cs:219-265,314-318,334-347
+- [x] STA-113 Group switch writes askGroupsOn; group off keeps its rule list visible but disabled — src/Settings/SettingsPane.xaml.cs:345,384-389
+- [x] STA-114 Rule row: tick (Label, help = Line), mono 11px line text, CC/CX chips; api row line: codex-only => "every gh api call"; Codex gets it => "{Line} · Codex: every gh api call" — src/Settings/SettingsPane.xaml.cs:267-294,356-359
+- [x] STA-115 Chips: CC visible if useClaude, CX if useCodex; opacity 1 if active else 0.4; line opacity 0.6 when group off — src/Settings/SettingsPane.xaml.cs:360-364
+- [x] STA-116 CC tooltip "Claude: asks first"/"Claude: runs without asking"; CX tooltip "Codex: runs without asking" | "Codex: Also apply to Codex is off" | "Codex: asks before every gh api call" (api) | "Codex: asks first" — src/Settings/SettingsPane.xaml.cs:365-369
+- [x] STA-117 Ask footer text: all groups off "Off. Only your own rules apply."; codex-only & AlsoForCodex off "Codex asks once Also apply to Codex is on. Your own rules still apply."; else "Applies to sessions you start from now on. Your own rules still apply." — src/Settings/SettingsPane.xaml.cs:372-374
+- [x] STA-118 "Your own rules" (read-only tag) collapsible; closed header counts "Claude {n} · Codex {m}" or "None"; per agent section CC "Claude Code"/CX "Codex" with "Open file" link (#E39A7E), problem line, rows — src/Settings/SettingsPane.xaml:506-527, .cs:459-505
+- [x] STA-119 Own rule row: decision pill (allow #9FD3B1 on #246BBF8A; deny/forbidden #EC9C99 on #29D2605F; ask/prompt/other #9CCBEF on #295AA9E6), mono rule text with tooltip, note in NeedsInput #5AA9E6 — src/Settings/SettingsPane.xaml.cs:507-546
+- [x] STA-120 Open file: shell-open; on failure `explorer.exe /select,"path"` — src/Settings/SettingsPane.xaml.cs:549-553
+- [x] STA-121 Island page: "Send a screenshot with Ctrl+Alt+S" (screenshotHotkey, default on), text normally "Take a screenshot (Win+Shift+S), then press Ctrl+Alt+S: the island asks which session it is for."; if hotkey taken "Another app has Ctrl+Alt+S, so the shortcut is off. Close that app's shortcut, then switch this off and on." — src/Settings/SettingsPane.xaml:540-552, .cs:144-151
+- [x] STA-122 Island page: "Offer to send every new screenshot" (screenshotOffer, default off): "The island asks each time you take one with Win+Shift+S, without the shortcut. Not while Clayo is in front." — src/Settings/SettingsPane.xaml:553-567
+- [x] STA-123 Card/Ask state is not persisted (cards open state reset each open) — src/Settings/SettingsPane.xaml.cs:215-217
 
 #### Settings model
 - [c] STA-124 Load never fails: missing/unreadable/broken/non-object file => all defaults; per key fallback on wrong type; unknown keys ignored — src/Settings/ClayoSettings.cs:73-135
@@ -1254,10 +1254,10 @@ Files read in full: src/Status/{StatusRelay,StatusStore,StatusStrip,StatusStripV
 - [c] STA-134 Default: every group off (askGroupsOn ""), every rule ticked (askOff ""); new groups arrive off, new rules arrive ticked — src/Settings/ClayoSettings.cs:44-50
 - [c] STA-135 ClaudeAsk = for each ticked rule of each on group, each pattern p => `Bash(p)` then `PowerShell(p)` (interleaved per pattern) — src/Settings/AskRules.cs:57-58
 - [c] STA-136 Codex `clayo.rules` at `<CODEX_HOME or ~/.codex>\rules\clayo.rules`; exists only if alsoForCodex && ≥1 ticked rule in an on group; written/rewritten (only if differs)/deleted on every settings change and at startup; Codex home not created if missing — src/Settings/AskRules.cs:60-106, src/MainWindow.xaml.cs:313,326,581
-- [ ] STA-137 Settings › General intro "How Clayo starts and what the window's close button does." — Settings/SettingsPane.xaml:248
-- [ ] STA-138 Settings › Island page heading "Screenshots" and intro "Send a screenshot to a session: the island asks which one, and the image lands in its prompt, ready for your question." — Settings/SettingsPane.xaml:534-536
-- [ ] STA-139 Settings section headings "Coming later", "Where it shows", "Per session", "Ask before" — Settings/SettingsPane.xaml:317,360,412,498
-- [c] STA-140 (D1) When alsoForCodex is true and `<CODEX_HOME>\rules\clayo.rules` exists, Security shows "Still active in Codex; delete this file to turn it off" + Open file link; the Rust build never writes or deletes it — PORTING.md §6 D1
+- [x] STA-137 Settings › General intro "How Clayo starts and what the window's close button does." — Settings/SettingsPane.xaml:248
+- [x] STA-138 Settings › Island page heading "Screenshots" and intro "Send a screenshot to a session: the island asks which one, and the image lands in its prompt, ready for your question." — Settings/SettingsPane.xaml:534-536
+- [x] STA-139 Settings section headings "Coming later", "Where it shows", "Per session", "Ask before" — Settings/SettingsPane.xaml:317,360,412,498
+- [x] STA-140 (D1) When alsoForCodex is true and `<CODEX_HOME>\rules\clayo.rules` exists, Security shows "Still active in Codex; delete this file to turn it off" + Open file link; the Rust build never writes or deletes it — PORTING.md §6 D1
 
 ### 3. DATA FORMATS
 

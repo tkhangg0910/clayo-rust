@@ -546,7 +546,7 @@ impl SetupWindow {
                 let gw = text_w(ui, "Get Node.js first", ui_font(12.0));
                 let gr = Rect::from_min_size(Pos2::new(x - gw, line.top()), Vec2::new(gw, 30.0));
                 if link(ui, gr, "get-node", "Get Node.js first") {
-                    ui.ctx().open_url(egui::OpenUrl::new_tab(setup::NODE_URL));
+                    crate::win::shell::open(setup::NODE_URL);
                 }
                 x = gr.left() - 10.0;
             } else {
@@ -622,24 +622,6 @@ const fn hex(rgb: u32) -> Color32 {
 
 fn text_w(ui: &Ui, text: &str, font: FontId) -> f32 {
     ui.painter().layout_no_wrap(text.to_string(), font, TEXT_PRIMARY).size().x
-}
-
-/// The 16 px tick box: clay-washed with a clay mark when on; faint when disabled.
-fn tick_box(ui: &Ui, rect: Rect, on: bool, enabled: bool) {
-    let p = ui.painter();
-    let (bg, rim, mark) = match (on, enabled) {
-        (_, false) => (Color32::TRANSPARENT, hex(0x3A414C), hex(0x59616D)),
-        (true, true) => (Color32::from_rgba_unmultiplied(0xD2, 0x75, 0x56, 0x24), CLAY, CLAY),
-        (false, true) => (Color32::TRANSPARENT, MUTED_AA, CLAY),
-    };
-    p.rect_filled(rect, 4, bg);
-    p.rect_stroke(rect, 4, Stroke::new(1.0, rim), StrokeKind::Inside);
-    if on {
-        let o = rect.min;
-        let s = Stroke::new(1.6, mark);
-        p.line_segment([o + Vec2::new(2.6, 6.85), o + Vec2::new(5.6, 9.8)], s);
-        p.line_segment([o + Vec2::new(5.6, 9.8), o + Vec2::new(11.4, 4.0)], s);
-    }
 }
 
 /// The Tick style with a title over a grey line (pieces in mono where flagged). The hover wash

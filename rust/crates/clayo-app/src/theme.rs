@@ -284,28 +284,42 @@ pub fn menu_separator(ui: &mut Ui) {
 }
 
 /// Switch: a 40x20 outlined track that fills with clay when on, its knob sliding 20 px and
-/// growing a little on hover. Returns the response; `on` flips on click.
-#[allow(dead_code)] // The Settings page (phase 7) uses it.
-pub fn switch(ui: &mut Ui, on: &mut bool) -> Response {
-    let (rect, mut resp) = ui.allocate_exact_size(Vec2::new(40.0, 20.0), Sense::click());
-    if resp.clicked() {
-        *on = !*on;
-        resp.mark_changed();
+/// growing a little when `hover`; drawn at 0.4 when disabled. Only paints: the caller owns the
+/// click (a settings row toggles from anywhere on it).
+pub fn paint_switch(ui: &Ui, rect: Rect, id: egui::Id, on: bool, enabled: bool, hover: bool) {
+    if !ui.is_rect_visible(rect) {
+        return;
     }
-    if ui.is_rect_visible(rect) {
-        let t = ui.ctx().animate_bool_with_time(resp.id, *on, 0.16);
-        let p = ui.painter();
-        let track = if *on { CLAY } else { Color32::TRANSPARENT };
-        p.rect_filled(rect, 10, track);
-        if !*on {
-            p.rect_stroke(rect, 10, Stroke::new(1.0, MUTED_AA), StrokeKind::Inside);
-        }
-        let grow = if resp.hovered() { 1.12 } else { 1.0 };
-        let x = rect.left() + 10.0 + 20.0 * t;
-        let knob = if *on { TERMINAL_BG } else { MUTED_AA };
-        p.circle_filled(Pos2::new(x, rect.center().y), 6.0 * grow, knob);
+    let t = ui.ctx().animate_bool_with_time(id, on, 0.18);
+    let a = if enabled { 1.0 } else { 0.4 };
+    let p = ui.painter();
+    if on {
+        p.rect_filled(rect, 10, CLAY.gamma_multiply(a));
+    } else {
+        p.rect_stroke(rect, 10, Stroke::new(1.0, MUTED_AA.gamma_multiply(a)), StrokeKind::Inside);
     }
-    resp.on_hover_cursor(CursorIcon::PointingHand)
+    let grow = if hover && enabled { 1.12 } else { 1.0 };
+    let x = rect.left() + 10.0 + 20.0 * t;
+    let knob = if on { hex(0x1A1210) } else { hex(0xA9B0BB) };
+    p.circle_filled(Pos2::new(x, rect.center().y), 6.0 * grow, knob.gamma_multiply(a));
+}
+
+/// The 16 px tick box (the Tick style): clay-washed with a clay mark when on; faint when disabled.
+pub fn tick_box(ui: &Ui, rect: Rect, on: bool, enabled: bool) {
+    let p = ui.painter();
+    let (bg, rim, mark) = match (on, enabled) {
+        (_, false) => (Color32::TRANSPARENT, hex(0x3A414C), hex(0x59616D)),
+        (true, true) => (Color32::from_rgba_unmultiplied(0xD2, 0x75, 0x56, 0x24), CLAY, CLAY),
+        (false, true) => (Color32::TRANSPARENT, MUTED_AA, CLAY),
+    };
+    p.rect_filled(rect, 4, bg);
+    p.rect_stroke(rect, 4, Stroke::new(1.0, rim), StrokeKind::Inside);
+    if on {
+        let o = rect.min;
+        let s = Stroke::new(1.6, mark);
+        p.line_segment([o + Vec2::new(2.6, 6.85), o + Vec2::new(5.6, 9.8)], s);
+        p.line_segment([o + Vec2::new(5.6, 9.8), o + Vec2::new(11.4, 4.0)], s);
+    }
 }
 
 /// A pane header chip (MainWindow.xaml:399-428): QuietButton with no border, padding 7,5, a

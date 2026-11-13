@@ -215,6 +215,8 @@ enum Action {
     CloseActive,
     OpenSettings,
     CloseSettings,
+    /// The Settings page changed something: saved and applied.
+    ApplySettings(Box<ClayoSettings>),
     SetLogin(bool),
     OpenSetup,
     Update,
@@ -265,8 +267,7 @@ pub struct ClayoApp {
     actions: Vec<Action>,
     first_frame_done: bool,
     island: IslandHandle,
-    /// Another app holds Ctrl+Alt+S (the Settings page says so, phase 7).
-    #[allow(dead_code)]
+    /// Another app holds Ctrl+Alt+S (the Settings page says so).
     screenshot_key_taken: bool,
     status: Status,
     status_frame: StatusFrame,
@@ -287,6 +288,8 @@ pub struct ClayoApp {
     confirm_link: Option<String>,
     /// The pane whose page chip is flashing, since when.
     page_flash: Option<(u64, std::time::Instant)>,
+    /// The Settings page's own state (which page, open cards, own rules read).
+    settings_page: crate::settings_page::SettingsPage,
     /// The image chip's thumbnails and full-size view.
     image_chip: ImageChip,
 }
@@ -375,6 +378,7 @@ impl ClayoApp {
 
         let mut app = Self {
             settings,
+            settings_page: crate::settings_page::SettingsPage::new(data.clone()),
             data,
             model,
             jobs,
@@ -421,6 +425,15 @@ impl ClayoApp {
             page_flash: None,
             image_chip: ImageChip::default(),
         };
+        // Debug builds: CLAYO_DEV_SETTINGS=<General|Status bar|Security|Island> opens Settings
+        // on that page at start (rendering checks).
+        if cfg!(debug_assertions) {
+            if let Ok(page) = std::env::var("CLAYO_DEV_SETTINGS") {
+                app.settings_page.refresh();
+                app.settings_page.dev_page(&page);
+                app.settings_open = true;
+            }
+        }
         // Opening Clayo in a folder lands you in a live session there (once setup is done).
         if let Some(folder) = start.folder {
             if setup_first {
@@ -907,8 +920,12 @@ impl ClayoApp {
                 }
                 Action::OpenSettings => {
                     Popup::close_all(ctx);
+                    if !self.settings_open {
+                        self.settings_page.refresh();
+                    }
                     self.settings_open = true;
                 }
+                Action::ApplySettings(s) => self.apply_settings(*s),
                 Action::CloseSettings => {
                     self.settings_open = false;
                     self.focus_terminal = true;
@@ -1559,7 +1576,7 @@ impl ClayoApp {
             let pages: Vec<&std::path::PathBuf> = written.pages.iter().filter(|p| p.is_file()).collect();
             if let Some(page) = written.pages.first() {
                 let tip = format!(
-                    "{}\n{}\nClick to see it here, again to close it. Right-click for the session's other pages.",
+                    "{}\n{}\nClick to open it in your browser. Right-click for the session's other pages.",
                     file_name(page),
                     page.display()
                 );
@@ -1671,35 +1688,20 @@ impl ClayoApp {
         }
     }
 
-    /// Placeholder for the Settings page (phase 7 fills it). It takes the terminal side's
-    /// place, panes hidden but running.
+    /// The Settings page (SettingsPane), in the terminal side's place, panes hidden but running.
+    /// What it changes is saved and applied at once (MainWindow.SettingsChanged).
     fn draw_settings(&mut self, ui: &mut Ui) {
-        let rect = ui.max_rect();
-        let p = ui.painter();
-        p.text(rect.left_top() + Vec2::new(36.0, 28.0), Align2::LEFT_TOP, "Settings", semibold(21.0), MENU_HOVER_FG);
-        p.text(
-            rect.left_top() + Vec2::new(36.0, 66.0),
-            Align2::LEFT_TOP,
-            "Settings arrive in a later build of the Rust port.",
-            ui_font(12.5),
-            MUTED_AA,
-        );
-        // Settings › Agents is not a page: it opens the setup window (SettingsPane.Agents_Checked).
-        let agents = Rect::from_min_size(rect.left_top() + Vec2::new(36.0, 100.0), Vec2::new(200.0, 30.0));
-        ui.scope_builder(UiBuilder::new().max_rect(agents), |ui| {
-            if ghost_button(ui, None, "Agents…", false, None)
-                .on_hover_text("Opens setup: which agents Clayo uses, sign-in and install.")
-                .clicked()
-            {
-                self.actions.push(Action::OpenSetup);
-            }
-        });
-        let close = Rect::from_min_size(Pos2::new(rect.right() - 50.0, rect.top() + 12.0), Vec2::new(40.0, 30.0));
-        ui.scope_builder(UiBuilder::new().max_rect(close), |ui| {
-            if quiet_button(ui, "✕", true, Vec2::new(9.0, 4.0), true).on_hover_text("Close (Esc)").clicked() {
-                self.actions.push(Action::CloseSettings);
-            }
-        });
+        use crate::settings_page::{Info, Out};
+        let info = Info { shot_key_taken: self.screenshot_key_taken, newer: self.update.to, waiting: self.update.waiting };
+        for out in self.settings_page.show(ui, &self.settings, &info) {
+            self.actions.push(match out {
+                Out::Close => Action::CloseSettings,
+                Out::Changed(s) => Action::ApplySettings(s),
+                // Settings › Agents is not a page: it opens the setup window.
+                Out::OpenSetup => Action::OpenSetup,
+                Out::Update => Action::Update,
+            });
+        }
     }
 
     /// The 7 px grab band with the hairline down its middle; hover or drag shows 2 px Working.

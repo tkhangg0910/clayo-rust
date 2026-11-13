@@ -17,6 +17,7 @@ pub mod screenshots;
 pub mod security;
 pub mod sessions;
 pub mod settings;
+pub mod settings_view;
 pub mod setup;
 pub mod sidebar;
 pub mod status;
