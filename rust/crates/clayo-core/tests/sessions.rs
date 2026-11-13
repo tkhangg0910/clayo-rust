@@ -71,6 +71,11 @@ fn watcher_keeps_the_list_fresh() {
     std::fs::write(project.join("subagents").join("agent-2.jsonl"), user("agent-2", "tool")).unwrap();
     std::thread::sleep(Duration::from_secs(1));
     assert_eq!(store.scan().len(), 1, "a new subagent transcript still is not a session");
+    // The 600 ms debounce fires on a background thread; under load it can take longer than 1 s.
+    let deadline = std::time::Instant::now() + Duration::from_secs(5);
+    while fired.load(Ordering::SeqCst) == 0 && std::time::Instant::now() < deadline {
+        std::thread::sleep(Duration::from_millis(50));
+    }
     assert!(fired.load(Ordering::SeqCst) > 0, "changes are reported after the debounce");
 
     store.stop_watching();

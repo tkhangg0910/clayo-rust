@@ -1,0 +1,28 @@
+[package]
+name = "clayo-app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "clayo"
+path = "src/main.rs"
+
+[dependencies]
+clayo-core = { path = "../clayo-core" }
+clayo-pty = { path = "../clayo-pty" }
+clayo-term = { path = "../clayo-term" }
+eframe = { version = "0.37", default-features = false, features = ["glow", "accesskit"] }
+egui = { version = "0.37" }
+memmap2 = "0.9"
+raw-window-handle = "0.6"
+chrono.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_Graphics_Dwm", "Win32_System_DataExchange", "Win32_UI_Shell", "Win32_System_Memory", "Win32_UI_HiDpi"] }
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "deny"
