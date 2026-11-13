@@ -286,8 +286,8 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 ### 2. BEHAVIORS
 
 #### Entry / command line
-- [ ] MAIN-001 `clayo --statusline` runs the status relay and exits, before any UI code loads (args[0] == "--statusline") — Program.cs:15
-- [ ] MAIN-002 `clayo --statusline --pass ...` relay with pass=true (args[1] == "--pass") — Program.cs:15; consts StatusRelay.cs:22-23
+- [x] MAIN-001 `clayo --statusline` runs the status relay and exits, before any UI code loads (args[0] == "--statusline") — Program.cs:15
+- [x] MAIN-002 `clayo --statusline --pass ...` relay with pass=true (args[1] == "--pass") — Program.cs:15; consts StatusRelay.cs:22-23
 - [x] MAIN-003 Any other invocation runs the GUI app — Program.cs:16,21-26
 - [ ] MAIN-004 Unhandled UI-thread and AppDomain exceptions append to `%LOCALAPPDATA%\Clayo\crash.log` as `yyyy-MM-dd HH:mm:ss  <exception>\n\n`; log >1 MiB is moved to `crash.old.log` (overwrite) first; crash still proceeds (not swallowed) — App.xaml.cs:14-18,109-125
 - [x] MAIN-005 On start, inherited Claude Code session env markers are removed from process env (SessionLauncher.ScrubInheritedSession) so every pane is top-level — App.xaml.cs:22
@@ -391,12 +391,12 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [ ] MAIN-091 Page chip (glyph E9D2): shown when session wrote pages in .clayo/pages; click toggles newest page; right-click menu lists the session's pages newest first (existing only), checked = open — MainWindow.xaml.cs:1489-1516
 - [ ] MAIN-092 New page written by session auto-opens (not for history on first read); open page/doc follows file; PageFolder.HideFromGit on write — MainWindow.xaml.cs:661-678
 - [ ] MAIN-093 Images chip (glyph EB9F + count): images pasted in active prompt since last sent prompt/pane open; Claude: files in paste cache dir for session; Codex: temp clipboard files matching pattern claimed per pane; only tags still in prompt text count; hover opens thumbnail popup (180px decode, 90 high, max 200 wide, "#n" label, wrap max 460); auto-hides 300ms after mouse leaves; new image flashes popup 1.5 s only if Clayo is active; click chip opens newest full-size overlay (#E614171C bg, margin 40, downscale only, ✕ / Esc / click closes, refocus terminal) — MainWindow.xaml.cs:1336-1468, MainWindow.xaml:418-461
-- [ ] MAIN-094 Status strip/footer limits: active pane's strip (Claude via StatusStore, Codex via transcript status) + git info; footer limits = active agent's account (Codex: newest across Codex transcripts; with no pane, Codex if Claude unused) — MainWindow.xaml.cs:1565-1586
+- [x] MAIN-094 Status strip/footer limits: active pane's strip (Claude via StatusStore, Codex via transcript status) + git info; footer limits = active agent's account (Codex: newest across Codex transcripts; with no pane, Codex if Claude unused) — MainWindow.xaml.cs:1565-1586
 - [ ] MAIN-095 Reserve threshold crossing emits ReserveCrossed to island (warning only) — MainWindow.xaml.cs:1592-1595
 
 #### Timers
-- [ ] MAIN-096 Git poll 3 s, only when window visible, for each pane cwd — MainWindow.xaml.cs:259,261,353-358
-- [ ] MAIN-097 Clock 30 s: refresh strip if visible; reserve check always — MainWindow.xaml.cs:263,360-365
+- [x] MAIN-096 Git poll 3 s, only when window visible, for each pane cwd — MainWindow.xaml.cs:259,261,353-358
+- [x] MAIN-097 Clock 30 s: refresh strip if visible; reserve check always — MainWindow.xaml.cs:263,360-365
 - [ ] MAIN-098 Image poll 1 s; image popup hide check 300 ms — MainWindow.xaml.cs:266-267,366-373
 - [ ] MAIN-099 Update check at load and every 12 h — MainWindow.xaml.cs:270,375-377
 - [ ] MAIN-100 On load: refresh sessions, start transcript watchers, status store, prune screenshots older than KeepFor — MainWindow.xaml.cs:345-350
@@ -1104,102 +1104,102 @@ Files read in full: src/Status/{StatusRelay,StatusStore,StatusStrip,StatusStripV
 ### 2. BEHAVIORS
 
 #### Relay / entry
-- [ ] STA-001 `clayo.exe --statusline` as FIRST arg (exact, case-sensitive) runs the relay and returns its exit code without starting the app; `--pass` only honored as SECOND arg — src/Program.cs:15
-- [c] STA-002 Relay reads ALL of stdin to EOF first (not streamed), then if `--pass` writes the identical bytes to stdout, then saves; always exit code 0 — src/Status/StatusRelay.cs:92-110
-- [c] STA-003 Stdout write IOException (their command didn't read) is swallowed; save still happens — src/Status/StatusRelay.cs:105
-- [c] STA-004 Without `--pass` the relay prints nothing — src/Status/StatusRelay.cs:17,98
-- [c] STA-005 Save: parses JSON, takes `session_id`; non-JSON / missing / non-string / not-a-GUID id => nothing saved, silently — src/Status/StatusRelay.cs:119-123
-- [c] STA-006 Save path `%LOCALAPPDATA%\Clayo\status\<guid>.json` (guid normalized to lowercase hyphenated "D" format); written to `<guid>.<pid>.tmp` then `File.Move(overwrite)`; on IO/Access error tmp is deleted — src/Status/StatusRelay.cs:125-136
-- [c] STA-007 Status dir created on demand — src/Status/StatusRelay.cs:129
-- [c] STA-008 Saved bytes are the raw stdin bytes (no re-serialization) — src/Status/StatusRelay.cs:130
-- [c] STA-009 Per-pane settings file: `%LOCALAPPDATA%\Clayo\statusline.json` (release) / `statusline.dev.json` (DEBUG build) — src/Status/StatusRelay.cs:39-43
-- [c] STA-010 Settings file regenerated on every Claude launch (new/resume/fork); only rewritten if content differs; returns null on IO/Access error (then no `--settings` arg) — src/Status/StatusRelay.cs:50-62
-- [c] STA-011 Relay command = `'<exe path with \ -> / and ' -> '\''>' --statusline` — src/Status/StatusRelay.cs:78
-- [c] STA-012 With user command: `<relay> --pass | {\n<their command>\n}`; without (missing, non-string or empty): just `<relay>` — src/Status/StatusRelay.cs:72,80
-- [c] STA-013 Other statusLine keys of the user (padding etc.) copied verbatim; `type` forced to `"command"` — src/Status/StatusRelay.cs:71,79
-- [c] STA-014 `permissions.ask` added only when ask list non-empty; otherwise no `permissions` key — src/Status/StatusRelay.cs:82-84
-- [c] STA-015 User's `<ClaudeConfigDir>\settings.json` `statusLine` only read; parse/IO failure or non-object => treated as no user statusLine — src/Status/StatusRelay.cs:139-147
-- [c] STA-016 ClaudeConfigDir = `%CLAUDE_CONFIG_DIR%` if non-empty else `%USERPROFILE%\.claude` — src/Status/StatusRelay.cs:30-33
-- [ ] STA-017 Claude command gets ` --settings '<path>'` (PowerShell single-quote; `'` and smart quotes ‘ ’ ‚ ‛ doubled) — src/Agents/ClaudeAgent.cs:43, src/Agents/AgentHelper.cs:48-56
-- [ ] STA-018 WriteSettings uses `Environment.ProcessPath` (own exe) and current AskRules.ClaudeAsk(settings) — src/Agents/ClaudeAgent.cs:18
+- [x] STA-001 `clayo.exe --statusline` as FIRST arg (exact, case-sensitive) runs the relay and returns its exit code without starting the app; `--pass` only honored as SECOND arg — src/Program.cs:15
+- [x] STA-002 Relay reads ALL of stdin to EOF first (not streamed), then if `--pass` writes the identical bytes to stdout, then saves; always exit code 0 — src/Status/StatusRelay.cs:92-110
+- [x] STA-003 Stdout write IOException (their command didn't read) is swallowed; save still happens — src/Status/StatusRelay.cs:105
+- [x] STA-004 Without `--pass` the relay prints nothing — src/Status/StatusRelay.cs:17,98
+- [x] STA-005 Save: parses JSON, takes `session_id`; non-JSON / missing / non-string / not-a-GUID id => nothing saved, silently — src/Status/StatusRelay.cs:119-123
+- [x] STA-006 Save path `%LOCALAPPDATA%\Clayo\status\<guid>.json` (guid normalized to lowercase hyphenated "D" format); written to `<guid>.<pid>.tmp` then `File.Move(overwrite)`; on IO/Access error tmp is deleted — src/Status/StatusRelay.cs:125-136
+- [x] STA-007 Status dir created on demand — src/Status/StatusRelay.cs:129
+- [x] STA-008 Saved bytes are the raw stdin bytes (no re-serialization) — src/Status/StatusRelay.cs:130
+- [x] STA-009 Per-pane settings file: `%LOCALAPPDATA%\Clayo\statusline.json` (release) / `statusline.dev.json` (DEBUG build) — src/Status/StatusRelay.cs:39-43
+- [x] STA-010 Settings file regenerated on every Claude launch (new/resume/fork); only rewritten if content differs; returns null on IO/Access error (then no `--settings` arg) — src/Status/StatusRelay.cs:50-62
+- [x] STA-011 Relay command = `'<exe path with \ -> / and ' -> '\''>' --statusline` — src/Status/StatusRelay.cs:78
+- [x] STA-012 With user command: `<relay> --pass | {\n<their command>\n}`; without (missing, non-string or empty): just `<relay>` — src/Status/StatusRelay.cs:72,80
+- [x] STA-013 Other statusLine keys of the user (padding etc.) copied verbatim; `type` forced to `"command"` — src/Status/StatusRelay.cs:71,79
+- [x] STA-014 `permissions.ask` added only when ask list non-empty; otherwise no `permissions` key — src/Status/StatusRelay.cs:82-84
+- [x] STA-015 User's `<ClaudeConfigDir>\settings.json` `statusLine` only read; parse/IO failure or non-object => treated as no user statusLine — src/Status/StatusRelay.cs:139-147
+- [x] STA-016 ClaudeConfigDir = `%CLAUDE_CONFIG_DIR%` if non-empty else `%USERPROFILE%\.claude` — src/Status/StatusRelay.cs:30-33
+- [x] STA-017 Claude command gets ` --settings '<path>'` (PowerShell single-quote; `'` and smart quotes ‘ ’ ‚ ‛ doubled) — src/Agents/ClaudeAgent.cs:43, src/Agents/AgentHelper.cs:48-56
+- [x] STA-018 WriteSettings uses `Environment.ProcessPath` (own exe) and current AskRules.ClaudeAsk(settings) — src/Agents/ClaudeAgent.cs:18
 
 #### Status store
-- [c] STA-019 Payload accepted only if whole JSON object with string `session_id` that parses as GUID; else ignored — src/Status/StatusStore.cs:174-181
-- [c] STA-020 Context size = `context_window.context_window_size` if number > 0 else 200000 — src/Status/StatusStore.cs:184
-- [c] STA-021 Context used = input_tokens + cache_creation_input_tokens + cache_read_input_tokens from `context_window.current_usage` (missing/null => 0; output_tokens NOT counted) — src/Status/StatusStore.cs:187-190
-- [c] STA-022 Context percent = integer `used*100/size` (truncation; can exceed 100) — src/Status/StatusStore.cs:200
-- [c] STA-023 Model = `model.display_name` (string) else null — src/Status/StatusStore.cs:196
-- [c] STA-024 Cwd = `cwd` string — src/Status/StatusStore.cs:197
-- [c] STA-025 Effort = `effort.level` if non-empty, else fallback(): env `CLAUDE_CODE_EFFORT_LEVEL`, then `effortLevel` in Claude settings.json, else `"medium"` (first non-whitespace wins) — src/Status/StatusStore.cs:201,211-226
-- [c] STA-026 Limits from `rate_limits.five_hour` / `rate_limits.seven_day`: `used_percentage` number (floored to int); absent => null — src/Status/StatusStore.cs:202-203,228-243
-- [c] STA-027 `resets_at`: number epoch seconds (>0, int64) or ISO string (invariant, assume UTC); anything else => no reset time — src/Status/StatusStore.cs:233-242
-- [c] STA-028 Updated = file's last-write time UTC — src/Status/StatusStore.cs:155
-- [c] STA-029 Store lookup by session id is case-insensitive — src/Status/StatusStore.cs:36
-- [c] STA-030 Unreadable/partial file keeps last good status; identical status doesn't fire Changed — src/Status/StatusStore.cs:144-168
-- [c] STA-031 File read with share ReadWrite|Delete so relay's rename isn't blocked — src/Status/StatusStore.cs:150-152
-- [c] STA-032 Start: creates dir, watches `*.json` (Created/Changed/Renamed, LastWrite|FileName), prunes files older than 7 days, loads all existing — src/Status/StatusStore.cs:110-127
-- [c] STA-033 Prune deletes `*.json` with last-write < now-7d (errors ignored) — src/Status/StatusStore.cs:130-141
-- [c] STA-034 Account limits = newest (by Updated) session that has any limit; sessions with no limits never blank them — src/Status/StatusStore.cs:60-78
-- [c] STA-035 Usage-cache fallback: `%TEMP%\claude\statusline-usage-cache.json` (user's statusline.ps1 cache; read-only), keys `five_hour`/`seven_day` with `utilization`, `resets_at`; Updated = file mtime — src/Status/StatusStore.cs:84-107
-- [c] STA-036 Cache wins only if newer than Claude's newest report (Claude wins on tie: `fromClaude.Updated >= cached.Updated`) — src/Status/StatusStore.cs:67
-- [ ] STA-037 Codex panes: status/limits come from Codex transcript (CodexSessionStore), limits = StatusStore.Newest over Codex sessions — src/MainWindow.xaml.cs:1577-1586
-- [ ] STA-038 Footer shows open pane's agent's limits; with no pane, Codex's if Claude not in use — src/MainWindow.xaml.cs:1564-1574
+- [x] STA-019 Payload accepted only if whole JSON object with string `session_id` that parses as GUID; else ignored — src/Status/StatusStore.cs:174-181
+- [x] STA-020 Context size = `context_window.context_window_size` if number > 0 else 200000 — src/Status/StatusStore.cs:184
+- [x] STA-021 Context used = input_tokens + cache_creation_input_tokens + cache_read_input_tokens from `context_window.current_usage` (missing/null => 0; output_tokens NOT counted) — src/Status/StatusStore.cs:187-190
+- [x] STA-022 Context percent = integer `used*100/size` (truncation; can exceed 100) — src/Status/StatusStore.cs:200
+- [x] STA-023 Model = `model.display_name` (string) else null — src/Status/StatusStore.cs:196
+- [x] STA-024 Cwd = `cwd` string — src/Status/StatusStore.cs:197
+- [x] STA-025 Effort = `effort.level` if non-empty, else fallback(): env `CLAUDE_CODE_EFFORT_LEVEL`, then `effortLevel` in Claude settings.json, else `"medium"` (first non-whitespace wins) — src/Status/StatusStore.cs:201,211-226
+- [x] STA-026 Limits from `rate_limits.five_hour` / `rate_limits.seven_day`: `used_percentage` number (floored to int); absent => null — src/Status/StatusStore.cs:202-203,228-243
+- [x] STA-027 `resets_at`: number epoch seconds (>0, int64) or ISO string (invariant, assume UTC); anything else => no reset time — src/Status/StatusStore.cs:233-242
+- [x] STA-028 Updated = file's last-write time UTC — src/Status/StatusStore.cs:155
+- [x] STA-029 Store lookup by session id is case-insensitive — src/Status/StatusStore.cs:36
+- [x] STA-030 Unreadable/partial file keeps last good status; identical status doesn't fire Changed — src/Status/StatusStore.cs:144-168
+- [x] STA-031 File read with share ReadWrite|Delete so relay's rename isn't blocked — src/Status/StatusStore.cs:150-152
+- [x] STA-032 Start: creates dir, watches `*.json` (Created/Changed/Renamed, LastWrite|FileName), prunes files older than 7 days, loads all existing — src/Status/StatusStore.cs:110-127
+- [x] STA-033 Prune deletes `*.json` with last-write < now-7d (errors ignored) — src/Status/StatusStore.cs:130-141
+- [x] STA-034 Account limits = newest (by Updated) session that has any limit; sessions with no limits never blank them — src/Status/StatusStore.cs:60-78
+- [x] STA-035 Usage-cache fallback: `%TEMP%\claude\statusline-usage-cache.json` (user's statusline.ps1 cache; read-only), keys `five_hour`/`seven_day` with `utilization`, `resets_at`; Updated = file mtime — src/Status/StatusStore.cs:84-107
+- [x] STA-036 Cache wins only if newer than Claude's newest report (Claude wins on tie: `fromClaude.Updated >= cached.Updated`) — src/Status/StatusStore.cs:67
+- [x] STA-037 Codex panes: status/limits come from Codex transcript (CodexSessionStore), limits = StatusStore.Newest over Codex sessions — src/MainWindow.xaml.cs:1577-1586
+- [x] STA-038 Footer shows open pane's agent's limits; with no pane, Codex's if Claude not in use — src/MainWindow.xaml.cs:1564-1574
 
 #### Git
-- [c] STA-039 Branch via `git rev-parse --abbrev-ref HEAD` (trimmed, empty => null) — src/Status/GitInfo.cs:56
-- [c] STA-040 Counts via `git diff --numstat --no-ext-diff --no-textconv` (unstaged vs index only; staged not counted), sum col1/col2, `-` (binary) contributes 0 — src/Status/GitInfo.cs:57,80-91
-- [c] STA-041 Every git call prefixed `-c core.fsmonitor=false --no-optional-locks -C <folder>`, no window, stdout+stderr drained, 5 s timeout => kill tree, null; nonzero exit => null; git missing => null — src/Status/GitInfo.cs:94-124
-- [c] STA-042 Repo detection walks up the tree for `.git` dir OR file (no process if not in a repo) — src/Status/GitInfo.cs:65-77
-- [c] STA-043 Cache: per folder (case-insensitive), at most one read per 3 s interval, at most one in flight; read on thread pool; Changed fires only if status differs — src/Status/GitInfo.cs:14-50, src/MainWindow.xaml.cs:259
-- [ ] STA-044 Git poll every 3 s for all open panes' working dirs, only while window visible; also on pane activation — src/MainWindow.xaml.cs:261,353-357,1325
+- [x] STA-039 Branch via `git rev-parse --abbrev-ref HEAD` (trimmed, empty => null) — src/Status/GitInfo.cs:56
+- [x] STA-040 Counts via `git diff --numstat --no-ext-diff --no-textconv` (unstaged vs index only; staged not counted), sum col1/col2, `-` (binary) contributes 0 — src/Status/GitInfo.cs:57,80-91
+- [x] STA-041 Every git call prefixed `-c core.fsmonitor=false --no-optional-locks -C <folder>`, no window, stdout+stderr drained, 5 s timeout => kill tree, null; nonzero exit => null; git missing => null — src/Status/GitInfo.cs:94-124
+- [x] STA-042 Repo detection walks up the tree for `.git` dir OR file (no process if not in a repo) — src/Status/GitInfo.cs:65-77
+- [x] STA-043 Cache: per folder (case-insensitive), at most one read per 3 s interval, at most one in flight; read on thread pool; Changed fires only if status differs — src/Status/GitInfo.cs:14-50, src/MainWindow.xaml.cs:259
+- [x] STA-044 Git poll every 3 s for all open panes' working dirs, only while window visible; also on pane activation — src/MainWindow.xaml.cs:261,353-357,1325
 
 #### Strip composition (header)
-- [c] STA-045 No strip when no status yet, header off, or every field empty/unticked (never zeros) — src/Status/StatusStrip.cs:38,51
-- [c] STA-046 Order: Model, Branch(+diff), Context, Effort, 5h, 7d — src/Status/StatusStrip.cs:22,42-49
-- [c] STA-047 Model shown if StatusModel && model present, via ModelName: `"Opus 5.5 (1M context)"` -> `"Opus 5.5 1M"` (regex `\s*\((\d+\.?\d*[kKmM])\s+context\)` -> ` $1`, trimmed) — src/Status/StatusStrip.cs:43,128-129
-- [c] STA-048 Branch shown if StatusBranch and folder is a repo — src/Status/StatusStrip.cs:44
-- [c] STA-049 Context meter: label `ctx`, detail `"{used}/{size}"`, tip `"Context: {used} of {size} tokens used ({pct}%)"`, no Reset — src/Status/StatusStrip.cs:54-59
-- [c] STA-050 Effort shown if StatusEffort and non-empty (Codex default effort => absent) — src/Status/StatusStrip.cs:47
-- [c] STA-051 5h/7d in header ONLY when footer is off (StatusFooter=false) and their tick is on and limit reported — src/Status/StatusStrip.cs:41,48-49
-- [c] STA-052 Tokens: <1000 => plain int; >=1000 => `(n/1000.0)` F0 + "k" (so 999_999 -> "1000k"); >=1M => round(n/1e6, 1) (.NET Math.Round = banker's), F0 if within 0.05 of integer else F1, + "M" — src/Status/StatusStrip.cs:116-125
-- [c] STA-053 ResetIn: `<=0` -> "now"; days>0 -> "{d}d{h}h" (h unpadded); hours>0 -> "{h}h{mm}m" (minutes 2-digit); else "{m}m" (truncated, so <1 min = "0m") — src/Status/StatusStrip.cs:132-139
-- [c] STA-054 Bands: >=90 Red, >=70 Orange, >=50 Yellow, else Green — src/Status/StatusStrip.cs:96-102
-- [c] STA-055 Meter.Band = Red if Reserve else BandFor(percent) — src/Status/StatusStrip.cs:18
-- [c] STA-056 EffortStep: low 0, medium/med 1, high 2, xhigh 3, max 4, else -1 (case-sensitive) — src/Status/StatusStrip.cs:105-113
-- [c] STA-057 LimitMeter labels: "5h"/"7d"; names "5-hour"/"7-day" — src/Status/StatusStrip.cs:74
-- [c] STA-058 Stale (ResetsAt <= now; null reset never stale): Detail null, Reset null, tip `"{name} limit: reset since the last report, which said {p}%"`, Stale=true, never Reserve — src/Status/StatusStrip.cs:77-79
-- [c] STA-059 Current limit: Detail `"↻ {reset}"` (U+21BB + space) or null without reset time; tip `"{name} limit: {p}% used"` + `", resets in {reset}"` + `". Past your {R}% reserve"` when past; Reset = bare countdown — src/Status/StatusStrip.cs:81-85
-- [c] STA-060 ReserveFor: ReserveAt if that limit's reserve tick on, else 0 — src/Status/StatusStrip.cs:89-90
-- [c] STA-061 PastReserve: reserveAt>0 && percent>=reserveAt && not stale — src/Status/StatusStrip.cs:93-94
-- [c] STA-062 Footer: empty if footer off or no limits; 5h then 7d, each if ticked and reported; header switch irrelevant — src/Status/StatusStrip.cs:62-69
-- [c] STA-063 ReserveWatch: warns once per (limit kind, ResetsAt) window; set never cleared; returns crossed meters (5h before 7d) — src/Status/StatusStrip.cs:146-161
-- [ ] STA-064 Reserve crossing -> island notification `IslandNote(label, "{label} at {p}%", NoteKind.Reserve)`; only a warning, prompts never blocked — src/Island/IslandWindow.xaml.cs:114, src/MainWindow.xaml.cs:1588-1595
-- [ ] STA-065 WarnReserve runs on status change, settings change, and every 30 s clock tick even when hidden (uses Claude limits only: `_status.Limits`) — src/MainWindow.xaml.cs:335-339,358-363,1594
-- [ ] STA-066 Strip/footer redraw every 30 s while visible (countdowns, staleness) and on status/git/settings change — src/MainWindow.xaml.cs:263,335-363
+- [x] STA-045 No strip when no status yet, header off, or every field empty/unticked (never zeros) — src/Status/StatusStrip.cs:38,51
+- [x] STA-046 Order: Model, Branch(+diff), Context, Effort, 5h, 7d — src/Status/StatusStrip.cs:22,42-49
+- [x] STA-047 Model shown if StatusModel && model present, via ModelName: `"Opus 5.5 (1M context)"` -> `"Opus 5.5 1M"` (regex `\s*\((\d+\.?\d*[kKmM])\s+context\)` -> ` $1`, trimmed) — src/Status/StatusStrip.cs:43,128-129
+- [x] STA-048 Branch shown if StatusBranch and folder is a repo — src/Status/StatusStrip.cs:44
+- [x] STA-049 Context meter: label `ctx`, detail `"{used}/{size}"`, tip `"Context: {used} of {size} tokens used ({pct}%)"`, no Reset — src/Status/StatusStrip.cs:54-59
+- [x] STA-050 Effort shown if StatusEffort and non-empty (Codex default effort => absent) — src/Status/StatusStrip.cs:47
+- [x] STA-051 5h/7d in header ONLY when footer is off (StatusFooter=false) and their tick is on and limit reported — src/Status/StatusStrip.cs:41,48-49
+- [x] STA-052 Tokens: <1000 => plain int; >=1000 => `(n/1000.0)` F0 + "k" (so 999_999 -> "1000k"); >=1M => round(n/1e6, 1) (.NET Math.Round = banker's), F0 if within 0.05 of integer else F1, + "M" — src/Status/StatusStrip.cs:116-125
+- [x] STA-053 ResetIn: `<=0` -> "now"; days>0 -> "{d}d{h}h" (h unpadded); hours>0 -> "{h}h{mm}m" (minutes 2-digit); else "{m}m" (truncated, so <1 min = "0m") — src/Status/StatusStrip.cs:132-139
+- [x] STA-054 Bands: >=90 Red, >=70 Orange, >=50 Yellow, else Green — src/Status/StatusStrip.cs:96-102
+- [x] STA-055 Meter.Band = Red if Reserve else BandFor(percent) — src/Status/StatusStrip.cs:18
+- [x] STA-056 EffortStep: low 0, medium/med 1, high 2, xhigh 3, max 4, else -1 (case-sensitive) — src/Status/StatusStrip.cs:105-113
+- [x] STA-057 LimitMeter labels: "5h"/"7d"; names "5-hour"/"7-day" — src/Status/StatusStrip.cs:74
+- [x] STA-058 Stale (ResetsAt <= now; null reset never stale): Detail null, Reset null, tip `"{name} limit: reset since the last report, which said {p}%"`, Stale=true, never Reserve — src/Status/StatusStrip.cs:77-79
+- [x] STA-059 Current limit: Detail `"↻ {reset}"` (U+21BB + space) or null without reset time; tip `"{name} limit: {p}% used"` + `", resets in {reset}"` + `". Past your {R}% reserve"` when past; Reset = bare countdown — src/Status/StatusStrip.cs:81-85
+- [x] STA-060 ReserveFor: ReserveAt if that limit's reserve tick on, else 0 — src/Status/StatusStrip.cs:89-90
+- [x] STA-061 PastReserve: reserveAt>0 && percent>=reserveAt && not stale — src/Status/StatusStrip.cs:93-94
+- [x] STA-062 Footer: empty if footer off or no limits; 5h then 7d, each if ticked and reported; header switch irrelevant — src/Status/StatusStrip.cs:62-69
+- [x] STA-063 ReserveWatch: warns once per (limit kind, ResetsAt) window; set never cleared; returns crossed meters (5h before 7d) — src/Status/StatusStrip.cs:146-161
+- [x] STA-064 Reserve crossing -> island notification `IslandNote(label, "{label} at {p}%", NoteKind.Reserve)`; only a warning, prompts never blocked — src/Island/IslandWindow.xaml.cs:114, src/MainWindow.xaml.cs:1588-1595
+- [x] STA-065 WarnReserve runs on status change, settings change, and every 30 s clock tick even when hidden (uses Claude limits only: `_status.Limits`) — src/MainWindow.xaml.cs:335-339,358-363,1594
+- [x] STA-066 Strip/footer redraw every 30 s while visible (countdowns, staleness) and on status/git/settings change — src/MainWindow.xaml.cs:263,335-363
 
 #### Strip drawing (themes Numbers/Bars/Rings/Chips)
-- [ ] STA-067 Hidden (collapsed) when strip null; clips instead of squeezing; tabular numerals — src/Status/StatusStripView.cs:21-29,32-38
-- [ ] STA-068 Leading 1px x 14px rule (StripRule #2E353F), margin 2/0/12/0, in every theme — src/Status/StatusStripView.cs:41
-- [ ] STA-069 Model field: TextPrimary text, tip "Model" — src/Status/StatusStripView.cs:43-44
-- [ ] STA-070 Branch field: 12px branch glyph (16-unit path, 1.3 stroke, MutedAA) + branch (TextPrimary, max 190 px, ellipsis) + `+{a}` (DiffAdded #7CC596) and `−{d}` (U+2212, DiffDeleted #E08480) only if a+d>0; tip "Branch and uncommitted diff" — src/Status/StatusStripView.cs:45-55,125-144
-- [ ] STA-071 Meter field Numbers: `label [detail] pct%` (label/detail MutedAA) — src/Status/StatusStripView.cs:71,74
-- [ ] STA-072 Meter field Bars: `"Context"|label`, 52px bar, pct — src/Status/StatusStripView.cs:65,68
-- [ ] STA-073 Meter field Rings: 16px ring stroke 2.5, `"Context"|label`, pct — src/Status/StatusStripView.cs:69
-- [ ] STA-074 Meter field Chips: `ctx|5h|7d` label, pct, then bare reset (if any) — src/Status/StatusStripView.cs:70,75
-- [ ] STA-075 Meter field tooltip/automation name = Meter.Tip; stale opacity 0.45 — src/Status/StatusStripView.cs:76, 304,355-360
-- [ ] STA-076 Effort field: Chips `"effort" value`; Bars/Rings with known step: 5 rising bars + value; else value only; tip `"Effort: {e}"` — src/Status/StatusStripView.cs:79-90
-- [ ] STA-077 Steps: 5 rects 3px wide, heights 4,6,8,10,12, 2px gap, bottom aligned, StepOn #A9B0BB for i<=step else StepOff #39404B — src/Status/StatusStripView.cs:402-415
-- [ ] STA-078 Field spacing: parts 6px apart; between fields Numbers adds 1x12 rule with 14px margins each side; Bars/Rings 14px left margin; Chips 6px — src/Status/StatusStripView.cs:97-112
-- [ ] STA-079 Chip: height 22, padding 9/0, radius 11, 1px border; neutral border StripRule + bg ChipBg #1F242C; meter chips tinted band color alpha .34 border / .10 fill; chip text size 11.5 (else 12) — src/Status/StatusStripView.cs:421-435
-- [ ] STA-080 Percent text: `"{p}%"`, SemiBold, band color — src/Status/StatusStripView.cs:326-331
-- [ ] STA-081 Band colors: Green #6BBF8A, Yellow #D9BE5C, Orange #E58C4E, Red #EC726C; MeterTrack #2A303A; MutedAA #8C94A1; TextPrimary #C8CDD6 — src/App.xaml:291-303,16,20
-- [ ] STA-082 Bar: 4px high, radius 2, track MeterTrack, fill = clamp(p,0,100)% in band color — src/Status/StatusStripView.cs:363-374
-- [ ] STA-083 Ring: track ellipse MeterTrack; arc from top clockwise, angle min(p/100*2π, 2π-0.001), round caps, none at 0% — src/Status/StatusStripView.cs:377-399
-- [ ] STA-084 Footer (LimitsView) collapsed when no meters; automation name "Account limits" — src/Status/StatusStripView.cs:153-166
-- [ ] STA-085 Footer Numbers: two equal columns; cell `label pct% [↻ reset]` (detail size 11.5); second column ruled off by 1px LimitRule #262C35 + 12px padding, 12px margin — src/Status/StatusStripView.cs:200-209,218-223
-- [ ] STA-086 Footer Bars: stacked rows 8px apart; grid cols 44 | * | 44 | 58, 10px gaps: "5-hour"/"7-day", bar, pct (right), bare reset (right, 11.5) — src/Status/StatusStripView.cs:168,189-191,226-245
-- [ ] STA-087 Footer Rings: two columns 10px gap; 34px ring stroke 3 with number (10.5 SemiBold, band color) centered; text "{5-hour|7-day} limit" + "resets in {reset}" (11, MutedAA) — src/Status/StatusStripView.cs:208,248-268
-- [ ] STA-088 Footer Chips: two columns 8px gap; card radius 8, pad 10/7, border band alpha .30, bg band alpha .08; long name (11.5) left + pct (15) right; "resets in {reset}" below — src/Status/StatusStripView.cs:208,271-297
+- [x] STA-067 Hidden (collapsed) when strip null; clips instead of squeezing; tabular numerals — src/Status/StatusStripView.cs:21-29,32-38
+- [x] STA-068 Leading 1px x 14px rule (StripRule #2E353F), margin 2/0/12/0, in every theme — src/Status/StatusStripView.cs:41
+- [x] STA-069 Model field: TextPrimary text, tip "Model" — src/Status/StatusStripView.cs:43-44
+- [x] STA-070 Branch field: 12px branch glyph (16-unit path, 1.3 stroke, MutedAA) + branch (TextPrimary, max 190 px, ellipsis) + `+{a}` (DiffAdded #7CC596) and `−{d}` (U+2212, DiffDeleted #E08480) only if a+d>0; tip "Branch and uncommitted diff" — src/Status/StatusStripView.cs:45-55,125-144
+- [x] STA-071 Meter field Numbers: `label [detail] pct%` (label/detail MutedAA) — src/Status/StatusStripView.cs:71,74
+- [x] STA-072 Meter field Bars: `"Context"|label`, 52px bar, pct — src/Status/StatusStripView.cs:65,68
+- [x] STA-073 Meter field Rings: 16px ring stroke 2.5, `"Context"|label`, pct — src/Status/StatusStripView.cs:69
+- [x] STA-074 Meter field Chips: `ctx|5h|7d` label, pct, then bare reset (if any) — src/Status/StatusStripView.cs:70,75
+- [x] STA-075 Meter field tooltip/automation name = Meter.Tip; stale opacity 0.45 — src/Status/StatusStripView.cs:76, 304,355-360
+- [x] STA-076 Effort field: Chips `"effort" value`; Bars/Rings with known step: 5 rising bars + value; else value only; tip `"Effort: {e}"` — src/Status/StatusStripView.cs:79-90
+- [x] STA-077 Steps: 5 rects 3px wide, heights 4,6,8,10,12, 2px gap, bottom aligned, StepOn #A9B0BB for i<=step else StepOff #39404B — src/Status/StatusStripView.cs:402-415
+- [x] STA-078 Field spacing: parts 6px apart; between fields Numbers adds 1x12 rule with 14px margins each side; Bars/Rings 14px left margin; Chips 6px — src/Status/StatusStripView.cs:97-112
+- [x] STA-079 Chip: height 22, padding 9/0, radius 11, 1px border; neutral border StripRule + bg ChipBg #1F242C; meter chips tinted band color alpha .34 border / .10 fill; chip text size 11.5 (else 12) — src/Status/StatusStripView.cs:421-435
+- [x] STA-080 Percent text: `"{p}%"`, SemiBold, band color — src/Status/StatusStripView.cs:326-331
+- [x] STA-081 Band colors: Green #6BBF8A, Yellow #D9BE5C, Orange #E58C4E, Red #EC726C; MeterTrack #2A303A; MutedAA #8C94A1; TextPrimary #C8CDD6 — src/App.xaml:291-303,16,20
+- [x] STA-082 Bar: 4px high, radius 2, track MeterTrack, fill = clamp(p,0,100)% in band color — src/Status/StatusStripView.cs:363-374
+- [x] STA-083 Ring: track ellipse MeterTrack; arc from top clockwise, angle min(p/100*2π, 2π-0.001), round caps, none at 0% — src/Status/StatusStripView.cs:377-399
+- [x] STA-084 Footer (LimitsView) collapsed when no meters; automation name "Account limits" — src/Status/StatusStripView.cs:153-166
+- [x] STA-085 Footer Numbers: two equal columns; cell `label pct% [↻ reset]` (detail size 11.5); second column ruled off by 1px LimitRule #262C35 + 12px padding, 12px margin — src/Status/StatusStripView.cs:200-209,218-223
+- [x] STA-086 Footer Bars: stacked rows 8px apart; grid cols 44 | * | 44 | 58, 10px gaps: "5-hour"/"7-day", bar, pct (right), bare reset (right, 11.5) — src/Status/StatusStripView.cs:168,189-191,226-245
+- [x] STA-087 Footer Rings: two columns 10px gap; 34px ring stroke 3 with number (10.5 SemiBold, band color) centered; text "{5-hour|7-day} limit" + "resets in {reset}" (11, MutedAA) — src/Status/StatusStripView.cs:208,248-268
+- [x] STA-088 Footer Chips: two columns 8px gap; card radius 8, pad 10/7, border band alpha .30, bg band alpha .08; long name (11.5) left + pct (15) right; "resets in {reset}" below — src/Status/StatusStripView.cs:208,271-297
 
 #### Settings page (SettingsPane)
 - [ ] STA-089 Header "Settings" with close × (tooltip "Close (Esc)", name "Close settings") -> back to previous session — src/Settings/SettingsPane.xaml:204-217, .cs:572

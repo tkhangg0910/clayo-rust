@@ -6,6 +6,8 @@
 
 use crate::model::{self, lock, Job, Model, Shared};
 use crate::pane::{AppEvent, Pane, Ticker, Waker};
+use crate::status::Status;
+use crate::status_view;
 use crate::theme::{self, *};
 use crate::win;
 use chrono::{Local, Utc};
@@ -18,7 +20,8 @@ use clayo_core::paths::{claude_dir, data_dir, DataDir, OsEnv};
 use clayo_core::security::ask_rules;
 use clayo_core::settings::{self, ClayoSettings};
 use clayo_core::sidebar::{self, Bucket, PaneRef, SortMode, UnboundPane, ViewOptions, Waiting};
-use clayo_core::status::relay;
+use clayo_core::status::strip::{self, Meter, Strip};
+use clayo_core::status::{parse, relay, AccountLimits};
 use clayo_core::system::login_startup::LoginStartup;
 use clayo_term::input::{bracketed_path, paste_bytes};
 use clayo_term::widget::{self, TermFont};
@@ -89,7 +92,6 @@ pub struct Revealer {
 }
 
 impl Revealer {
-    #[allow(dead_code)] // Called by the island (phase 5) and the single instance (phase 6).
     pub fn reveal(&self) {
         self.flag.store(true, Ordering::SeqCst);
         self.ctx.request_repaint();
@@ -99,7 +101,26 @@ impl Revealer {
 /// The agent choice menu over New session is open for this request.
 struct AskAgent {
     folder: String,
-    insert: Option<String>,
+    typed: Typed,
+}
+
+/// What a new session gets typed at its prompt, unsent.
+#[derive(Default)]
+enum Typed {
+    #[default]
+    Nothing,
+    /// On its first Done (Open a file).
+    OnDone(String),
+    /// The pane's prefill, once the agent's input box is up (the island's file drop and
+    /// screenshots, AdoptFolder).
+    Prefill(String),
+}
+
+/// What the header strip and the footer show this frame.
+#[derive(Default)]
+struct StatusFrame {
+    strip: Option<Strip>,
+    meters: Vec<Meter>,
 }
 
 struct Rename {
@@ -178,6 +199,10 @@ pub struct ClayoApp {
     revealer: Revealer,
     actions: Vec<Action>,
     first_frame_done: bool,
+    status: Status,
+    status_frame: StatusFrame,
+    /// Codex's account limits, recomputed when the rows change (model generation).
+    codex_limits: (u64, Option<AccountLimits>),
 }
 
 impl ClayoApp {
@@ -204,6 +229,13 @@ impl ClayoApp {
         let reveal = Arc::new(AtomicBool::new(false));
         let revealer = Revealer { flag: reveal.clone(), ctx: cc.egui_ctx.clone() };
         let home = std::env::var("USERPROFILE").unwrap_or_default();
+        let waker = Waker { ctx: cc.egui_ctx.clone(), tx };
+
+        let status = {
+            let ctx = cc.egui_ctx.clone();
+            Status::start(&data, settings.clone(), !start.background, move || ctx.request_repaint(), |_| {})
+        };
+
         let mut app = Self {
             settings,
             data,
@@ -213,7 +245,7 @@ impl ClayoApp {
             active: None,
             used: Vec::new(),
             next_id: 1,
-            waker: Waker { ctx: cc.egui_ctx.clone(), tx },
+            waker,
             rx,
             ticker: Ticker::start(),
             font: TermFont::default(),
@@ -237,19 +269,16 @@ impl ClayoApp {
             revealer,
             actions: Vec::new(),
             first_frame_done: false,
+            status,
+            status_frame: StatusFrame::default(),
+            codex_limits: (u64::MAX, None),
         };
         // Opening Clayo in a folder lands you in a live session there.
         if let Some(folder) = start.folder {
-            app.start_new(&folder, None);
+            app.start_new(&folder, Typed::Nothing);
             crate::mark("pane started");
         }
         app
-    }
-
-    /// For the island and the single instance (later phases).
-    #[allow(dead_code)]
-    pub fn revealer(&self) -> Revealer {
-        self.revealer.clone()
     }
 
     // ------------------------------------------------------------------ launching
@@ -273,10 +302,11 @@ impl ClayoApp {
 
     fn plan(&self, kind: AgentKind, mode: LaunchMode, folder: &str, id: Option<&str>) -> Option<LaunchPlan> {
         let mut p = plan(self.agent(kind).as_ref(), mode, folder, id, &OsEnv).ok()?;
-        // Debug builds: run something else in place of the agent (rendering checks, benches).
+        // Debug builds: run something else in place of the agent (rendering checks, benches);
+        // `{id}` in it is the session id the pane expects.
         if cfg!(debug_assertions) {
             if let Ok(cmd) = std::env::var("CLAYO_DEV_AGENT_CMD") {
-                p.agent_command = cmd;
+                p.agent_command = cmd.replace("{id}", p.expected_session_id.as_deref().unwrap_or(""));
             }
         }
         Some(p)
@@ -284,35 +314,40 @@ impl ClayoApp {
 
     /// A new session with the agent settings pick, or the one chosen from the menu over New
     /// session when set to ask (closing that menu starts nothing).
-    fn start_new(&mut self, folder: &str, insert: Option<String>) {
+    fn start_new(&mut self, folder: &str, typed: Typed) {
         match self.settings.new_session_kind() {
-            Some(kind) => self.start_new_with(kind, folder, insert),
+            Some(kind) => self.start_new_with(kind, folder, typed),
             None => {
-                self.ask_agent = Some(AskAgent { folder: folder.to_string(), insert });
+                self.ask_agent = Some(AskAgent { folder: folder.to_string(), typed });
                 self.open_agent_menu = true;
             }
         }
     }
 
-    fn start_new_with(&mut self, kind: AgentKind, folder: &str, insert: Option<String>) {
+    fn start_new_with(&mut self, kind: AgentKind, folder: &str, typed: Typed) {
         let Some(p) = self.plan(kind, LaunchMode::New, folder, None) else { return };
-        let id = self.start_pane(&p, sidebar::new_title(folder), None);
-        if let (Some(text), Some(pane)) = (insert, self.pane(id)) {
+        let (on_done, prefill) = match typed {
+            Typed::Nothing => (None, None),
+            Typed::OnDone(t) => (Some(t), None),
+            Typed::Prefill(t) => (None, Some(t)),
+        };
+        let id = self.start_pane(&p, sidebar::new_title(folder), None, prefill);
+        if let (Some(text), Some(pane)) = (on_done, self.pane(id)) {
             pane.shared.insert_on_first_done(text);
         }
     }
 
     /// Points the window at `folder` and starts a session there (SpawnIn).
-    fn spawn_in(&mut self, folder: &str, insert: Option<String>) {
+    fn spawn_in(&mut self, folder: &str, typed: Typed) {
         if !std::path::Path::new(folder).is_dir() {
             return;
         }
         self.folder = folder.to_string();
-        self.start_new(folder, insert);
+        self.start_new(folder, typed);
     }
 
     /// The row exists at once (status Starting), under Open, before any transcript.
-    fn start_pane(&mut self, p: &LaunchPlan, title: String, fork_of: Option<String>) -> u64 {
+    fn start_pane(&mut self, p: &LaunchPlan, title: String, fork_of: Option<String>, prefill: Option<String>) -> u64 {
         let id = self.next_id;
         self.next_id += 1;
         let pane = Pane::start(
@@ -320,7 +355,7 @@ impl ClayoApp {
             p,
             title.clone(),
             GridSize { cols: 120, rows: 40 },
-            None,
+            prefill,
             self.waker.clone(),
             self.ticker.clone(),
         );
@@ -341,8 +376,14 @@ impl ClayoApp {
             self.selected = Some(key);
         }
         self.panes.push(pane);
+        self.panes_changed();
         self.activate(id);
         id
+    }
+
+    /// The open panes' folders are what git is polled for.
+    fn panes_changed(&self) {
+        self.status.set_folders(self.panes.iter().map(|p| p.cwd.to_string_lossy().into_owned()).collect());
     }
 
     fn pane(&self, id: u64) -> Option<&Pane> {
@@ -359,8 +400,13 @@ impl ClayoApp {
         self.active = Some(id);
         self.used.retain(|u| *u != id);
         self.used.insert(0, id);
+        lock(&self.model).used = self.used.clone();
         self.focus_terminal = true;
         self.list_focus = false;
+        // Its branch at once, not at the next poll.
+        if let Some(p) = self.pane(id) {
+            self.status.git.refresh(&p.cwd.to_string_lossy());
+        }
     }
 
     /// Ends the session: the process goes and its row drops out of Open. A Codex pane closed
@@ -379,8 +425,9 @@ impl ClayoApp {
             m.panes.retain(|p| p.id != id);
             m.generation += 1;
         }
-        // Island (phase 5): SessionNotice(pane, "", null) and SessionWorking(pane, false) go here.
         self.used.retain(|u| *u != id);
+        lock(&self.model).used = self.used.clone();
+        self.panes_changed();
         self.active = self.panes.last().map(Pane::id);
         if let Some(a) = self.active {
             self.activate(a);
@@ -401,7 +448,7 @@ impl ClayoApp {
         }
         let cwd = launch::resume_folder(&folder, &self.folder);
         if let Some(p) = self.plan(agent, LaunchMode::Resume, &cwd, Some(id)) {
-            self.start_pane(&p, name, None);
+            self.start_pane(&p, name, None, None);
         }
     }
 
@@ -415,7 +462,7 @@ impl ClayoApp {
         if let Some(child) = &p.expected_session_id {
             lock(&self.model).parents.set(child, &parent);
         }
-        self.start_pane(&p, sidebar::branch_title(&parent), Some(parent));
+        self.start_pane(&p, sidebar::branch_title(&parent), Some(parent), None);
     }
 
     /// Ends Clayo: every session closes, the watchers stop, the app exits.
@@ -427,6 +474,12 @@ impl ClayoApp {
         }
         self.panes.clear();
         lock(&self.model).panes.clear();
+        self.status.stop();
+        // A hidden window gets no egui pass that would carry out the Close (the island's Quit
+        // comes while hidden): end here, as main would after the event loop.
+        if !self.shown {
+            std::process::exit(0);
+        }
         ctx.send_viewport_cmd(ViewportCommand::Close);
     }
 
@@ -484,19 +537,19 @@ impl ClayoApp {
                     }
                     m.generation += 1;
                 }
-                Action::NewIn(folder) => self.spawn_in(&folder, None),
+                Action::NewIn(folder) => self.spawn_in(&folder, Typed::Nothing),
                 Action::Browse => {
                     let mut d = rfd::FileDialog::new().set_title("Start a session in").set_parent(frame);
                     if std::path::Path::new(&self.folder).is_dir() {
                         d = d.set_directory(&self.folder);
                     }
                     if let Some(f) = d.pick_folder() {
-                        self.spawn_in(&f.to_string_lossy(), None);
+                        self.spawn_in(&f.to_string_lossy(), Typed::Nothing);
                     }
                 }
                 Action::StartWith(kind) => {
                     if let Some(ask) = self.ask_agent.take() {
-                        self.start_new_with(kind, &ask.folder, ask.insert);
+                        self.start_new_with(kind, &ask.folder, ask.typed);
                     }
                 }
                 Action::OpenFile => {
@@ -507,7 +560,7 @@ impl ClayoApp {
                     if let Some(file) = d.pick_file() {
                         let text = clayo_core::text::insert_paths(&[file.to_string_lossy()]);
                         if let Some(dir) = file.parent() {
-                            self.spawn_in(&dir.to_string_lossy(), Some(text));
+                            self.spawn_in(&dir.to_string_lossy(), Typed::OnDone(text));
                         }
                     }
                 }
@@ -598,7 +651,10 @@ impl ClayoApp {
     fn draw_sidebar(&mut self, ui: &mut Ui) {
         let rect = ui.max_rect();
         ui.painter().rect_filled(rect, 0, SURFACE_BG);
-        let footer_h = 12.0 + 30.0 + 14.0;
+        // The account's limits sit above the actions, 12 px apart; none, and the gap goes too.
+        let limits_h = status_view::limits_height(ui, &self.status_frame.meters, self.settings.theme);
+        let limits_gap = if limits_h > 0.0 { limits_h + 12.0 } else { 0.0 };
+        let footer_h = 12.0 + limits_gap + 30.0 + 14.0;
         let body = Rect::from_min_max(rect.min, Pos2::new(rect.right(), rect.bottom() - footer_h - 1.0));
         let footer = Rect::from_min_max(Pos2::new(rect.left(), body.bottom()), rect.max);
         ui.scope_builder(UiBuilder::new().max_rect(body), |ui| self.draw_sidebar_body(ui));
@@ -858,11 +914,15 @@ impl ClayoApp {
         let rect = ui.max_rect();
         ui.painter().rect_filled(rect, 0, FOOTER_BAND);
         ui.painter().hline(rect.x_range(), rect.top() + 0.5, Stroke::new(1.0, HAIRLINE));
-        // Slot: the account's limits (LimitsView) and the Update button go above these (phases 4, 6).
-        let row = Rect::from_min_max(
-            Pos2::new(rect.left() + 14.0, rect.top() + 1.0 + 12.0),
-            Pos2::new(rect.right() - 14.0, rect.top() + 1.0 + 12.0 + 30.0),
-        );
+        // The account's limits (LimitsView); the Update button (phase 6) goes under them.
+        let mut top = rect.top() + 1.0 + 12.0;
+        let limits_h = status_view::limits_height(ui, &self.status_frame.meters, self.settings.theme);
+        if limits_h > 0.0 {
+            let r = Rect::from_min_max(Pos2::new(rect.left() + 14.0, top), Pos2::new(rect.right() - 14.0, top + limits_h));
+            status_view::draw_limits(ui, r, &self.status_frame.meters, self.settings.theme);
+            top += limits_h + 12.0;
+        }
+        let row = Rect::from_min_max(Pos2::new(rect.left() + 14.0, top), Pos2::new(rect.right() - 14.0, top + 30.0));
         ui.scope_builder(UiBuilder::new().max_rect(row).layout(egui::Layout::left_to_right(egui::Align::Center)), |ui| {
             let new = ghost_button(ui, Some('\u{E710}'), "New session", true, None)
                 .on_hover_text("Pick the folder to start in. Recent folders first.");
@@ -1050,8 +1110,12 @@ impl ClayoApp {
         let x = inner.left() + 7.0 + 10.0;
         let g = elided(ui, &title, ui_font(12.0), TEXT_MUTED, title_right - x - 10.0);
         let y = rect.center().y - g.size().y / 2.0;
+        let title_w = if title.is_empty() { 0.0 } else { g.size().x };
         ui.painter().galley(Pos2::new(x, y), g, TEXT_MUTED);
-        // Slot: the status strip (HeadStrip, phase 4) follows the title.
+        // The status strip follows the title (margin 10) and is cut off, not squeezed, by the
+        // buttons.
+        let strip = self.status_frame.strip.as_ref().filter(|_| has_pane);
+        status_view::draw_strip(ui, strip, self.settings.theme, x + title_w + 10.0, title_right, rect.center().y);
     }
 
     fn draw_pane(&mut self, ui: &mut Ui) {
@@ -1156,7 +1220,7 @@ impl ClayoApp {
         }
     }
 
-    fn handle_events(&mut self) {
+    fn handle_events(&mut self, ctx: &egui::Context) {
         while let Ok(ev) = self.rx.try_recv() {
             match ev {
                 AppEvent::Status(id, s) => {
@@ -1168,9 +1232,6 @@ impl ClayoApp {
                     if was.is_some() {
                         lock(&self.model).sidebar.set_pane_status(id, s);
                     }
-                    // Island (phase 5): notices from (was, s) — NeedsInput -> NeedsYou, Error ->
-                    // Error, Done after Working -> Done, else cleared; SessionWorking on Working.
-                    let _ = (was, PaneStatus::Working);
                 }
             }
         }
@@ -1181,6 +1242,43 @@ impl ClayoApp {
             let v = self.shown && !self.settings_open && self.active == Some(p.id());
             p.shared.visible.store(v, Ordering::Relaxed);
         }
+        self.status.set_shown(self.shown);
+    }
+
+    /// ShowStatusBar: the active pane's strip (Claude's from its status file, Codex's from its
+    /// transcript) with its folder's git state, and the footer's limits: the active pane's
+    /// agent's account, or with no pane Codex's when Claude is not in use.
+    fn status_frame(&mut self) -> StatusFrame {
+        let now = Utc::now();
+        let codex = self.active_pane().map_or(!self.settings.use_claude, |p| p.agent == AgentKind::Codex);
+        let limits = if codex { self.codex_limits() } else { self.status.claude_limits() };
+        let strip = self.active_pane().and_then(|pane| {
+            let id = pane.shared.session_id()?;
+            let session = if codex {
+                lock(&self.model).sidebar.get(&id).and_then(|r| r.info.as_ref()).and_then(|i| i.status.clone())
+            } else {
+                self.status.store.get(&id)
+            };
+            let git = self.status.git.get(&pane.cwd.to_string_lossy());
+            strip::header(session.as_ref(), git.as_ref(), limits.as_ref(), &self.settings, now)
+        });
+        StatusFrame { strip, meters: strip::footer(limits.as_ref(), &self.settings, now) }
+    }
+
+    /// The newest limits any Codex transcript reported, not the open session's (as old as its
+    /// last turn). Recomputed only when the rows change.
+    fn codex_limits(&mut self) -> Option<AccountLimits> {
+        let m = lock(&self.model);
+        if self.codex_limits.0 != m.generation {
+            let statuses = m
+                .sidebar
+                .rows()
+                .filter_map(|r| r.info.as_ref())
+                .filter(|i| i.agent == AgentKind::Codex)
+                .filter_map(|i| i.status.as_ref());
+            self.codex_limits = (m.generation, parse::newest(statuses));
+        }
+        self.codex_limits.1.clone()
     }
 }
 
@@ -1284,7 +1382,7 @@ fn quiet_button_wide(ui: &mut Ui, text: &str, w: f32) -> egui::Response {
 impl eframe::App for ClayoApp {
     /// Runs while hidden too: pane events, the reveal request, and close-only-hides.
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.handle_events();
+        self.handle_events(ctx);
         if self.reveal.swap(false, Ordering::SeqCst) {
             ctx.send_viewport_cmd(ViewportCommand::Visible(true));
             ctx.send_viewport_cmd(ViewportCommand::Minimized(false));
@@ -1305,10 +1403,16 @@ impl eframe::App for ClayoApp {
         if !self.first_frame_done {
             self.first_frame_done = true;
             crate::mark("first frame");
+            // eframe shows the root window after its first frame whatever the builder said; a
+            // login start (--background) is the island only, so it goes straight back.
+            if !self.shown {
+                ui.ctx().send_viewport_cmd(ViewportCommand::Visible(false));
+            }
         }
         let ctx = ui.ctx().clone();
         self.shown = ctx.input(|i| i.viewport().visible()).unwrap_or(true) && self.shown;
         self.handle_keys(&ctx);
+        self.status_frame = self.status_frame();
         let full = ui.max_rect();
         self.sidebar_w = clamp_sidebar(self.sidebar_w, full.width());
         let side = Rect::from_min_size(full.min, Vec2::new(self.sidebar_w, full.height()));
@@ -1320,8 +1424,9 @@ impl eframe::App for ClayoApp {
         ui.scope_builder(UiBuilder::new().max_rect(term), |ui| self.draw_terminal_side(ui));
         self.run_actions(&ctx, frame);
         self.set_visibility();
-        // Ages ("3 min ago") and the Today bucket move with the clock.
-        ctx.request_repaint_after(std::time::Duration::from_secs(60));
+        // Ages ("3 min ago") and the Today bucket move with the clock, and the strip's and the
+        // footer's countdowns and staleness (at most every 30 s while visible).
+        ctx.request_repaint_after(crate::status::CLOCK);
     }
 }
 

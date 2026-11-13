@@ -23,6 +23,8 @@ pub struct Model {
     pub parents: SessionParents,
     /// Codex panes waiting for their transcript, in start order.
     pub waiting: Vec<Waiting>,
+    /// Open panes, the one used last first (the screenshot picker's order).
+    pub used: Vec<u64>,
     /// Live panes, in start order.
     pub panes: Vec<Arc<PaneShared>>,
     /// Either agent's transcript folder exists (else the list shows the empty-state text).
@@ -40,6 +42,7 @@ impl Model {
             names: SessionNames::open(data),
             parents: SessionParents::open(data),
             waiting: Vec::new(),
+            used: Vec::new(),
             panes: Vec::new(),
             roots_exist: true,
             use_claude,

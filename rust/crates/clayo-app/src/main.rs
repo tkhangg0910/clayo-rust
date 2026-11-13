@@ -5,6 +5,8 @@ mod app;
 mod fonts;
 mod model;
 mod pane;
+mod status;
+mod status_view;
 mod theme;
 mod win;
 

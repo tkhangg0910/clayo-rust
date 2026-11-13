@@ -52,6 +52,9 @@ pub struct PaneShared {
     session_id: Mutex<Option<String>>,
     /// Typed at the prompt on the first Done (Open a file).
     insert_on_done: Mutex<Option<String>>,
+    /// Screenshots sent to a Codex pane (path, when), for the image chip (phase 7): Codex
+    /// reads them where they are, so nothing else records them.
+    pub codex_images: Mutex<Vec<(PathBuf, chrono::DateTime<Utc>)>>,
     waker: Waker,
     ticker: Ticker,
 }
@@ -198,6 +201,7 @@ impl Pane {
             visible: AtomicBool::new(false),
             session_id: Mutex::new(plan.expected_session_id.clone()),
             insert_on_done: Mutex::new(None),
+            codex_images: Mutex::new(Vec::new()),
             waker: waker.clone(),
             ticker: ticker.clone(),
         });
