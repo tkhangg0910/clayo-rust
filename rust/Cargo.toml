@@ -1,0 +1,28 @@
+[workspace]
+resolver = "2"
+members = ["crates/clayo-core"]
+
+[workspace.package]
+version = "1.0.6"
+edition = "2021"
+license = "MIT"
+rust-version = "1.85"
+
+[workspace.dependencies]
+serde_json = { version = "1", features = ["preserve_order"] }
+regex = { version = "1", default-features = false, features = ["std", "unicode-perl", "unicode-case"] }
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+uuid = { version = "1", features = ["v4"] }
+notify = { version = "6", default-features = false }
+winreg = "0.56"
+tempfile = "3"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[workspace.lints.rust]
+unsafe_code = "deny"
