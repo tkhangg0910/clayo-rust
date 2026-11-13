@@ -239,6 +239,12 @@ impl IslandTrigger {
         self.note.as_ref().map(|(n, _)| n)
     }
 
+    /// The queue number of the note on screen: a re-sent note with the same words gets a new
+    /// one, so the island can tell it apart and greet it again (the C# compared references).
+    pub fn note_seq(&self) -> Option<u64> {
+        self.note.as_ref().map(|(_, s)| *s)
+    }
+
     /// 0..1 through the dwell at the edge, for the dwell bar. 0 when not dwelling.
     pub fn dwell_progress(&self) -> f64 {
         self.dwell_progress
