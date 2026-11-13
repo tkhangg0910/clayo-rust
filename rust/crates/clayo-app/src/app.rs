@@ -52,6 +52,7 @@ const ROW_H: f32 = 48.0;
 const EMPTY_PANES: &str = "Pick a session on the left, or start a new one.";
 
 /// How the app was asked to start (see `clayo_core::cli`).
+#[derive(Clone)]
 pub struct Startup {
     pub background: bool,
     pub folder: Option<String>,
@@ -61,13 +62,51 @@ pub fn run(start: Startup) -> i32 {
     // Until setup is done the setup window comes first, in place of the main window.
     let settings = ClayoSettings::load(&settings::default_path(&data_dir(&OsEnv)));
     let setup_first = !start.background && needs_setup(&settings);
+    // OpenGL first (fast to start, light); a machine without a usable GL driver gets Direct3D 12
+    // (or WARP) through wgpu; failing both, a message box and crash.log (PORTING.md D10).
+    let mut failures = Vec::new();
+    for renderer in [eframe::Renderer::Glow, eframe::Renderer::Wgpu] {
+        // Debug builds can try the fallback on its own.
+        if cfg!(debug_assertions) && renderer == eframe::Renderer::Glow && std::env::var("CLAYO_DEV_RENDERER").as_deref() == Ok("wgpu") {
+            continue;
+        }
+        crate::mark("run_native");
+        let visible = start_visible(&start, setup_first);
+        let start = start.clone();
+        let app = Box::new(move |cc: &eframe::CreationContext<'_>| -> Result<Box<dyn eframe::App>, _> {
+            Ok(Box::new(ClayoApp::new(cc, start, setup_first)))
+        });
+        match eframe::run_native("Clayo", native_options(renderer, visible), app) {
+            Ok(()) => return 0,
+            Err(e) => {
+                crate::log_fatal(&format!("Clayo could not open its window with {renderer}: {e}"));
+                failures.push(format!("{renderer}: {e}"));
+            }
+        }
+    }
+    #[cfg(windows)]
+    win::shell::error_box(
+        "Clayo",
+        &format!(
+            "Clayo could not open its window.\n\n{}\n\nThe details are in %LOCALAPPDATA%\\Clayo\\crash.log.",
+            failures.join("\n")
+        ),
+    );
+    1
+}
+
+fn start_visible(start: &Startup, setup_first: bool) -> bool {
+    !start.background && !setup_first
+}
+
+fn native_options(renderer: eframe::Renderer, visible: bool) -> eframe::NativeOptions {
     let mut viewport = egui::ViewportBuilder::default()
         .with_title("C L A Y O")
         .with_inner_size([1280.0, 820.0])
         .with_min_inner_size([760.0, 420.0])
         // The exe's own icon goes on by handle (win::shell::set_window_icon), not egui's.
         .with_icon(Arc::new(egui::IconData::default()))
-        .with_visible(!start.background && !setup_first);
+        .with_visible(visible);
     let mut centered = true;
     #[cfg(windows)]
     if let Some((x, y, w, h)) = win::primary_work_area() {
@@ -76,28 +115,20 @@ pub fn run(start: Startup) -> i32 {
         viewport = viewport.with_inner_size([iw, ih]).with_position([x + (w - iw) / 2.0, y + (h - ih - 32.0) / 2.0]);
         centered = false;
     }
-    let opts = eframe::NativeOptions {
+    let mut wgpu_options = eframe::egui_wgpu::WgpuConfiguration::default();
+    // Key echo must not wait for the next vblank (PORTING.md §4.6, < 5 ms).
+    wgpu_options.surface.present_mode = wgpu::PresentMode::AutoNoVsync;
+    eframe::NativeOptions {
         viewport,
-        renderer: eframe::Renderer::Glow,
+        renderer,
         centered,
-        // Key echo must not wait for the next vblank (PORTING.md §4.6, < 5 ms).
         glow_options: eframe::egui_glow::GlowConfiguration { vsync: false, ..Default::default() },
+        wgpu_options,
         clipboard_shortcuts: false,
         persist_window: false,
+        // The event loop outlives a failed renderer, so the next one can be tried.
+        run_and_return: true,
         ..Default::default()
-    };
-    crate::mark("run_native");
-    match eframe::run_native("Clayo", opts, Box::new(move |cc| Ok(Box::new(ClayoApp::new(cc, start, setup_first))))) {
-        Ok(()) => 0,
-        Err(e) => {
-            // No window could be made (no usable OpenGL, PORTING.md D10): say so where it can
-            // be seen, and leave a record.
-            let what = format!("Clayo could not open its window: {e}");
-            crate::log_fatal(&what);
-            #[cfg(windows)]
-            win::shell::error_box("Clayo", &format!("{what}\n\nThe details are in %LOCALAPPDATA%\\Clayo\\crash.log."));
-            1
-        }
     }
 }
 
