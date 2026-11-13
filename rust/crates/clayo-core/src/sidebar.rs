@@ -741,3 +741,113 @@ pub fn codex_bind_window(unbound: &[UnboundPane], i: usize) -> (DateTime<Utc>, D
         .expect("chain has one element");
     (wait.since, until)
 }
+
+/// A Codex pane waiting for its transcript, under the placeholder id its row is keyed on.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Waiting {
+    pub placeholder: String,
+    pub pane: UnboundPane,
+}
+
+/// BindCodexPanes: each waiting pane (in start order) takes the session that
+/// [`crate::sessions::codex::find_started`] finds for it within [`codex_bind_window`]. Bound panes
+/// leave `waiting` and their new id joins `taken` (the ids live panes already hold). Returns
+/// (placeholder, session id) per bind, for the caller to re-key the row and the pane.
+pub fn bind_codex_panes(
+    waiting: &mut Vec<Waiting>,
+    codex: &[SessionInfo],
+    taken: &mut HashSet<String>,
+) -> Vec<(String, String)> {
+    let mut bound = Vec::new();
+    for w in waiting.clone() {
+        let Some(i) = waiting.iter().position(|x| x.placeholder == w.placeholder) else {
+            continue;
+        };
+        let unbound: Vec<UnboundPane> = waiting.iter().map(|w| w.pane.clone()).collect();
+        let (since, until) = codex_bind_window(&unbound, i);
+        let Some(found) = crate::sessions::codex::find_started(
+            codex,
+            &w.pane.folder,
+            w.pane.parent_id.as_deref(),
+            since,
+            taken,
+            Some(until),
+        ) else {
+            continue;
+        };
+        let id = found.session_id.clone();
+        waiting.remove(i);
+        taken.insert(id.clone());
+        bound.push((w.placeholder, id));
+    }
+    bound
+}
+
+#[cfg(test)]
+mod bind_tests {
+    use super::*;
+
+    fn at(min: i64) -> DateTime<Utc> {
+        DateTime::from_timestamp(1_700_000_000, 0).unwrap() + TimeDelta::minutes(min)
+    }
+
+    fn session(id: &str, folder: &str, parent: Option<&str>, started: i64) -> SessionInfo {
+        SessionInfo {
+            session_id: id.into(),
+            agent: AgentKind::Codex,
+            parent_id: parent.map(String::from),
+            file: None,
+            project_dir: folder.into(),
+            preview: String::new(),
+            ai_title: None,
+            last_prompt: None,
+            last_activity: at(started),
+            started: at(started),
+            turn: None,
+            status: None,
+        }
+    }
+
+    fn wait(ph: &str, folder: &str, parent: Option<&str>, since: i64) -> Waiting {
+        Waiting {
+            placeholder: ph.into(),
+            pane: UnboundPane { folder: folder.into(), parent_id: parent.map(String::from), since: at(since) },
+        }
+    }
+
+    #[test]
+    fn two_panes_in_one_folder_bind_in_start_order() {
+        let mut w = vec![wait("p1", r"C:\a", None, 0), wait("p2", r"C:\a", None, 2)];
+        let codex = [session("s2", r"C:\a\", None, 3), session("s1", r"C:\A", None, 1)];
+        let mut taken = HashSet::new();
+        let b = bind_codex_panes(&mut w, &codex, &mut taken);
+        assert_eq!(b, vec![("p1".into(), "s1".into()), ("p2".into(), "s2".into())]);
+        assert!(w.is_empty());
+        assert!(taken.contains("s1") && taken.contains("s2"));
+    }
+
+    #[test]
+    fn later_pane_session_is_not_taken_by_earlier_pane() {
+        // Only the second pane's session exists so far: it started after pane 2 opened.
+        let mut w = vec![wait("p1", r"C:\a", None, 0), wait("p2", r"C:\a", None, 2)];
+        let codex = [session("s2", r"C:\a", None, 3)];
+        let b = bind_codex_panes(&mut w, &codex, &mut HashSet::new());
+        assert_eq!(b, vec![("p2".into(), "s2".into())]);
+        assert_eq!(w.len(), 1);
+        assert_eq!(w[0].placeholder, "p1");
+    }
+
+    #[test]
+    fn fork_binds_by_parent_and_skips_taken_and_late() {
+        let mut w = vec![wait("f", r"C:\x", Some("par"), 0)];
+        let codex = [
+            session("other", r"C:\x", None, 1),
+            session("held", r"C:\x", Some("par"), 1),
+            session("late", r"C:\x", Some("par"), 11),
+            session("mine", r"C:\y", Some("par"), 2),
+        ];
+        let mut taken = HashSet::from(["held".to_string()]);
+        let b = bind_codex_panes(&mut w, &codex, &mut taken);
+        assert_eq!(b, vec![("f".into(), "mine".into())]);
+    }
+}

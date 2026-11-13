@@ -9,6 +9,9 @@ use std::sync::Arc;
 /// Family name for semibold UI text.
 pub const SEMIBOLD: &str = "semibold";
 
+/// Family name for Segoe Fluent Icons / MDL2 glyphs.
+pub const ICONS: &str = "icons";
+
 fn add(defs: &mut FontDefinitions, name: &str, file: &str, index: u32) -> bool {
     let Some(bytes) = map_font(&fonts_dir().join(file)) else { return false };
     let mut data = FontData::from_static(bytes);
@@ -50,8 +53,13 @@ pub fn definitions() -> FontDefinitions {
     let m = chain(&[("mono", mono)], &defs, &builtin_mono);
     let p = chain(&[("ui", ui)], &defs, &builtin_prop);
     let s = chain(&[("ui-semibold", semi), ("ui", ui)], &defs, &builtin_prop);
+    // Glyph icons (E710 add, E713 gear, ...): Segoe Fluent Icons (Windows 11), else MDL2.
+    let fluent = add(&mut defs, "icons-fluent", "SegoeIcons.ttf", 0);
+    let mdl2 = add(&mut defs, "icons-mdl2", "segmdl2.ttf", 0);
+    let i = chain(&[("icons-fluent", fluent), ("icons-mdl2", mdl2), ("ui", ui)], &defs, &builtin_prop);
     defs.families.insert(FontFamily::Monospace, m);
     defs.families.insert(FontFamily::Proportional, p);
     defs.families.insert(FontFamily::Name(SEMIBOLD.into()), s);
+    defs.families.insert(FontFamily::Name(ICONS.into()), i);
     defs
 }

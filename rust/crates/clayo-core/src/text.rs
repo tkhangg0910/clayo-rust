@@ -48,9 +48,37 @@ pub fn new_guid() -> String {
     uuid::Uuid::new_v4().hyphenated().to_string()
 }
 
+/// Paths typed at a prompt (InsertPaths): space separated, quoted when one holds a space, with
+/// a trailing space to carry on typing; no Enter. Empty when there are no paths.
+pub fn insert_paths<S: AsRef<str>>(paths: &[S]) -> String {
+    let text = paths
+        .iter()
+        .map(|p| {
+            let p = p.as_ref();
+            if p.contains(' ') {
+                format!("\"{p}\"")
+            } else {
+                p.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+    if text.is_empty() {
+        text
+    } else {
+        text + " "
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn insert_paths_quotes_and_trails() {
+        assert_eq!(insert_paths::<&str>(&[]), "");
+        assert_eq!(insert_paths(&[r"C:\a.txt", r"C:\my docs\b.md"]), "C:\\a.txt \"C:\\my docs\\b.md\" ");
+    }
 
     #[test]
     fn quoting() {

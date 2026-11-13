@@ -288,14 +288,14 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 #### Entry / command line
 - [ ] MAIN-001 `clayo --statusline` runs the status relay and exits, before any UI code loads (args[0] == "--statusline") — Program.cs:15
 - [ ] MAIN-002 `clayo --statusline --pass ...` relay with pass=true (args[1] == "--pass") — Program.cs:15; consts StatusRelay.cs:22-23
-- [ ] MAIN-003 Any other invocation runs the GUI app — Program.cs:16,21-26
+- [x] MAIN-003 Any other invocation runs the GUI app — Program.cs:16,21-26
 - [ ] MAIN-004 Unhandled UI-thread and AppDomain exceptions append to `%LOCALAPPDATA%\Clayo\crash.log` as `yyyy-MM-dd HH:mm:ss  <exception>\n\n`; log >1 MiB is moved to `crash.old.log` (overwrite) first; crash still proceeds (not swallowed) — App.xaml.cs:14-18,109-125
-- [c] MAIN-005 On start, inherited Claude Code session env markers are removed from process env (SessionLauncher.ScrubInheritedSession) so every pane is top-level — App.xaml.cs:22
+- [x] MAIN-005 On start, inherited Claude Code session env markers are removed from process env (SessionLauncher.ScrubInheritedSession) so every pane is top-level — App.xaml.cs:22
 - [ ] MAIN-006 `--background` arg (LoginStartup.BackgroundArg) = login start: no main window, island only, island Greet() — App.xaml.cs:25,62,67
-- [ ] MAIN-007 Folder = first arg that is an existing directory (any position); else, unless background, the current working directory — App.xaml.cs:30-31
-- [ ] MAIN-008 CWD is ignored (treated as "no folder") when it equals the exe's own folder (AppContext.BaseDirectory) or the System32 dir (Start menu/shortcut launches); compare is full-path, trailing separator trimmed, case-insensitive — App.xaml.cs:79-86
+- [x] MAIN-007 Folder = first arg that is an existing directory (any position); else, unless background, the current working directory — App.xaml.cs:30-31
+- [x] MAIN-008 CWD is ignored (treated as "no folder") when it equals the exe's own folder (AppContext.BaseDirectory) or the System32 dir (Start menu/shortcut launches); compare is full-path, trailing separator trimmed, case-insensitive — App.xaml.cs:79-86
 - [ ] MAIN-009 `clayo` typed in Explorer's address bar works because Explorer runs the command with the current folder as CWD and the exe folder is on the user PATH (no App Paths registry key anywhere) — App.xaml.cs:27-31, UserPath.cs:7-10
-- [ ] MAIN-010 Main window opens on the folder if given (and auto-starts a new session in it), else on %USERPROFILE% with no session — App.xaml.cs:46-48, MainWindow.xaml.cs:381
+- [x] MAIN-010 Main window opens on the folder if given (and auto-starts a new session in it), else on %USERPROFILE% with no session — App.xaml.cs:46-48, MainWindow.xaml.cs:381
 - [ ] MAIN-011 Second instance: hands folder (or "" when no folder; nothing when --background) to the running instance via pipe and exits — App.xaml.cs:33-40
 - [ ] MAIN-012 Running instance on receipt: "" -> Reveal(); path -> AdoptFolder(path) (on UI thread) — App.xaml.cs:51-55
 - [ ] MAIN-013 Windows sign-out (SessionEnding) performs a real Quit (panes closed) — App.xaml.cs:59
@@ -314,79 +314,79 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [ ] MAIN-024 Timeout/IO/Unauthorized errors on send are swallowed; second instance just exits — SingleInstance.cs:99-101
 
 #### Window chrome / placement / theme
-- [ ] MAIN-025 Title "C L A Y O" (spaced; also Alt-Tab/taskbar label) — MainWindow.xaml:5
-- [ ] MAIN-026 Default 1280x820, min 760x420 — MainWindow.xaml:6-7
-- [ ] MAIN-027 Dark caption: DWMWA_USE_IMMERSIVE_DARK_MODE(20)=1, DWMWA_SYSTEMBACKDROP_TYPE(38)=3 (acrylic/transient), DWMWA_BORDER_COLOR(34)=0x00352C26 (#262C35); return values ignored; also applied to setup window — MainWindow.xaml.cs:387-428, SetupWindow.xaml.cs:71-75
-- [ ] MAIN-028 On first show the window is centered on the PRIMARY monitor work area (MonitorFromPoint(0,0, DEFAULTTOPRIMARY)), size clamped to work area, SWP_NOZORDER|SWP_NOACTIVATE (works around mixed-DPI CenterScreen bug) — MainWindow.xaml.cs:487-506
+- [x] MAIN-025 Title "C L A Y O" (spaced; also Alt-Tab/taskbar label) — MainWindow.xaml:5
+- [x] MAIN-026 Default 1280x820, min 760x420 — MainWindow.xaml:6-7
+- [x] MAIN-027 Dark caption: DWMWA_USE_IMMERSIVE_DARK_MODE(20)=1, DWMWA_SYSTEMBACKDROP_TYPE(38)=3 (acrylic/transient), DWMWA_BORDER_COLOR(34)=0x00352C26 (#262C35); return values ignored; also applied to setup window — MainWindow.xaml.cs:387-428, SetupWindow.xaml.cs:71-75
+- [x] MAIN-028 On first show the window is centered on the PRIMARY monitor work area (MonitorFromPoint(0,0, DEFAULTTOPRIMARY)), size clamped to work area, SWP_NOZORDER|SWP_NOACTIVATE (works around mixed-DPI CenterScreen bug) — MainWindow.xaml.cs:487-506
 - [ ] MAIN-029 Text rendering: TextFormattingMode=Display, UseLayoutRounding — MainWindow.xaml:11-12
-- [ ] MAIN-030 Colors (App.xaml:12-29,73,291-303): TerminalBg #14171C, SurfaceBg #1B1F26, RaisedBg #222731, Hairline #262C35, TextPrimary #C8CDD6, TextMuted #7A828F, TextFaint #565E6B, MutedAA #8C94A1, Working #D4A24C, NeedsInput #5AA9E6, Done #6BBF8A, Failed #D2605F, Ended #5A6472, Dormant #39404B, Clay #D27556, BandGreen #6BBF8A, BandYellow #D9BE5C, BandOrange #E58C4E, BandRed #EC726C, DiffAdded #7CC596, DiffDeleted #E08480, StripRule #2E353F, LimitRule #262C35, MeterTrack #2A303A, ChipBg #1F242C, StepOn #A9B0BB, StepOff #39404B, MenuRim #323A46; footer band #171B21 — App.xaml, MainWindow.xaml:252
-- [ ] MAIN-031 Fonts: UI "Segoe UI Variable Text, Segoe UI"; mono "Cascadia Mono, Consolas"; icons "Segoe Fluent Icons, Segoe MDL2 Assets"; setup headline "Segoe UI Variable Display" — App.xaml:31-32, SetupWindow.xaml:21
+- [x] MAIN-030 Colors (App.xaml:12-29,73,291-303): TerminalBg #14171C, SurfaceBg #1B1F26, RaisedBg #222731, Hairline #262C35, TextPrimary #C8CDD6, TextMuted #7A828F, TextFaint #565E6B, MutedAA #8C94A1, Working #D4A24C, NeedsInput #5AA9E6, Done #6BBF8A, Failed #D2605F, Ended #5A6472, Dormant #39404B, Clay #D27556, BandGreen #6BBF8A, BandYellow #D9BE5C, BandOrange #E58C4E, BandRed #EC726C, DiffAdded #7CC596, DiffDeleted #E08480, StripRule #2E353F, LimitRule #262C35, MeterTrack #2A303A, ChipBg #1F242C, StepOn #A9B0BB, StepOff #39404B, MenuRim #323A46; footer band #171B21 — App.xaml, MainWindow.xaml:252
+- [x] MAIN-031 Fonts: UI "Segoe UI Variable Text, Segoe UI"; mono "Cascadia Mono, Consolas"; icons "Segoe Fluent Icons, Segoe MDL2 Assets"; setup headline "Segoe UI Variable Display" — App.xaml:31-32, SetupWindow.xaml:21
 - [ ] MAIN-032 Single dark theme only for the chrome (Settings has a `Theme` passed to strip/limits views, owned elsewhere) — App.xaml, MainWindow.xaml.cs:1572-1573
 - [ ] MAIN-033 Button styles: QuietButton (transparent, border Hairline, radius 4, padding 10,5, hover RaisedBg+TextPrimary, disabled TextFaint/no border); GhostButton (h30, radius 6, border #2E353F, label opacity .75 -> 1 hover, wash of fg at .08 hover/.03 pressed, 160ms cubic ease, Segoe glyph in Tag before label); AccentButton (bg #2A303A, border #3A424E, fg #E6E9EE); ClayButton (bg Clay, fg #14171C, 14 semibold, h36, radius 8, hover #DC8466, pressed #B9654A, disabled #2A2F38/#6C7480) — App.xaml:34-69,92-170,309-350
 - [ ] MAIN-034 Switch (40x20 track, clay fill when on, knob slides 20px, grows 1.12 hover) and Tick (16px box radius 4, clay tick) checkbox styles; FocusRing is clay 1px radius 9, keyboard focus only — App.xaml:77-86,175-287
-- [ ] MAIN-035 Context menus: RaisedBg panel radius 8, rim #323A46, drop shadow, min width 176, items radius 5, hover #2D343F/#E6E9EE, gesture text #959CA8, check mark clay path, separator 1px MenuRim margin 10,4 — App.xaml:655-768
-- [ ] MAIN-036 Thin scrollbar 8px, thumb #333A45 (hover #4A5462), no arrows — App.xaml:411-444
-- [ ] MAIN-037 Splitter between sidebar and terminal: 7px grab band, 1px Hairline centered, hover/drag 2px Working color, cursor SizeWE — App.xaml:599-622, MainWindow.xaml:352-357
+- [x] MAIN-035 Context menus: RaisedBg panel radius 8, rim #323A46, drop shadow, min width 176, items radius 5, hover #2D343F/#E6E9EE, gesture text #959CA8, check mark clay path, separator 1px MenuRim margin 10,4 — App.xaml:655-768
+- [x] MAIN-036 Thin scrollbar 8px, thumb #333A45 (hover #4A5462), no arrows — App.xaml:411-444
+- [x] MAIN-037 Splitter between sidebar and terminal: 7px grab band, 1px Hairline centered, hover/drag 2px Working color, cursor SizeWE — App.xaml:599-622, MainWindow.xaml:352-357
 
 #### Layout sizes
-- [ ] MAIN-038 Columns: sidebar 310 (min 240, max 520) | 7 splitter | terminal * (min 360) — MainWindow.xaml:26-28
-- [ ] MAIN-039 Sidebar header: current folder leaf (14 semibold TextPrimary, ellipsis) over full path (mono 10.5 TextFaint), margin 14,14,14,8 — MainWindow.xaml:41-51, ShowFolder MainWindow.xaml.cs:591-595
-- [ ] MAIN-040 Search box margin 14,0,14,6, padding 8,6, caret Working, radius 4, hint "Search sessions" 12px faint — MainWindow.xaml:55-68, App.xaml:352-375
-- [ ] MAIN-041 Session item: 2px left selection rule (Working color when selected), content margin 34,7,10,7, hover #1F242C, selected #232935; row: 14px status column w/ 7px dot, name 12.5, subtitle 10.5 faint; branch indent Depth*15px — App.xaml:379-405, MainWindow.xaml:183-248, MainWindow.xaml.cs:132
-- [ ] MAIN-042 Section header (Open/Today/Earlier): chevron rotates 90 when expanded, label 11.5 semibold + count 11 faint, padding 10,7 — App.xaml:447-498, MainWindow.xaml:121-156
-- [ ] MAIN-043 Folder sub-header: margin 26,10,10,4, name 11 TextMuted + count — MainWindow.xaml:159-179
+- [x] MAIN-038 Columns: sidebar 310 (min 240, max 520) | 7 splitter | terminal * (min 360) — MainWindow.xaml:26-28
+- [x] MAIN-039 Sidebar header: current folder leaf (14 semibold TextPrimary, ellipsis) over full path (mono 10.5 TextFaint), margin 14,14,14,8 — MainWindow.xaml:41-51, ShowFolder MainWindow.xaml.cs:591-595
+- [x] MAIN-040 Search box margin 14,0,14,6, padding 8,6, caret Working, radius 4, hint "Search sessions" 12px faint — MainWindow.xaml:55-68, App.xaml:352-375
+- [x] MAIN-041 Session item: 2px left selection rule (Working color when selected), content margin 34,7,10,7, hover #1F242C, selected #232935; row: 14px status column w/ 7px dot, name 12.5, subtitle 10.5 faint; branch indent Depth*15px — App.xaml:379-405, MainWindow.xaml:183-248, MainWindow.xaml.cs:132
+- [x] MAIN-042 Section header (Open/Today/Earlier): chevron rotates 90 when expanded, label 11.5 semibold + count 11 faint, padding 10,7 — App.xaml:447-498, MainWindow.xaml:121-156
+- [x] MAIN-043 Folder sub-header: margin 26,10,10,4, name 11 TextMuted + count — MainWindow.xaml:159-179
 - [ ] MAIN-044 Footer: margin 14,12,14,14; LimitsView, Update button, then New session | Open | (right) gear 30px wide glyph E713 size 15 — MainWindow.xaml:252-349
 - [ ] MAIN-045 Header bar: SurfaceBg, bottom hairline, margin 14,0; status dot 7px, title (margin 10,13, 12 TextMuted), status strip, chips, Attach, Branch, ✕ — MainWindow.xaml:366-488
 
 #### Sidebar
-- [c] MAIN-046 Rows are sessions from both agents' transcripts (only agents with Use on are scanned), plus panes started this window without a transcript yet — MainWindow.xaml.cs:617-656,1252-1262
-- [c] MAIN-047 Rows persist across refresh (keyed by session id, case-insensitive) so status lights don't flicker; rows whose transcript disappeared are dropped unless open — MainWindow.xaml.cs:277,683-687
-- [c] MAIN-048 Row name precedence: custom name > Claude ai-title > first prompt preview (unless "(no prompt yet)") > fallback title ("new session", or "new · <folder leaf>", or "branch of <first 8 of parent id>") — MainWindow.xaml.cs:62-66,1028,1120,1597
-- [c] MAIN-049 Subtitle: open -> status text; else age — MainWindow.xaml.cs:68
-- [c] MAIN-050 Age: "just now" (<1 min), "N min ago", "N h ago", "N d ago" (<7d), else "d MMM" — MainWindow.xaml.cs:81-92
-- [c] MAIN-051 Status text: Working "running", NeedsInput "needs you", Done "done", Error "api error", Exited "shell closed", Starting "starting", else age — MainWindow.xaml.cs:176-185
-- [c] MAIN-052 Status light color key: Working/Starting->Working amber, NeedsInput->blue, Done->green, Error->Failed red, Exited->Ended, none->Dormant (near invisible); tooltip = status text — MainWindow.xaml.cs:164-172, MainWindow.xaml:194-198
-- [c] MAIN-053 Row tooltip: "Name\n<projectDir or folder>\n<sessionId>" + "\n\nBranched from: <parent name>" + "\n\nLast: <last prompt>" — MainWindow.xaml.cs:70-73
-- [c] MAIN-054 Project = transcript project name, else leaf of folder — MainWindow.xaml.cs:75-77
-- [c] MAIN-055 CC/CX tag at right of name (mono 9.5 semibold, opacity .85): "CX" #7DBBEB for Codex, "CC" #E39A7E for Claude; shown only when both agents are in use — MainWindow.xaml.cs:42-52,624,642, MainWindow.xaml:212-218
-- [c] MAIN-056 Branch marker "↳" (11 faint) before name for any row with a parent; indent 15px per depth — MainWindow.xaml:219-224, MainWindow.xaml.cs:130-134
-- [c] MAIN-057 Top-level sections: "Open" (has live pane), "Today" (last activity today), "Earlier"; sorted in that order; Open and Today expanded by default, Earlier collapsed; expand state remembered across rebuilds in a dict — MainWindow.xaml.cs:102-105,602-615
-- [c] MAIN-058 Section header shows count of items — MainWindow.xaml:143-146
-- [c] MAIN-059 Group combo: "Group: Folder" (default) / "Group: None"; with Folder, second-level grouping by Project — MainWindow.xaml:72-79, MainWindow.xaml.cs:760,767-769
-- [c] MAIN-060 Sort combo: "Newest" (default) / "Oldest" / "Name" — MainWindow.xaml:80-89, MainWindow.xaml.cs:761
-- [c] MAIN-061 Sort keys: BucketOrder asc; if grouped by folder: Name-sort -> Project asc; date sorts -> FolderRank (newest activity in that folder) desc for Newest / asc for Oldest, then Project asc tiebreak; finally Name asc (Name sort) or ThreadOrder asc (date sorts) — MainWindow.xaml.cs:773-795,690-694
-- [c] MAIN-062 Branch threading: ParentId = transcript's parentId (Codex) else Clayo-recorded parents.json; depth = hops up through parents present in list, capped at 8 (cycle guard); ThreadOrder = concat over chain root..self of Stamp(when)+sessionId+"/"; Stamp = 19-digit zero-padded ticks, (MaxTicks - ticks) when newest-first — MainWindow.xaml.cs:838-879
-- [c] MAIN-063 Search: trimmed text; matches Name contains / Project contains (case-insensitive) or SessionId starts-with — MainWindow.xaml.cs:749-758
-- [ ] MAIN-064 Search hint hides as soon as the box has focus or text; returns on blur if empty — MainWindow.xaml.cs:881-897
-- [c] MAIN-065 List view only rebuilt when the layout signature (id|bucket|project-if-grouped|depth|parentId per row) changes; not rebuilt while any row is being renamed; selection restored without stealing focus; after rebuild scroll to top — MainWindow.xaml.cs:802-834
-- [c] MAIN-066 Empty-state text when no transcript roots exist: "No transcripts found under ~\.claude or ~\.codex.\nStart a session and it will show up here." — MainWindow.xaml.cs:700-701
-- [ ] MAIN-067 Selecting a row that has a live pane switches to that pane; leaving a row cancels its rename — MainWindow.xaml.cs:909-918
-- [ ] MAIN-068 Double-click row or Enter (when not renaming) = Open: live pane -> activate; else resume (LaunchMode.Resume) in row folder (or current folder if gone) with row's agent — MainWindow.xaml.cs:923-950
-- [ ] MAIN-069 F2 on selected row starts inline rename — MainWindow.xaml.cs:932
-- [ ] MAIN-070 Context menu on list: "Open", "Rename" (gesture text F2), separator, "Reset name" — MainWindow.xaml:107-114
-- [ ] MAIN-071 Reset name clears custom name (names.json entry removed) — MainWindow.xaml.cs:1186-1192
-- [c] MAIN-072 Rename box: in-row TextBox, pre-filled with custom name or current name, focused + select all; Enter commits, Esc cancels, losing focus commits; trimmed; empty or equal to ai-title => no override; updates header title if active — MainWindow.xaml.cs:189-214,1194-1239, App.xaml:626-647 (border Working color)
-- [ ] MAIN-073 Sidebar list not virtualized; horizontal scroll disabled — MainWindow.xaml:96-97
+- [x] MAIN-046 Rows are sessions from both agents' transcripts (only agents with Use on are scanned), plus panes started this window without a transcript yet — MainWindow.xaml.cs:617-656,1252-1262
+- [x] MAIN-047 Rows persist across refresh (keyed by session id, case-insensitive) so status lights don't flicker; rows whose transcript disappeared are dropped unless open — MainWindow.xaml.cs:277,683-687
+- [x] MAIN-048 Row name precedence: custom name > Claude ai-title > first prompt preview (unless "(no prompt yet)") > fallback title ("new session", or "new · <folder leaf>", or "branch of <first 8 of parent id>") — MainWindow.xaml.cs:62-66,1028,1120,1597
+- [x] MAIN-049 Subtitle: open -> status text; else age — MainWindow.xaml.cs:68
+- [x] MAIN-050 Age: "just now" (<1 min), "N min ago", "N h ago", "N d ago" (<7d), else "d MMM" — MainWindow.xaml.cs:81-92
+- [x] MAIN-051 Status text: Working "running", NeedsInput "needs you", Done "done", Error "api error", Exited "shell closed", Starting "starting", else age — MainWindow.xaml.cs:176-185
+- [x] MAIN-052 Status light color key: Working/Starting->Working amber, NeedsInput->blue, Done->green, Error->Failed red, Exited->Ended, none->Dormant (near invisible); tooltip = status text — MainWindow.xaml.cs:164-172, MainWindow.xaml:194-198
+- [x] MAIN-053 Row tooltip: "Name\n<projectDir or folder>\n<sessionId>" + "\n\nBranched from: <parent name>" + "\n\nLast: <last prompt>" — MainWindow.xaml.cs:70-73
+- [x] MAIN-054 Project = transcript project name, else leaf of folder — MainWindow.xaml.cs:75-77
+- [x] MAIN-055 CC/CX tag at right of name (mono 9.5 semibold, opacity .85): "CX" #7DBBEB for Codex, "CC" #E39A7E for Claude; shown only when both agents are in use — MainWindow.xaml.cs:42-52,624,642, MainWindow.xaml:212-218
+- [x] MAIN-056 Branch marker "↳" (11 faint) before name for any row with a parent; indent 15px per depth — MainWindow.xaml:219-224, MainWindow.xaml.cs:130-134
+- [x] MAIN-057 Top-level sections: "Open" (has live pane), "Today" (last activity today), "Earlier"; sorted in that order; Open and Today expanded by default, Earlier collapsed; expand state remembered across rebuilds in a dict — MainWindow.xaml.cs:102-105,602-615
+- [x] MAIN-058 Section header shows count of items — MainWindow.xaml:143-146
+- [x] MAIN-059 Group combo: "Group: Folder" (default) / "Group: None"; with Folder, second-level grouping by Project — MainWindow.xaml:72-79, MainWindow.xaml.cs:760,767-769
+- [x] MAIN-060 Sort combo: "Newest" (default) / "Oldest" / "Name" — MainWindow.xaml:80-89, MainWindow.xaml.cs:761
+- [x] MAIN-061 Sort keys: BucketOrder asc; if grouped by folder: Name-sort -> Project asc; date sorts -> FolderRank (newest activity in that folder) desc for Newest / asc for Oldest, then Project asc tiebreak; finally Name asc (Name sort) or ThreadOrder asc (date sorts) — MainWindow.xaml.cs:773-795,690-694
+- [x] MAIN-062 Branch threading: ParentId = transcript's parentId (Codex) else Clayo-recorded parents.json; depth = hops up through parents present in list, capped at 8 (cycle guard); ThreadOrder = concat over chain root..self of Stamp(when)+sessionId+"/"; Stamp = 19-digit zero-padded ticks, (MaxTicks - ticks) when newest-first — MainWindow.xaml.cs:838-879
+- [x] MAIN-063 Search: trimmed text; matches Name contains / Project contains (case-insensitive) or SessionId starts-with — MainWindow.xaml.cs:749-758
+- [x] MAIN-064 Search hint hides as soon as the box has focus or text; returns on blur if empty — MainWindow.xaml.cs:881-897
+- [x] MAIN-065 List view only rebuilt when the layout signature (id|bucket|project-if-grouped|depth|parentId per row) changes; not rebuilt while any row is being renamed; selection restored without stealing focus; after rebuild scroll to top — MainWindow.xaml.cs:802-834
+- [x] MAIN-066 Empty-state text when no transcript roots exist: "No transcripts found under ~\.claude or ~\.codex.\nStart a session and it will show up here." — MainWindow.xaml.cs:700-701
+- [x] MAIN-067 Selecting a row that has a live pane switches to that pane; leaving a row cancels its rename — MainWindow.xaml.cs:909-918
+- [x] MAIN-068 Double-click row or Enter (when not renaming) = Open: live pane -> activate; else resume (LaunchMode.Resume) in row folder (or current folder if gone) with row's agent — MainWindow.xaml.cs:923-950
+- [x] MAIN-069 F2 on selected row starts inline rename — MainWindow.xaml.cs:932
+- [x] MAIN-070 Context menu on list: "Open", "Rename" (gesture text F2), separator, "Reset name" — MainWindow.xaml:107-114
+- [x] MAIN-071 Reset name clears custom name (names.json entry removed) — MainWindow.xaml.cs:1186-1192
+- [x] MAIN-072 Rename box: in-row TextBox, pre-filled with custom name or current name, focused + select all; Enter commits, Esc cancels, losing focus commits; trimmed; empty or equal to ai-title => no override; updates header title if active — MainWindow.xaml.cs:189-214,1194-1239, App.xaml:626-647 (border Working color)
+- [x] MAIN-073 Sidebar list not virtualized; horizontal scroll disabled — MainWindow.xaml:96-97
 
 #### Footer actions
-- [c] MAIN-074 "New session" (glyph E710, AccentButton) opens a folder popup above it: "Start a session in", up to 8 recent folders (current folder pinned first, then rows' folders by most recent activity, dedup case-insensitive, existing dirs only; each shows leaf + full path mono), separator, "Browse for a folder…" — MainWindow.xaml:264-324, MainWindow.xaml.cs:952-984
-- [ ] MAIN-075 Picking a recent folder or browsing (OpenFolderDialog title "Start a session in", initial = current folder) -> sets current folder + header and starts a new session there — MainWindow.xaml.cs:986-1017
-- [ ] MAIN-076 New session agent: settings NewSessionKind (Claude if Codex unused; Codex if Claude unused; else DefaultAgent Claude/Codex; Ask => null). Null -> context menu above New session button with "Claude Code" / "Codex"; dismissing starts nothing — MainWindow.xaml.cs:1024-1046, ClayoSettings.cs:56-64
-- [ ] MAIN-077 "Open" (glyph E8B7): OpenFileDialog "Open a file in a new session"; starts new session in the file's folder and, on that pane's first Done status, inserts the file path at the prompt (unsent) — MainWindow.xaml.cs:1054-1076
+- [x] MAIN-074 "New session" (glyph E710, AccentButton) opens a folder popup above it: "Start a session in", up to 8 recent folders (current folder pinned first, then rows' folders by most recent activity, dedup case-insensitive, existing dirs only; each shows leaf + full path mono), separator, "Browse for a folder…" — MainWindow.xaml:264-324, MainWindow.xaml.cs:952-984
+- [x] MAIN-075 Picking a recent folder or browsing (OpenFolderDialog title "Start a session in", initial = current folder) -> sets current folder + header and starts a new session there — MainWindow.xaml.cs:986-1017
+- [x] MAIN-076 New session agent: settings NewSessionKind (Claude if Codex unused; Codex if Claude unused; else DefaultAgent Claude/Codex; Ask => null). Null -> context menu above New session button with "Claude Code" / "Codex"; dismissing starts nothing — MainWindow.xaml.cs:1024-1046, ClayoSettings.cs:56-64
+- [x] MAIN-077 "Open" (glyph E8B7): OpenFileDialog "Open a file in a new session"; starts new session in the file's folder and, on that pane's first Done status, inserts the file path at the prompt (unsent) — MainWindow.xaml.cs:1054-1076
 - [ ] MAIN-078 Update button (glyph E896) hidden until a newer release is found (see Updater) — MainWindow.xaml:258-262
-- [ ] MAIN-079 Gear button (E713, tooltip "Settings"): left click opens menu above it: "Settings…" (gesture Ctrl+,), "Start at login" (checkable; state read fresh from registry on open; disabled if !CanWrite), separator, "Quit Clayo" — MainWindow.xaml:329-346, MainWindow.xaml.cs:1616-1637,1682-1684
+- [x] MAIN-079 Gear button (E713, tooltip "Settings"): left click opens menu above it: "Settings…" (gesture Ctrl+,), "Start at login" (checkable; state read fresh from registry on open; disabled if !CanWrite), separator, "Quit Clayo" — MainWindow.xaml:329-346, MainWindow.xaml.cs:1616-1637,1682-1684
 
 #### Pane header / panes
 - [ ] MAIN-080 Header: status dot (same color mapping), pane title, status strip (HeadStrip), doc chip, page chip, images chip, "Attach files…", "Branch from here", "✕" — MainWindow.xaml:378-487
-- [ ] MAIN-081 Attach/Branch/✕ disabled when no pane; Branch also disabled until pane has a session id (Codex placeholder until bound) — MainWindow.xaml:468,476,485, MainWindow.xaml.cs:1319-1321,739,1169-1171
-- [ ] MAIN-082 "Attach files…": multi-select OpenFileDialog "Attach files" in active pane's cwd; inserts paths at prompt, refocuses terminal — MainWindow.xaml.cs:1086-1103
-- [ ] MAIN-083 "Branch from here": fork of active session (LaunchMode.Fork) in its cwd with its agent; if launcher allocated child id (Claude), record child->parent in parents.json immediately; new pane title "branch of <8 chars>" — MainWindow.xaml.cs:1105-1121
+- [x] MAIN-081 Attach/Branch/✕ disabled when no pane; Branch also disabled until pane has a session id (Codex placeholder until bound) — MainWindow.xaml:468,476,485, MainWindow.xaml.cs:1319-1321,739,1169-1171
+- [x] MAIN-082 "Attach files…": multi-select OpenFileDialog "Attach files" in active pane's cwd; inserts paths at prompt, refocuses terminal — MainWindow.xaml.cs:1086-1103
+- [x] MAIN-083 "Branch from here": fork of active session (LaunchMode.Fork) in its cwd with its agent; if launcher allocated child id (Claude), record child->parent in parents.json immediately; new pane title "branch of <8 chars>" — MainWindow.xaml.cs:1105-1121
 - [ ] MAIN-084 "✕" closes active session: kill process, remove pane, notify island (notice cleared, working=false), may trigger pending update; row loses pane/status (falls to Today/Earlier); unbound Codex pane with no transcript is dropped; activates last remaining pane or shows empty state "Pick a session on the left, or start a new one." — MainWindow.xaml.cs:1123-1177, MainWindow.xaml:493-498
-- [ ] MAIN-085 Multiple panes alive simultaneously but only ONE visible at a time (others Collapsed, keep running) — MainWindow.xaml.cs:272-273,1312-1313
+- [x] MAIN-085 Multiple panes alive simultaneously but only ONE visible at a time (others Collapsed, keep running) — MainWindow.xaml.cs:272-273,1312-1313
 - [ ] MAIN-086 Activating a pane: hides Settings if shown, MRU list update, title, enable buttons, hide empty state, paint dot, refresh git immediately, strip, images, chips, focus terminal — MainWindow.xaml.cs:1308-1331
-- [ ] MAIN-087 New pane gets a row immediately (status Starting) under Open before its transcript exists; Codex panes (no id) get a placeholder GUID and are re-keyed once their transcript appears (start-time + folder/parent match, within 10 min, not past the next same-kind pane's start) — MainWindow.xaml.cs:1244-1298,711-741
+- [x] MAIN-087 New pane gets a row immediately (status Starting) under Open before its transcript exists; Codex panes (no id) get a placeholder GUID and are re-keyed once their transcript appears (start-time + folder/parent match, within 10 min, not past the next same-kind pane's start) — MainWindow.xaml.cs:1244-1298,711-741
 - [ ] MAIN-088 Pane status change -> row status, header dot, island notices: NeedsInput->NeedsYou, Error->Error, Done only if previous was Working->Done, else null (clears); SessionWorking true on Working, false when leaving Working — MainWindow.xaml.cs:1270-1292
-- [ ] MAIN-089 Codex pane working/done driven from transcript turn info on each refresh — MainWindow.xaml.cs:629-632
+- [x] MAIN-089 Codex pane working/done driven from transcript turn info on each refresh — MainWindow.xaml.cs:629-632
 - [ ] MAIN-090 Doc chip (glyph F000): shown when active session wrote a .md; tooltip "<file>\n<path>\nClick to read it here, again to close it."; click toggles doc viewer; refocus terminal — MainWindow.xaml.cs:1471-1486
 - [ ] MAIN-091 Page chip (glyph E9D2): shown when session wrote pages in .clayo/pages; click toggles newest page; right-click menu lists the session's pages newest first (existing only), checked = open — MainWindow.xaml.cs:1489-1516
 - [ ] MAIN-092 New page written by session auto-opens (not for history on first read); open page/doc follows file; PageFolder.HideFromGit on write — MainWindow.xaml.cs:661-678
@@ -402,23 +402,23 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [ ] MAIN-100 On load: refresh sessions, start transcript watchers, status store, prune screenshots older than KeepFor — MainWindow.xaml.cs:345-350
 
 #### Keyboard shortcuts
-- [ ] MAIN-101 Ctrl+, opens Settings (window-level preview, not when focus in terminal webview) — MainWindow.xaml.cs:1667-1673
-- [ ] MAIN-102 Esc closes Settings (unless Settings has a confirm to cancel first) — MainWindow.xaml.cs:1674-1678
-- [ ] MAIN-103 F2 rename, Enter open (sidebar) — MainWindow.xaml.cs:932-933
-- [ ] MAIN-104 Rename: Enter commit / Esc cancel — MainWindow.xaml.cs:1208-1217
+- [x] MAIN-101 Ctrl+, opens Settings (window-level preview, not when focus in terminal webview) — MainWindow.xaml.cs:1667-1673
+- [x] MAIN-102 Esc closes Settings (unless Settings has a confirm to cancel first) — MainWindow.xaml.cs:1674-1678
+- [x] MAIN-103 F2 rename, Enter open (sidebar) — MainWindow.xaml.cs:932-933
+- [x] MAIN-104 Rename: Enter commit / Esc cancel — MainWindow.xaml.cs:1208-1217
 - [ ] MAIN-105 Image overlay: Esc closes — MainWindow.xaml.cs:1455-1458
 - [ ] MAIN-106 Setup: Enter = Open Clayo (IsDefault) — SetupWindow.xaml:125
 
 #### Settings view
 - [ ] MAIN-107 Settings replaces the terminal side (over header + panes), panes hidden but running; popups closed; Refresh(settings, screenshotKeyTaken, updateTo) — MainWindow.xaml.cs:1645-1654, MainWindow.xaml:502
-- [ ] MAIN-108 Leaving Settings returns to active pane focus; picking/starting a session also leaves Settings — MainWindow.xaml.cs:1657-1662,1311
+- [x] MAIN-108 Leaving Settings returns to active pane focus; picking/starting a session also leaves Settings — MainWindow.xaml.cs:1657-1662,1311
 - [ ] MAIN-109 On settings change: save settings.json, sync Codex ask rules, refresh strip, reserve check, notify island, re-show screenshot-key status; toggling UpdateCheck triggers a check (or clears offer) — MainWindow.xaml.cs:319-332
 - [ ] MAIN-110 Settings' "setup" request opens setup window; its Update request = Update button — MainWindow.xaml.cs:316-318
 
 #### Close / quit / reveal
-- [ ] MAIN-111 Window X only hides (sessions keep running; island brings it back) — MainWindow.xaml.cs:1754-1761
-- [ ] MAIN-112 Quit (gear "Quit Clayo", island Quit, update, sign-out): stop watchers, dispose status, stop timers, close all panes, then app exits — MainWindow.xaml.cs:1602-1606,1762-1769
-- [ ] MAIN-113 No tray icon (the island is the background presence) — App.xaml.cs:24,64-67
+- [x] MAIN-111 Window X only hides (sessions keep running; island brings it back) — MainWindow.xaml.cs:1754-1761
+- [x] MAIN-112 Quit (gear "Quit Clayo", island Quit, update, sign-out): stop watchers, dispose status, stop timers, close all panes, then app exits — MainWindow.xaml.cs:1602-1606,1762-1769
+- [x] MAIN-113 No tray icon (the island is the background presence) — App.xaml.cs:24,64-67
 - [ ] MAIN-114 Reveal: if hidden and setup needed -> show setup window instead; else Show, restore if minimized (keeps prior maximized), Activate — MainWindow.xaml.cs:530-540
 - [ ] MAIN-115 NeedsSetup = !SetupDone || no in-use agent locatable (file check only, no run) — MainWindow.xaml.cs:546-555
 - [ ] MAIN-116 AdoptFolder(folder, prefill): if dir exists -> set current folder, Reveal; if main window is visible start a new session with optional prefill text typed (not sent) — MainWindow.xaml.cs:511-521
@@ -729,24 +729,24 @@ Paths below are relative to D:\Clayo\Clayo. Namespace in C# is `CcxShell.Core` t
 - [c] SES-082 StartWatching no-op if root missing or already watching; StopWatching disposes watcher+timer — Sessions/SessionStore.cs:303,332-338
 
 #### Sidebar (consumer logic, MainWindow)
-- [c] SES-083 Scan Claude (if UseClaude) + Codex (if UseCodex); tag rows `CC`/`CX` only when both enabled — MainWindow.xaml.cs:623-626, SessionRow.AgentTag
-- [c] SES-084 Row name priority: custom name (names.json) > AiTitle > Preview (unless "(no prompt yet)") > FallbackTitle — MainWindow.xaml.cs SessionRow.Name
-- [c] SES-085 Tooltip: `Name\n<ProjectDir or Folder>\n<SessionId>` + `\n\nBranched from: <parent name>` + `\n\nLast: <LastPrompt>` — SessionRow.Tip
-- [c] SES-086 Subtitle: open pane -> status text, else age: <1 min "just now", <60 "N min ago", <24h "N h ago", <7d "N d ago", else `d MMM` — SessionRow.Age
-- [c] SES-087 Buckets: Open (pane open, order 0), Today (When.Date==today, 1), Earlier (2) — SessionRow.Bucket
-- [c] SES-088 When = Info.LastActivity, or now if no transcript yet — SessionRow.When
-- [c] SES-089 Rows whose transcript vanished are removed unless open — MainWindow.xaml.cs:690-694
-- [c] SES-090 Group by folder (GroupBy index 0) under bucket; folder groups ordered by FolderRank = newest When in that folder (desc for newest, asc for oldest; tie-break project name asc); sort=name -> project asc — MainWindow.xaml.cs:697-701,745-759
-- [c] SES-091 Sort modes: 0 newest, 1 oldest, 2 name (alphabetical, branches not threaded) — MainWindow.xaml.cs:731,764-766
-- [c] SES-092 Threading: ParentId = Info.ParentId (Codex) ?? parents.json; Depth = chain length-1 walking parents present in list, max 8 hops; ThreadOrder = concat over chain root..row of `Stamp(When)+SessionId+"/"`, Stamp = 19-digit ticks (MaxValue.Ticks - ticks for newest-first) — MainWindow.xaml.cs:826-865
-- [c] SES-093 Filter text: name contains, project contains, or session id starts-with (case-insens.) — MainWindow.xaml.cs:719-726
-- [c] SES-094 List view swapped only when layout string `id|bucket|project|depth|parent` per row changes, and not while a rename box is open — MainWindow.xaml.cs:774-780
-- [c] SES-095 Empty state text "No transcripts found under ~\.claude or ~\.codex.\nStart a session and it will show up here." when neither root exists — MainWindow.xaml.cs:708-709
-- [ ] SES-096 Rename: F2; blank clears override; Enter opens; double-click opens; open row activates its pane — MainWindow.xaml.cs:925-950, SessionNames.cs:32-40
-- [c] SES-097 Fork button: parent = active pane's SessionId (disabled until a Codex pane is bound); Claude child link written to parents.json immediately — MainWindow.xaml.cs:1104-1120
-- [c] SES-098 New pane gets a row immediately (key = expected id, or a random placeholder guid for Codex), status Starting — MainWindow.xaml.cs:1244-1268
-- [c] SES-099 Codex unbound panes rebound each refresh (see HARD POINTS) — MainWindow.xaml.cs:712-741
-- [ ] SES-100 Codex pane status from transcript each refresh: `pane.ShowTurn(info.Turn, info.LastActivity)` — MainWindow.xaml.cs:629-632
+- [x] SES-083 Scan Claude (if UseClaude) + Codex (if UseCodex); tag rows `CC`/`CX` only when both enabled — MainWindow.xaml.cs:623-626, SessionRow.AgentTag
+- [x] SES-084 Row name priority: custom name (names.json) > AiTitle > Preview (unless "(no prompt yet)") > FallbackTitle — MainWindow.xaml.cs SessionRow.Name
+- [x] SES-085 Tooltip: `Name\n<ProjectDir or Folder>\n<SessionId>` + `\n\nBranched from: <parent name>` + `\n\nLast: <LastPrompt>` — SessionRow.Tip
+- [x] SES-086 Subtitle: open pane -> status text, else age: <1 min "just now", <60 "N min ago", <24h "N h ago", <7d "N d ago", else `d MMM` — SessionRow.Age
+- [x] SES-087 Buckets: Open (pane open, order 0), Today (When.Date==today, 1), Earlier (2) — SessionRow.Bucket
+- [x] SES-088 When = Info.LastActivity, or now if no transcript yet — SessionRow.When
+- [x] SES-089 Rows whose transcript vanished are removed unless open — MainWindow.xaml.cs:690-694
+- [x] SES-090 Group by folder (GroupBy index 0) under bucket; folder groups ordered by FolderRank = newest When in that folder (desc for newest, asc for oldest; tie-break project name asc); sort=name -> project asc — MainWindow.xaml.cs:697-701,745-759
+- [x] SES-091 Sort modes: 0 newest, 1 oldest, 2 name (alphabetical, branches not threaded) — MainWindow.xaml.cs:731,764-766
+- [x] SES-092 Threading: ParentId = Info.ParentId (Codex) ?? parents.json; Depth = chain length-1 walking parents present in list, max 8 hops; ThreadOrder = concat over chain root..row of `Stamp(When)+SessionId+"/"`, Stamp = 19-digit ticks (MaxValue.Ticks - ticks for newest-first) — MainWindow.xaml.cs:826-865
+- [x] SES-093 Filter text: name contains, project contains, or session id starts-with (case-insens.) — MainWindow.xaml.cs:719-726
+- [x] SES-094 List view swapped only when layout string `id|bucket|project|depth|parent` per row changes, and not while a rename box is open — MainWindow.xaml.cs:774-780
+- [x] SES-095 Empty state text "No transcripts found under ~\.claude or ~\.codex.\nStart a session and it will show up here." when neither root exists — MainWindow.xaml.cs:708-709
+- [x] SES-096 Rename: F2; blank clears override; Enter opens; double-click opens; open row activates its pane — MainWindow.xaml.cs:925-950, SessionNames.cs:32-40
+- [x] SES-097 Fork button: parent = active pane's SessionId (disabled until a Codex pane is bound); Claude child link written to parents.json immediately — MainWindow.xaml.cs:1104-1120
+- [x] SES-098 New pane gets a row immediately (key = expected id, or a random placeholder guid for Codex), status Starting — MainWindow.xaml.cs:1244-1268
+- [x] SES-099 Codex unbound panes rebound each refresh (see HARD POINTS) — MainWindow.xaml.cs:712-741
+- [x] SES-100 Codex pane status from transcript each refresh: `pane.ShowTurn(info.Turn, info.LastActivity)` — MainWindow.xaml.cs:629-632
 
 #### Open-pane transcript tail (doc / pages / image chips)
 - [c] SES-101 Each refresh, each open pane with a transcript file: TranscriptTail(folder=pane cwd, since=pane OpenedAt, codex) created once and Read(file) — MainWindow.xaml.cs:661-686

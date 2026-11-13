@@ -1,14 +1,16 @@
 //! One session pane: a shell under ConPTY running the agent, its terminal, and its status.
 //!
 //! The PTY read thread parses output into the terminal and updates the status tracker, so a
-//! pane keeps working while hidden or while the window is closed (eframe stops calling
-//! `update` then). Status changes and ticks travel to the UI as [`AppEvent`]s; the shared
-//! [`Ticker`] thread replaces the C# per-pane 400 ms timer with one-shot deadlines (D13).
+//! pane keeps working while hidden or while the window is closed (eframe stops calling `ui`
+//! then). Status changes and ticks travel to the UI as [`AppEvent`]s, handled in `App::logic`,
+//! which eframe keeps calling for a hidden window; the shared [`Ticker`] thread replaces the
+//! C# per-pane 400 ms timer with one-shot deadlines (D13).
 
 use chrono::Utc;
 use clayo_core::agent::AgentKind;
 use clayo_core::launch::LaunchPlan;
 use clayo_core::pane_status::{PaneStatus, PaneStatusTracker};
+use clayo_core::sessions::TurnState;
 use clayo_pty::{PtyConfig, PtyEvent, PtyProcess};
 use clayo_term::widget::ViewState;
 use clayo_term::{GridSize, Terminal};
@@ -44,7 +46,12 @@ pub struct PaneShared {
     pub term: Arc<Terminal>,
     pub tracker: Mutex<PaneStatusTracker>,
     pty: Mutex<Option<PtyProcess>>,
+    /// Only the active pane of a shown window is drawn, and only it asks for repaints.
     pub visible: AtomicBool,
+    /// None for a Codex pane until its transcript is found (the sessions thread binds it).
+    session_id: Mutex<Option<String>>,
+    /// Typed at the prompt on the first Done (Open a file).
+    insert_on_done: Mutex<Option<String>>,
     waker: Waker,
     ticker: Ticker,
 }
@@ -59,9 +66,50 @@ impl PaneShared {
         }
     }
 
+    pub fn session_id(&self) -> Option<String> {
+        self.session_id.lock().ok().and_then(|s| s.clone())
+    }
+
+    pub fn set_session_id(&self, id: Option<String>) {
+        if let Ok(mut s) = self.session_id.lock() {
+            *s = id;
+        }
+    }
+
+    /// Types paths at the prompt, unsent (InsertPaths).
+    pub fn insert_paths<S: AsRef<str>>(&self, paths: &[S]) {
+        let text = clayo_core::text::insert_paths(paths);
+        if !text.is_empty() {
+            self.write(text.as_bytes());
+        }
+    }
+
+    /// Types `text` once the session first settles at its prompt (its first Done): earlier, the
+    /// keys would reach a CLI still starting up, or a trust prompt.
+    pub fn insert_on_first_done(&self, text: String) {
+        if let Ok(mut t) = self.insert_on_done.lock() {
+            *t = Some(text);
+        }
+    }
+
+    /// A Codex transcript's turn: working / done are exact there.
+    pub fn show_turn(&self, turn: TurnState, at: chrono::DateTime<Utc>) {
+        let s = self.tracker.lock().ok().and_then(|mut t| t.on_turn(turn, at));
+        self.status_changed(s);
+    }
+
+    fn emit(&self, s: PaneStatus) {
+        if s == PaneStatus::Done {
+            if let Some(text) = self.insert_on_done.lock().ok().and_then(|mut t| t.take()) {
+                self.write(text.as_bytes());
+            }
+        }
+        self.waker.send(AppEvent::Status(self.id, s));
+    }
+
     fn status_changed(&self, s: Option<PaneStatus>) {
         if let Some(s) = s {
-            self.waker.send(AppEvent::Status(self.id, s));
+            self.emit(s);
         }
         self.ticker.poke();
     }
@@ -93,29 +141,41 @@ impl PaneShared {
             self.write(text.as_bytes());
         }
         if let Some(s) = out.status {
-            self.waker.send(AppEvent::Status(self.id, s));
+            self.emit(s);
+        }
+    }
+
+    /// Kills the shell (and the agent in it); clayo-pty tears the console down off this thread.
+    pub fn kill(&self) {
+        if let Ok(mut p) = self.pty.lock() {
+            p.take();
         }
     }
 }
 
-/// A pane the UI owns. (Fields not read yet are wired up by the main window in phase 3.)
-#[allow(dead_code)]
+/// A pane the UI owns.
 pub struct Pane {
     pub shared: Arc<PaneShared>,
     pub agent: AgentKind,
     pub cwd: PathBuf,
-    pub session_id: Option<String>,
+    /// Shown in the header until the row has a name.
     pub title: String,
     pub status: PaneStatus,
     pub view: ViewState,
-    pub opened_at: chrono::DateTime<Utc>,
-    pub exited: bool,
 }
 
 impl Pane {
     /// Start the shell for `plan`, then type the agent command 400 ms later so PowerShell is
     /// ready for it (TP:446-459).
-    pub fn start(id: u64, plan: &LaunchPlan, size: GridSize, prefill: Option<String>, waker: Waker, ticker: Ticker) -> Self {
+    pub fn start(
+        id: u64,
+        plan: &LaunchPlan,
+        title: String,
+        size: GridSize,
+        prefill: Option<String>,
+        waker: Waker,
+        ticker: Ticker,
+    ) -> Self {
         let now = Utc::now();
         let mut tracker = PaneStatusTracker::new(plan.agent == AgentKind::Codex, now);
         tracker.set_prefill(prefill);
@@ -135,7 +195,9 @@ impl Pane {
             term: term.clone(),
             tracker: Mutex::new(tracker),
             pty: Mutex::new(None),
-            visible: AtomicBool::new(true),
+            visible: AtomicBool::new(false),
+            session_id: Mutex::new(plan.expected_session_id.clone()),
+            insert_on_done: Mutex::new(None),
             waker: waker.clone(),
             ticker: ticker.clone(),
         });
@@ -164,7 +226,9 @@ impl Pane {
                     p.term.feed(b"\r\n\x1b[38;5;244m[shell exited]\x1b[0m");
                     let s = p.tracker.lock().ok().and_then(|mut t| t.on_exit());
                     p.status_changed(s);
-                    p.waker.ctx.request_repaint();
+                    if p.visible.load(Ordering::Relaxed) {
+                        p.waker.ctx.request_repaint();
+                    }
                 }
             }
         };
@@ -198,12 +262,9 @@ impl Pane {
             shared,
             agent: plan.agent,
             cwd: PathBuf::from(&plan.working_directory),
-            session_id: plan.expected_session_id.clone(),
-            title: String::new(),
+            title,
             status: if exited { PaneStatus::Exited } else { PaneStatus::Starting },
             view: ViewState::default(),
-            opened_at: Utc::now(),
-            exited,
         }
     }
 
@@ -214,10 +275,7 @@ impl Pane {
 
 impl Drop for Pane {
     fn drop(&mut self) {
-        // Kill the child; clayo-pty tears the console down off this thread.
-        if let Ok(mut p) = self.shared.pty.lock() {
-            p.take();
-        }
+        self.shared.kill();
     }
 }
 

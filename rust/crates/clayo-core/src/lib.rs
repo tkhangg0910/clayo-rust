@@ -3,6 +3,7 @@
 //! [`paths::ReadOnlyDir`] and `tests/invariants.rs`.
 
 pub mod agent;
+pub mod cli;
 pub mod git;
 pub mod images;
 pub mod island;

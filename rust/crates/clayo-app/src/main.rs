@@ -3,7 +3,9 @@
 
 mod app;
 mod fonts;
+mod model;
 mod pane;
+mod theme;
 mod win;
 
 /// Startup timing marks, written to the file named by `CLAYO_STARTUP_LOG` (for BENCH.md).
@@ -37,7 +39,13 @@ fn main() {
     // Clayo itself may have been launched from.
     mark("main");
     clayo_core::launch::scrub_inherited_session();
-    let code = app::run();
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let cwd = std::env::current_dir().unwrap_or_default();
+    let exe_dir = std::env::current_exe().ok().and_then(|e| e.parent().map(std::path::Path::to_path_buf)).unwrap_or_default();
+    let windir = std::env::var_os("SystemRoot").or_else(|| std::env::var_os("WINDIR")).unwrap_or_else(|| "C:\\Windows".into());
+    let system_dir = std::path::Path::new(&windir).join("System32");
+    let start = clayo_core::cli::parse(&args, &cwd, &exe_dir, &system_dir, |p| std::path::Path::new(p).is_dir());
+    let code = app::run(app::Startup { background: start.background, folder: start.folder });
     // Hard exit: no stray thread (a PTY reader, a watcher) may keep the process alive.
     std::process::exit(code);
 }
