@@ -247,7 +247,7 @@ tick các mã hành vi tương ứng, commit riêng trên nhánh `rust-port`.
 
 # Phụ lục (kiểm kê chi tiết, tiếng Anh)
 
-Trạng thái: `[ ]` chưa port, `[x]` đã port, `[~]` tạm hoãn đã duyệt (xem §6).
+Trạng thái: `[ ]` chưa port, `[c]` logic đã port trong `clayo-core` (chờ nối UI), `[x]` đã port, `[~]` tạm hoãn đã duyệt (xem §6).
 Một số hành vi xuất hiện ở hai phụ lục (vd sidebar ở A và B, status pane ở B và E) vì các vùng dùng chung
 logic; khi port, các mã trùng được tick cùng lúc.
 
@@ -290,7 +290,7 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [ ] MAIN-002 `clayo --statusline --pass ...` relay with pass=true (args[1] == "--pass") — Program.cs:15; consts StatusRelay.cs:22-23
 - [ ] MAIN-003 Any other invocation runs the GUI app — Program.cs:16,21-26
 - [ ] MAIN-004 Unhandled UI-thread and AppDomain exceptions append to `%LOCALAPPDATA%\Clayo\crash.log` as `yyyy-MM-dd HH:mm:ss  <exception>\n\n`; log >1 MiB is moved to `crash.old.log` (overwrite) first; crash still proceeds (not swallowed) — App.xaml.cs:14-18,109-125
-- [ ] MAIN-005 On start, inherited Claude Code session env markers are removed from process env (SessionLauncher.ScrubInheritedSession) so every pane is top-level — App.xaml.cs:22
+- [c] MAIN-005 On start, inherited Claude Code session env markers are removed from process env (SessionLauncher.ScrubInheritedSession) so every pane is top-level — App.xaml.cs:22
 - [ ] MAIN-006 `--background` arg (LoginStartup.BackgroundArg) = login start: no main window, island only, island Greet() — App.xaml.cs:25,62,67
 - [ ] MAIN-007 Folder = first arg that is an existing directory (any position); else, unless background, the current working directory — App.xaml.cs:30-31
 - [ ] MAIN-008 CWD is ignored (treated as "no folder") when it equals the exe's own folder (AppContext.BaseDirectory) or the System32 dir (Start menu/shortcut launches); compare is full-path, trailing separator trimmed, case-insensitive — App.xaml.cs:79-86
@@ -339,37 +339,37 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [ ] MAIN-045 Header bar: SurfaceBg, bottom hairline, margin 14,0; status dot 7px, title (margin 10,13, 12 TextMuted), status strip, chips, Attach, Branch, ✕ — MainWindow.xaml:366-488
 
 #### Sidebar
-- [ ] MAIN-046 Rows are sessions from both agents' transcripts (only agents with Use on are scanned), plus panes started this window without a transcript yet — MainWindow.xaml.cs:617-656,1252-1262
-- [ ] MAIN-047 Rows persist across refresh (keyed by session id, case-insensitive) so status lights don't flicker; rows whose transcript disappeared are dropped unless open — MainWindow.xaml.cs:277,683-687
-- [ ] MAIN-048 Row name precedence: custom name > Claude ai-title > first prompt preview (unless "(no prompt yet)") > fallback title ("new session", or "new · <folder leaf>", or "branch of <first 8 of parent id>") — MainWindow.xaml.cs:62-66,1028,1120,1597
-- [ ] MAIN-049 Subtitle: open -> status text; else age — MainWindow.xaml.cs:68
-- [ ] MAIN-050 Age: "just now" (<1 min), "N min ago", "N h ago", "N d ago" (<7d), else "d MMM" — MainWindow.xaml.cs:81-92
-- [ ] MAIN-051 Status text: Working "running", NeedsInput "needs you", Done "done", Error "api error", Exited "shell closed", Starting "starting", else age — MainWindow.xaml.cs:176-185
-- [ ] MAIN-052 Status light color key: Working/Starting->Working amber, NeedsInput->blue, Done->green, Error->Failed red, Exited->Ended, none->Dormant (near invisible); tooltip = status text — MainWindow.xaml.cs:164-172, MainWindow.xaml:194-198
-- [ ] MAIN-053 Row tooltip: "Name\n<projectDir or folder>\n<sessionId>" + "\n\nBranched from: <parent name>" + "\n\nLast: <last prompt>" — MainWindow.xaml.cs:70-73
-- [ ] MAIN-054 Project = transcript project name, else leaf of folder — MainWindow.xaml.cs:75-77
-- [ ] MAIN-055 CC/CX tag at right of name (mono 9.5 semibold, opacity .85): "CX" #7DBBEB for Codex, "CC" #E39A7E for Claude; shown only when both agents are in use — MainWindow.xaml.cs:42-52,624,642, MainWindow.xaml:212-218
-- [ ] MAIN-056 Branch marker "↳" (11 faint) before name for any row with a parent; indent 15px per depth — MainWindow.xaml:219-224, MainWindow.xaml.cs:130-134
-- [ ] MAIN-057 Top-level sections: "Open" (has live pane), "Today" (last activity today), "Earlier"; sorted in that order; Open and Today expanded by default, Earlier collapsed; expand state remembered across rebuilds in a dict — MainWindow.xaml.cs:102-105,602-615
-- [ ] MAIN-058 Section header shows count of items — MainWindow.xaml:143-146
-- [ ] MAIN-059 Group combo: "Group: Folder" (default) / "Group: None"; with Folder, second-level grouping by Project — MainWindow.xaml:72-79, MainWindow.xaml.cs:760,767-769
-- [ ] MAIN-060 Sort combo: "Newest" (default) / "Oldest" / "Name" — MainWindow.xaml:80-89, MainWindow.xaml.cs:761
-- [ ] MAIN-061 Sort keys: BucketOrder asc; if grouped by folder: Name-sort -> Project asc; date sorts -> FolderRank (newest activity in that folder) desc for Newest / asc for Oldest, then Project asc tiebreak; finally Name asc (Name sort) or ThreadOrder asc (date sorts) — MainWindow.xaml.cs:773-795,690-694
-- [ ] MAIN-062 Branch threading: ParentId = transcript's parentId (Codex) else Clayo-recorded parents.json; depth = hops up through parents present in list, capped at 8 (cycle guard); ThreadOrder = concat over chain root..self of Stamp(when)+sessionId+"/"; Stamp = 19-digit zero-padded ticks, (MaxTicks - ticks) when newest-first — MainWindow.xaml.cs:838-879
-- [ ] MAIN-063 Search: trimmed text; matches Name contains / Project contains (case-insensitive) or SessionId starts-with — MainWindow.xaml.cs:749-758
+- [c] MAIN-046 Rows are sessions from both agents' transcripts (only agents with Use on are scanned), plus panes started this window without a transcript yet — MainWindow.xaml.cs:617-656,1252-1262
+- [c] MAIN-047 Rows persist across refresh (keyed by session id, case-insensitive) so status lights don't flicker; rows whose transcript disappeared are dropped unless open — MainWindow.xaml.cs:277,683-687
+- [c] MAIN-048 Row name precedence: custom name > Claude ai-title > first prompt preview (unless "(no prompt yet)") > fallback title ("new session", or "new · <folder leaf>", or "branch of <first 8 of parent id>") — MainWindow.xaml.cs:62-66,1028,1120,1597
+- [c] MAIN-049 Subtitle: open -> status text; else age — MainWindow.xaml.cs:68
+- [c] MAIN-050 Age: "just now" (<1 min), "N min ago", "N h ago", "N d ago" (<7d), else "d MMM" — MainWindow.xaml.cs:81-92
+- [c] MAIN-051 Status text: Working "running", NeedsInput "needs you", Done "done", Error "api error", Exited "shell closed", Starting "starting", else age — MainWindow.xaml.cs:176-185
+- [c] MAIN-052 Status light color key: Working/Starting->Working amber, NeedsInput->blue, Done->green, Error->Failed red, Exited->Ended, none->Dormant (near invisible); tooltip = status text — MainWindow.xaml.cs:164-172, MainWindow.xaml:194-198
+- [c] MAIN-053 Row tooltip: "Name\n<projectDir or folder>\n<sessionId>" + "\n\nBranched from: <parent name>" + "\n\nLast: <last prompt>" — MainWindow.xaml.cs:70-73
+- [c] MAIN-054 Project = transcript project name, else leaf of folder — MainWindow.xaml.cs:75-77
+- [c] MAIN-055 CC/CX tag at right of name (mono 9.5 semibold, opacity .85): "CX" #7DBBEB for Codex, "CC" #E39A7E for Claude; shown only when both agents are in use — MainWindow.xaml.cs:42-52,624,642, MainWindow.xaml:212-218
+- [c] MAIN-056 Branch marker "↳" (11 faint) before name for any row with a parent; indent 15px per depth — MainWindow.xaml:219-224, MainWindow.xaml.cs:130-134
+- [c] MAIN-057 Top-level sections: "Open" (has live pane), "Today" (last activity today), "Earlier"; sorted in that order; Open and Today expanded by default, Earlier collapsed; expand state remembered across rebuilds in a dict — MainWindow.xaml.cs:102-105,602-615
+- [c] MAIN-058 Section header shows count of items — MainWindow.xaml:143-146
+- [c] MAIN-059 Group combo: "Group: Folder" (default) / "Group: None"; with Folder, second-level grouping by Project — MainWindow.xaml:72-79, MainWindow.xaml.cs:760,767-769
+- [c] MAIN-060 Sort combo: "Newest" (default) / "Oldest" / "Name" — MainWindow.xaml:80-89, MainWindow.xaml.cs:761
+- [c] MAIN-061 Sort keys: BucketOrder asc; if grouped by folder: Name-sort -> Project asc; date sorts -> FolderRank (newest activity in that folder) desc for Newest / asc for Oldest, then Project asc tiebreak; finally Name asc (Name sort) or ThreadOrder asc (date sorts) — MainWindow.xaml.cs:773-795,690-694
+- [c] MAIN-062 Branch threading: ParentId = transcript's parentId (Codex) else Clayo-recorded parents.json; depth = hops up through parents present in list, capped at 8 (cycle guard); ThreadOrder = concat over chain root..self of Stamp(when)+sessionId+"/"; Stamp = 19-digit zero-padded ticks, (MaxTicks - ticks) when newest-first — MainWindow.xaml.cs:838-879
+- [c] MAIN-063 Search: trimmed text; matches Name contains / Project contains (case-insensitive) or SessionId starts-with — MainWindow.xaml.cs:749-758
 - [ ] MAIN-064 Search hint hides as soon as the box has focus or text; returns on blur if empty — MainWindow.xaml.cs:881-897
-- [ ] MAIN-065 List view only rebuilt when the layout signature (id|bucket|project-if-grouped|depth|parentId per row) changes; not rebuilt while any row is being renamed; selection restored without stealing focus; after rebuild scroll to top — MainWindow.xaml.cs:802-834
-- [ ] MAIN-066 Empty-state text when no transcript roots exist: "No transcripts found under ~\.claude or ~\.codex.\nStart a session and it will show up here." — MainWindow.xaml.cs:700-701
+- [c] MAIN-065 List view only rebuilt when the layout signature (id|bucket|project-if-grouped|depth|parentId per row) changes; not rebuilt while any row is being renamed; selection restored without stealing focus; after rebuild scroll to top — MainWindow.xaml.cs:802-834
+- [c] MAIN-066 Empty-state text when no transcript roots exist: "No transcripts found under ~\.claude or ~\.codex.\nStart a session and it will show up here." — MainWindow.xaml.cs:700-701
 - [ ] MAIN-067 Selecting a row that has a live pane switches to that pane; leaving a row cancels its rename — MainWindow.xaml.cs:909-918
 - [ ] MAIN-068 Double-click row or Enter (when not renaming) = Open: live pane -> activate; else resume (LaunchMode.Resume) in row folder (or current folder if gone) with row's agent — MainWindow.xaml.cs:923-950
 - [ ] MAIN-069 F2 on selected row starts inline rename — MainWindow.xaml.cs:932
 - [ ] MAIN-070 Context menu on list: "Open", "Rename" (gesture text F2), separator, "Reset name" — MainWindow.xaml:107-114
 - [ ] MAIN-071 Reset name clears custom name (names.json entry removed) — MainWindow.xaml.cs:1186-1192
-- [ ] MAIN-072 Rename box: in-row TextBox, pre-filled with custom name or current name, focused + select all; Enter commits, Esc cancels, losing focus commits; trimmed; empty or equal to ai-title => no override; updates header title if active — MainWindow.xaml.cs:189-214,1194-1239, App.xaml:626-647 (border Working color)
+- [c] MAIN-072 Rename box: in-row TextBox, pre-filled with custom name or current name, focused + select all; Enter commits, Esc cancels, losing focus commits; trimmed; empty or equal to ai-title => no override; updates header title if active — MainWindow.xaml.cs:189-214,1194-1239, App.xaml:626-647 (border Working color)
 - [ ] MAIN-073 Sidebar list not virtualized; horizontal scroll disabled — MainWindow.xaml:96-97
 
 #### Footer actions
-- [ ] MAIN-074 "New session" (glyph E710, AccentButton) opens a folder popup above it: "Start a session in", up to 8 recent folders (current folder pinned first, then rows' folders by most recent activity, dedup case-insensitive, existing dirs only; each shows leaf + full path mono), separator, "Browse for a folder…" — MainWindow.xaml:264-324, MainWindow.xaml.cs:952-984
+- [c] MAIN-074 "New session" (glyph E710, AccentButton) opens a folder popup above it: "Start a session in", up to 8 recent folders (current folder pinned first, then rows' folders by most recent activity, dedup case-insensitive, existing dirs only; each shows leaf + full path mono), separator, "Browse for a folder…" — MainWindow.xaml:264-324, MainWindow.xaml.cs:952-984
 - [ ] MAIN-075 Picking a recent folder or browsing (OpenFolderDialog title "Start a session in", initial = current folder) -> sets current folder + header and starts a new session there — MainWindow.xaml.cs:986-1017
 - [ ] MAIN-076 New session agent: settings NewSessionKind (Claude if Codex unused; Codex if Claude unused; else DefaultAgent Claude/Codex; Ask => null). Null -> context menu above New session button with "Claude Code" / "Codex"; dismissing starts nothing — MainWindow.xaml.cs:1024-1046, ClayoSettings.cs:56-64
 - [ ] MAIN-077 "Open" (glyph E8B7): OpenFileDialog "Open a file in a new session"; starts new session in the file's folder and, on that pane's first Done status, inserts the file path at the prompt (unsent) — MainWindow.xaml.cs:1054-1076
@@ -426,15 +426,15 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [ ] MAIN-118 RecentSessions(max) for screenshot picker: MRU then others, distinct, live only; name/project/status ("new session" + cwd leaf if no row) — MainWindow.xaml.cs:1524-1532
 
 #### Updater (System/Updater.cs + MainWindow)
-- [ ] MAIN-119 GET `https://api.github.com/repos/YogiOnCode/Clayo/releases/latest`, User-Agent "Clayo", 15 s timeout; reads `tag_name`; errors -> null; disabled in Debug — Updater.cs:24,35-49
-- [ ] MAIN-120 Newer: strip leading v/V, parse version, compare as (major, minor, max(build,0)) — Updater.cs:52-59
+- [c] MAIN-119 GET `https://api.github.com/repos/YogiOnCode/Clayo/releases/latest`, User-Agent "Clayo", 15 s timeout; reads `tag_name`; errors -> null; disabled in Debug — Updater.cs:24,35-49
+- [c] MAIN-120 Newer: strip leading v/V, parse version, compare as (major, minor, max(build,0)) — Updater.cs:52-59
 - [ ] MAIN-121 If settings UpdateCheck off: no request, hide button, clear offer — MainWindow.xaml.cs:1698-1704
 - [ ] MAIN-122 Found: button text "Update to X.Y.Z", tooltip "Clayo X.Y.Z is out (you have A.B.C). Clayo closes, updates and opens again, once no session is working."; Settings shows it too — MainWindow.xaml.cs:1706-1712
 - [ ] MAIN-123 Click with panes open: confirm box title "Update Clayo", text "Clayo closes to update and opens again. Open sessions close and resume from the sidebar; any that are still working are waited for." OK/Cancel — MainWindow.xaml.cs:1729-1733
 - [ ] MAIN-124 Then waiting: button "Update waits for running sessions", tooltip "Clayo updates as soon as no session is working. Press to call it off."; clicking again cancels and re-checks — MainWindow.xaml.cs:1722-1738
 - [ ] MAIN-125 UpdateWhenIdle (called on click, every pane status change, pane close): when no pane is Working or NeedsInput -> Updater.Start(version) and Quit — MainWindow.xaml.cs:1742-1748
-- [ ] MAIN-126 Start: `powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "try { irm '<ScriptUrl>' | iex } catch { Write-Host $_ -ForegroundColor Red; pause }"` with env CLAYO_DIR=exe folder (AppContext.BaseDirectory, has trailing \), visible window — Updater.cs:62-73
-- [ ] MAIN-127 ScriptUrl = `https://raw.githubusercontent.com/YogiOnCode/Clayo/v{X.Y.Z}/scripts/install.ps1`; ReleaseUrl = `https://github.com/YogiOnCode/Clayo/releases/tag/v{X.Y.Z}` — Updater.cs:19-23
+- [c] MAIN-126 Start: `powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "try { irm '<ScriptUrl>' | iex } catch { Write-Host $_ -ForegroundColor Red; pause }"` with env CLAYO_DIR=exe folder (AppContext.BaseDirectory, has trailing \), visible window — Updater.cs:62-73
+- [c] MAIN-127 ScriptUrl = `https://raw.githubusercontent.com/YogiOnCode/Clayo/v{X.Y.Z}/scripts/install.ps1`; ReleaseUrl = `https://github.com/YogiOnCode/Clayo/releases/tag/v{X.Y.Z}` — Updater.cs:19-23
 
 #### install.ps1 / publish.ps1
 - [ ] MAIN-128 Install dir: $env:CLAYO_DIR (trimmed \) or `%LOCALAPPDATA%\Programs\Clayo`; exe `clayo.exe` — install.ps1:9-11
@@ -445,19 +445,19 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [ ] MAIN-133 publish.ps1: reads <Version> from csproj; `dotnet publish -c Release -r win-x64 --self-contained -p:SatelliteResourceLanguages=en -o publish\Clayo`; asserts clayo.exe, Assets\terminal.html, Assets\xterm\xterm.js; zip `publish\clayo-<ver>-win-x64.zip` entries `Clayo/<rel path with />`; writes `<zip>.sha256` = "<lowerhex>  <zipname>" ascii no newline — publish.ps1:6-44
 
 #### Login startup (System/LoginStartup.cs)
-- [ ] MAIN-134 Registry: HKCU `Software\Microsoft\Windows\CurrentVersion\Run`, value `Clayo` (REG_SZ) = `"<exe path>" --background` — LoginStartup.cs:13,15,17,64-69
-- [ ] MAIN-135 On by default: every start Keep() writes it unless opt-out marker `%LOCALAPPDATA%\Clayo\no-login-start` exists; only rewrites when value differs — LoginStartup.cs:44-47,68
-- [ ] MAIN-136 Set(on): delete marker + write; Set(off): create marker (empty) + delete value — LoginStartup.cs:49-62
-- [ ] MAIN-137 IsOn = value present — LoginStartup.cs:31-38
-- [ ] MAIN-138 Debug build never writes the real Run key (CanWrite false only for the real key) — LoginStartup.cs:24-29
+- [c] MAIN-134 Registry: HKCU `Software\Microsoft\Windows\CurrentVersion\Run`, value `Clayo` (REG_SZ) = `"<exe path>" --background` — LoginStartup.cs:13,15,17,64-69
+- [c] MAIN-135 On by default: every start Keep() writes it unless opt-out marker `%LOCALAPPDATA%\Clayo\no-login-start` exists; only rewrites when value differs — LoginStartup.cs:44-47,68
+- [c] MAIN-136 Set(on): delete marker + write; Set(off): create marker (empty) + delete value — LoginStartup.cs:49-62
+- [c] MAIN-137 IsOn = value present — LoginStartup.cs:31-38
+- [c] MAIN-138 Debug build never writes the real Run key (CanWrite false only for the real key) — LoginStartup.cs:24-29
 - [ ] MAIN-139 Exposed in gear menu, island menu, and setup window ("Start Clayo when I sign in", written immediately on click) — MainWindow.xaml.cs:1610-1627, SetupWindow.xaml.cs:173-176
 
 #### PATH (System/UserPath.cs)
-- [ ] MAIN-140 HKCU\Environment value `Path`, read raw (DoNotExpandEnvironmentNames); kind kept REG_SZ if it was REG_SZ, else REG_EXPAND_SZ (also when missing) — UserPath.cs:51-57
-- [ ] MAIN-141 Entries split on ';', empty/whitespace dropped (so a trailing ';' disappears on write); add appends at end; remove deletes all matching; no-op if already in desired state — UserPath.cs:34-48,59-60
-- [ ] MAIN-142 Match: expand %VARS% in entry, trim spaces, trim quotes, trim trailing \ or /, case-insensitive — UserPath.cs:63-66
+- [c] MAIN-140 HKCU\Environment value `Path`, read raw (DoNotExpandEnvironmentNames); kind kept REG_SZ if it was REG_SZ, else REG_EXPAND_SZ (also when missing) — UserPath.cs:51-57
+- [c] MAIN-141 Entries split on ';', empty/whitespace dropped (so a trailing ';' disappears on write); add appends at end; remove deletes all matching; no-op if already in desired state — UserPath.cs:34-48,59-60
+- [c] MAIN-142 Match: expand %VARS% in entry, trim spaces, trim quotes, trim trailing \ or /, case-insensitive — UserPath.cs:63-66
 - [ ] MAIN-143 After writing the real key: SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE 0x1A, 0, "Environment", SMTO_ABORTIFHUNG, 2000) — UserPath.cs:47,69-78
-- [ ] MAIN-144 Folder = directory of the running exe; Debug never writes real key — UserPath.cs:19,25-30
+- [c] MAIN-144 Folder = directory of the running exe; Debug never writes real key — UserPath.cs:19,25-30
 - [ ] MAIN-145 Written only on setup's "Open Clayo" (PathTick) — SetupWindow.xaml.cs:189-190
 
 #### Setup window flow
@@ -477,7 +477,7 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [ ] MAIN-159 Pill text/color: Looking… #D4A24C, Ready #6BBF8A, Not signed in #D4A24C, Installing… #D4A24C, Signing in… #D4A24C, Not installed #8A929F; pill bg = color at alpha 0x1F — AgentRow.xaml.cs:47-59
 - [ ] MAIN-160 Use tick visible only when Ready; Sign in button (amber filled) only when SignIn; fix line (install command box, Install, Locate…) only when Missing; Codex with no npm shows "Get Node.js first" link (https://nodejs.org) instead of Install — AgentRow.xaml.cs:61-68, AgentRow.xaml:41-58
 - [ ] MAIN-161 Install command displayed: Claude `irm https://claude.ai/install.ps1 | iex`; Codex `npm install -g @openai/codex` — AgentRow.xaml.cs:65
-- [ ] MAIN-162 Setup texts (SetupScreen.cs:30-112): see section 5 checks for exact strings
+- [c] MAIN-162 Setup texts (SetupScreen.cs:30-112): see section 5 checks for exact strings
 
 ### 3. DATA
 
@@ -633,140 +633,140 @@ Paths below are relative to D:\Clayo\Clayo. Namespace in C# is `CcxShell.Core` t
 ### 2. BEHAVIORS
 
 #### Detection (setup window)
-- [ ] SES-001 Detect both agents concurrently off-thread (`DetectAsync`, Task.WhenAll) — Agents/AgentDetector.cs:34
-- [ ] SES-002 Locate order: saved path (if file exists) -> PATH -> known install places; first hit wins — Agents/AgentDetector.cs:97-103
-- [ ] SES-003 PATH search iterates names outer, PATH dirs inner: Claude tries `claude.exe` across the whole PATH, then `claude.cmd`; Codex tries `codex.cmd` then `codex.exe` — Agents/AgentDetector.cs:66,100-101
-- [ ] SES-004 PATH lookup: split on `;`, drop empty entries, strip `"` from each entry, Path.Combine(dir, exe), File.Exists; malformed entries skipped — Sessions/SessionLauncher.cs:92-108
-- [ ] SES-005 Claude known places in order: `%USERPROFILE%\.local\bin\claude.exe`, `%APPDATA%\npm\claude.cmd`, `%LOCALAPPDATA%\Microsoft\WinGet\Links\claude.exe` — Agents/AgentDetector.cs:106
-- [ ] SES-006 Codex known places: `%APPDATA%\npm\codex.cmd`, `%LOCALAPPDATA%\Microsoft\WinGet\Links\codex.exe` — Agents/AgentDetector.cs:107
-- [ ] SES-007 Env var that is unset/empty makes its known place null (skipped); USERPROFILE missing -> "" root — Agents/AgentDetector.cs:109-112
-- [ ] SES-008 Found exe must run: `<exe> --version`; version = first non-empty trimmed line; if null (fail/non-zero/timeout) exe is reported as null — Agents/AgentDetector.cs:45-46,114-115
-- [ ] SES-009 Signed-in: Claude runs `<exe> auth status`, parses JSON from first `{` to end, `loggedIn == true`; any parse error -> false — Agents/AgentDetector.cs:49,118-128
-- [ ] SES-010 Signed-in: Codex runs `<exe> login status`; true iff any line (trimmed) starts with "Logged in" (ordinal); Codex prints on stderr — Agents/AgentDetector.cs:50,131-132
-- [ ] SES-011 Data folder: Claude `%CLAUDE_CONFIG_DIR%` else `%USERPROFILE%\.claude`; Codex `%CODEX_HOME%` else `%USERPROFILE%\.codex` (note: `env()` returning "" is NOT treated as unset here, unlike CodexSessionStore.ForThisUser) — Agents/AgentDetector.cs:52-54
-- [ ] SES-012 Claude counts: for each dir under `<data>\projects`, n = count of `*.jsonl` directly in it; sessions += n; projects++ if n>0 (subfolders like subagents NOT counted since non-recursive) — Agents/AgentDetector.cs:135-147
-- [ ] SES-013 Codex counts: every `rollout-*.jsonl` under `<data>\sessions` recursively is a session; projects = distinct `payload.cwd` of line 0 (TrimEndingDirectorySeparator, case-insensitive); unreadable/non-JSON lines still count as sessions — Agents/AgentDetector.cs:150-172
-- [ ] SES-014 IO/UnauthorizedAccess while counting -> (0,0), never fails setup — Agents/AgentDetector.cs:56-58
-- [ ] SES-015 npm (Codex only): PATH `npm.cmd`, then `%ProgramFiles%\nodejs\npm.cmd`; null for Claude — Agents/AgentDetector.cs:60
-- [ ] SES-016 Runner: UseShellExecute=false, CreateNoWindow, redirect stdout+stderr, default timeout 3000 ms, on timeout Kill(entireProcessTree) and return null; returns stdout+stderr concatenated only when ExitCode==0; Win32Exception (missing exe) -> null — Agents/AgentDetector.cs:72-94
-- [ ] SES-017 Locate (cheap, no run) used at every pane launch; fallback literal "claude"/"codex" when not found — Agents/ClaudeAgent.cs:16, Agents/CodexAgent.cs:11
+- [c] SES-001 Detect both agents concurrently off-thread (`DetectAsync`, Task.WhenAll) — Agents/AgentDetector.cs:34
+- [c] SES-002 Locate order: saved path (if file exists) -> PATH -> known install places; first hit wins — Agents/AgentDetector.cs:97-103
+- [c] SES-003 PATH search iterates names outer, PATH dirs inner: Claude tries `claude.exe` across the whole PATH, then `claude.cmd`; Codex tries `codex.cmd` then `codex.exe` — Agents/AgentDetector.cs:66,100-101
+- [c] SES-004 PATH lookup: split on `;`, drop empty entries, strip `"` from each entry, Path.Combine(dir, exe), File.Exists; malformed entries skipped — Sessions/SessionLauncher.cs:92-108
+- [c] SES-005 Claude known places in order: `%USERPROFILE%\.local\bin\claude.exe`, `%APPDATA%\npm\claude.cmd`, `%LOCALAPPDATA%\Microsoft\WinGet\Links\claude.exe` — Agents/AgentDetector.cs:106
+- [c] SES-006 Codex known places: `%APPDATA%\npm\codex.cmd`, `%LOCALAPPDATA%\Microsoft\WinGet\Links\codex.exe` — Agents/AgentDetector.cs:107
+- [c] SES-007 Env var that is unset/empty makes its known place null (skipped); USERPROFILE missing -> "" root — Agents/AgentDetector.cs:109-112
+- [c] SES-008 Found exe must run: `<exe> --version`; version = first non-empty trimmed line; if null (fail/non-zero/timeout) exe is reported as null — Agents/AgentDetector.cs:45-46,114-115
+- [c] SES-009 Signed-in: Claude runs `<exe> auth status`, parses JSON from first `{` to end, `loggedIn == true`; any parse error -> false — Agents/AgentDetector.cs:49,118-128
+- [c] SES-010 Signed-in: Codex runs `<exe> login status`; true iff any line (trimmed) starts with "Logged in" (ordinal); Codex prints on stderr — Agents/AgentDetector.cs:50,131-132
+- [c] SES-011 Data folder: Claude `%CLAUDE_CONFIG_DIR%` else `%USERPROFILE%\.claude`; Codex `%CODEX_HOME%` else `%USERPROFILE%\.codex` (note: `env()` returning "" is NOT treated as unset here, unlike CodexSessionStore.ForThisUser) — Agents/AgentDetector.cs:52-54
+- [c] SES-012 Claude counts: for each dir under `<data>\projects`, n = count of `*.jsonl` directly in it; sessions += n; projects++ if n>0 (subfolders like subagents NOT counted since non-recursive) — Agents/AgentDetector.cs:135-147
+- [c] SES-013 Codex counts: every `rollout-*.jsonl` under `<data>\sessions` recursively is a session; projects = distinct `payload.cwd` of line 0 (TrimEndingDirectorySeparator, case-insensitive); unreadable/non-JSON lines still count as sessions — Agents/AgentDetector.cs:150-172
+- [c] SES-014 IO/UnauthorizedAccess while counting -> (0,0), never fails setup — Agents/AgentDetector.cs:56-58
+- [c] SES-015 npm (Codex only): PATH `npm.cmd`, then `%ProgramFiles%\nodejs\npm.cmd`; null for Claude — Agents/AgentDetector.cs:60
+- [c] SES-016 Runner: UseShellExecute=false, CreateNoWindow, redirect stdout+stderr, default timeout 3000 ms, on timeout Kill(entireProcessTree) and return null; returns stdout+stderr concatenated only when ExitCode==0; Win32Exception (missing exe) -> null — Agents/AgentDetector.cs:72-94
+- [c] SES-017 Locate (cheap, no run) used at every pane launch; fallback literal "claude"/"codex" when not found — Agents/ClaudeAgent.cs:16, Agents/CodexAgent.cs:11
 
 #### Install / sign-in helper
-- [ ] SES-018 Claude install command: `irm https://claude.ai/install.ps1 | iex` — Agents/AgentHelper.cs:14
-- [ ] SES-019 Codex install command: `& '<npm.cmd>' install -g @openai/codex`; null (not installable) when npm not found — Agents/AgentHelper.cs:15
-- [ ] SES-020 Sign-in: Claude `& '<exe>' auth login`; Codex `& '<exe>' login`; null when exe not found — Agents/AgentHelper.cs:18-20
-- [ ] SES-021 Runs in visible `powershell.exe` with args `-NoProfile -ExecutionPolicy Bypass -Command "<cmd>; Read-Host 'Done. Press Enter to close'"` (ArgumentList quoting), never elevated/hidden; awaits exit — Agents/AgentHelper.cs:26-42
-- [ ] SES-022 PS quoting: wrap in `'...'`, double each of `'` U+2018 `‘` U+2019 `’` U+201A `‚` U+201B `‛` — Agents/AgentHelper.cs:48-57
+- [c] SES-018 Claude install command: `irm https://claude.ai/install.ps1 | iex` — Agents/AgentHelper.cs:14
+- [c] SES-019 Codex install command: `& '<npm.cmd>' install -g @openai/codex`; null (not installable) when npm not found — Agents/AgentHelper.cs:15
+- [c] SES-020 Sign-in: Claude `& '<exe>' auth login`; Codex `& '<exe>' login`; null when exe not found — Agents/AgentHelper.cs:18-20
+- [c] SES-021 Runs in visible `powershell.exe` with args `-NoProfile -ExecutionPolicy Bypass -Command "<cmd>; Read-Host 'Done. Press Enter to close'"` (ArgumentList quoting), never elevated/hidden; awaits exit — Agents/AgentHelper.cs:26-42
+- [c] SES-022 PS quoting: wrap in `'...'`, double each of `'` U+2018 `‘` U+2019 `’` U+201A `‚` U+201B `‛` — Agents/AgentHelper.cs:48-57
 
 #### Launch command lines (typed into pane's PowerShell)
-- [ ] SES-023 Shell: `"<full path of pwsh.exe>" -NoLogo` if pwsh.exe on PATH, else `powershell.exe -NoLogo` — Sessions/SessionLauncher.cs:30-35
-- [ ] SES-024 Pane spawns the shell, waits 400 ms, then types `AgentCommand + "\r"` (once) so exit lands on a prompt — Terminal/TerminalPane.xaml.cs:445-458 (consumer)
-- [ ] SES-025 Claude new: `& '<exe>' --session-id '<new guid>'[ --settings '<relay.json>']` — Agents/ClaudeAgent.cs:26,37-45
-- [ ] SES-026 Claude resume: `& '<exe>' --resume '<id>'[ --settings '<relay.json>']` — Agents/ClaudeAgent.cs:28
-- [ ] SES-027 Claude fork/branch: `& '<exe>' --resume '<parentId>' --fork-session --session-id '<new guid>'[ --settings '<relay.json>']` — Agents/ClaudeAgent.cs:30-31
-- [ ] SES-028 Claude `--settings` file path comes from StatusRelay.WriteSettings(selfExe, askRules) each launch; omitted if null or ProcessPath unknown; user's settings.json never written — Agents/ClaudeAgent.cs:18,43
-- [ ] SES-029 Ids are always PS-quoted (ids are read from transcripts: injection guard) — Agents/ClaudeAgent.cs:34, Agents/CodexAgent.cs:23
-- [ ] SES-030 Codex new: `& '<exe>'` (no id, no -C; shell already in folder) — Agents/CodexAgent.cs:20,27
-- [ ] SES-031 Codex resume: `& '<exe>' resume '<id>'` — Agents/CodexAgent.cs:23
-- [ ] SES-032 Codex fork: `& '<exe>' fork '<parentId>'` — Agents/CodexAgent.cs:25
-- [ ] SES-033 Exe path re-located on every launch (install/Locate during runtime honored) — Agents/ClaudeAgent.cs:4-5
-- [ ] SES-034 Plan: Resume/Fork without non-blank sessionId -> ArgumentException — Sessions/SessionLauncher.cs:67-68
-- [ ] SES-035 Plan: new guid (Guid.NewGuid, "D" format lowercase with dashes) only when agent.KnowsIdUpfront (Claude) and mode != Resume; Codex gets null — Sessions/SessionLauncher.cs:75
-- [ ] SES-036 Plan.ExpectedSessionId: Resume -> the given id; New/Fork -> the new guid (null for Codex, never the parent's) — Sessions/SessionLauncher.cs:87-88
-- [ ] SES-037 LaunchPlan fields: ShellCommandLine, WorkingDirectory, AgentCommand, ExpectedSessionId, Agent — Sessions/SessionLauncher.cs:17-22
-- [ ] SES-038 Resume cwd = row.Folder if it exists, else the app's current folder — MainWindow.xaml.cs:948
-- [ ] SES-039 Pane fallback titles: new `new · <folder leaf>`; fork `branch of <first 8 chars of parent id>`; resume = row name — MainWindow.xaml.cs:1028,1120,949
+- [c] SES-023 Shell: `"<full path of pwsh.exe>" -NoLogo` if pwsh.exe on PATH, else `powershell.exe -NoLogo` — Sessions/SessionLauncher.cs:30-35
+- [c] SES-024 Pane spawns the shell, waits 400 ms, then types `AgentCommand + "\r"` (once) so exit lands on a prompt — Terminal/TerminalPane.xaml.cs:445-458 (consumer)
+- [c] SES-025 Claude new: `& '<exe>' --session-id '<new guid>'[ --settings '<relay.json>']` — Agents/ClaudeAgent.cs:26,37-45
+- [c] SES-026 Claude resume: `& '<exe>' --resume '<id>'[ --settings '<relay.json>']` — Agents/ClaudeAgent.cs:28
+- [c] SES-027 Claude fork/branch: `& '<exe>' --resume '<parentId>' --fork-session --session-id '<new guid>'[ --settings '<relay.json>']` — Agents/ClaudeAgent.cs:30-31
+- [c] SES-028 Claude `--settings` file path comes from StatusRelay.WriteSettings(selfExe, askRules) each launch; omitted if null or ProcessPath unknown; user's settings.json never written — Agents/ClaudeAgent.cs:18,43
+- [c] SES-029 Ids are always PS-quoted (ids are read from transcripts: injection guard) — Agents/ClaudeAgent.cs:34, Agents/CodexAgent.cs:23
+- [c] SES-030 Codex new: `& '<exe>'` (no id, no -C; shell already in folder) — Agents/CodexAgent.cs:20,27
+- [c] SES-031 Codex resume: `& '<exe>' resume '<id>'` — Agents/CodexAgent.cs:23
+- [c] SES-032 Codex fork: `& '<exe>' fork '<parentId>'` — Agents/CodexAgent.cs:25
+- [c] SES-033 Exe path re-located on every launch (install/Locate during runtime honored) — Agents/ClaudeAgent.cs:4-5
+- [c] SES-034 Plan: Resume/Fork without non-blank sessionId -> ArgumentException — Sessions/SessionLauncher.cs:67-68
+- [c] SES-035 Plan: new guid (Guid.NewGuid, "D" format lowercase with dashes) only when agent.KnowsIdUpfront (Claude) and mode != Resume; Codex gets null — Sessions/SessionLauncher.cs:75
+- [c] SES-036 Plan.ExpectedSessionId: Resume -> the given id; New/Fork -> the new guid (null for Codex, never the parent's) — Sessions/SessionLauncher.cs:87-88
+- [c] SES-037 LaunchPlan fields: ShellCommandLine, WorkingDirectory, AgentCommand, ExpectedSessionId, Agent — Sessions/SessionLauncher.cs:17-22
+- [c] SES-038 Resume cwd = row.Folder if it exists, else the app's current folder — MainWindow.xaml.cs:948
+- [c] SES-039 Pane fallback titles: new `new · <folder leaf>`; fork `branch of <first 8 chars of parent id>`; resume = row name — MainWindow.xaml.cs:1028,1120,949
 
 #### Environment
-- [ ] SES-040 At app start, remove from own process env: CLAUDECODE, CLAUDE_CODE_CHILD_SESSION, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, CLAUDE_CODE_MESSAGING_SOCKET, CLAUDE_CODE_MESSAGING_TOKEN, CLAUDE_PID (children inherit the scrubbed block); ANTHROPIC_*, CLAUDE_EFFORT left alone — Sessions/SessionLauncher.cs:48-63, App.xaml.cs:22
+- [c] SES-040 At app start, remove from own process env: CLAUDECODE, CLAUDE_CODE_CHILD_SESSION, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, CLAUDE_CODE_MESSAGING_SOCKET, CLAUDE_CODE_MESSAGING_TOKEN, CLAUDE_PID (children inherit the scrubbed block); ANTHROPIC_*, CLAUDE_EFFORT left alone — Sessions/SessionLauncher.cs:48-63, App.xaml.cs:22
 
 #### Claude session list
-- [ ] SES-041 Root: `%USERPROFILE%\.claude\projects` (UserProfile special folder) — does NOT honor CLAUDE_CONFIG_DIR (only detector does; docs/AGENTS.md:75 matches this) — Sessions/SessionStore.cs:66-71
-- [ ] SES-042 No root -> empty list — Sessions/SessionStore.cs:77
-- [ ] SES-043 Enumerate `*.jsonl` recursively; skip files whose parent dir name is `subagents` (case-insens.) — Sessions/SessionStore.cs:82,91-92
-- [ ] SES-044 Empty (0 byte) or missing file -> removed from cache/no row — Sessions/SessionStore.cs:98-102
-- [ ] SES-045 Cache invalidation: (size, LastWriteTimeUtc) equal -> reuse — Sessions/SessionStore.cs:105-106
-- [ ] SES-046 Parse failure (IO/permission, e.g. mid-write) keeps old row and re-queues file for next scan — Sessions/SessionStore.cs:109-114
-- [ ] SES-047 Result sorted by LastActivity descending — Sessions/SessionStore.cs:119
-- [ ] SES-048 Head: first 40 lines; skip empty/non-JSON; first `cwd`, first `sessionId`; preview = first `type=="user"` line with non-empty extracted text, shortened to 120; break when all 3 found — Sessions/SessionStore.cs:133-153
-- [ ] SES-049 User text extraction: skip if `isMeta:true`; `message.content` string -> Clean; array -> first block `type=="text"` with non-empty Clean(text) — Sessions/SessionStore.cs:259-284
-- [ ] SES-050 Clean: Trim; if starts with `<` and contains `>` -> ""; if starts with "Caveat:" -> "" — Sessions/SessionStore.cs:286-293
-- [ ] SES-051 Shorten: collapse all whitespace runs to single space; if > max chars, cut to max, TrimEnd, append `…` (U+2026) — Sessions/SessionStore.cs:295-299
-- [ ] SES-052 Tail: last 96 KiB; if not at 0, discard first partial line; only lines containing `"ai-title"` or `"last-prompt"` are parsed; last `type=="ai-title"` -> `aiTitle`, last `type=="last-prompt"` -> `lastPrompt` — Sessions/SessionStore.cs:188-239
-- [ ] SES-053 AiTitle = Shorten(Clean(title), 90) or null; LastPrompt = Shorten(Clean(prompt), 120) or null — Sessions/SessionStore.cs:234-238
-- [ ] SES-054 SessionId fallback = file name without extension — Sessions/SessionStore.cs:161
-- [ ] SES-055 ProjectDir fallback (no cwd) = mangled folder name (display only), else "(unknown)" — Sessions/SessionStore.cs:163-168
-- [ ] SES-056 Preview placeholder "(no prompt yet)" — Sessions/SessionStore.cs:175
-- [ ] SES-057 LastActivity (Claude) = file LastWriteTime (local) — Sessions/SessionStore.cs:178
-- [ ] SES-058 ProjectName = last path segment of ProjectDir (trim `\`/`/`), else ProjectDir — Sessions/SessionStore.cs:23-25
+- [c] SES-041 Root: `%USERPROFILE%\.claude\projects` (UserProfile special folder) — does NOT honor CLAUDE_CONFIG_DIR (only detector does; docs/AGENTS.md:75 matches this) — Sessions/SessionStore.cs:66-71
+- [c] SES-042 No root -> empty list — Sessions/SessionStore.cs:77
+- [c] SES-043 Enumerate `*.jsonl` recursively; skip files whose parent dir name is `subagents` (case-insens.) — Sessions/SessionStore.cs:82,91-92
+- [c] SES-044 Empty (0 byte) or missing file -> removed from cache/no row — Sessions/SessionStore.cs:98-102
+- [c] SES-045 Cache invalidation: (size, LastWriteTimeUtc) equal -> reuse — Sessions/SessionStore.cs:105-106
+- [c] SES-046 Parse failure (IO/permission, e.g. mid-write) keeps old row and re-queues file for next scan — Sessions/SessionStore.cs:109-114
+- [c] SES-047 Result sorted by LastActivity descending — Sessions/SessionStore.cs:119
+- [c] SES-048 Head: first 40 lines; skip empty/non-JSON; first `cwd`, first `sessionId`; preview = first `type=="user"` line with non-empty extracted text, shortened to 120; break when all 3 found — Sessions/SessionStore.cs:133-153
+- [c] SES-049 User text extraction: skip if `isMeta:true`; `message.content` string -> Clean; array -> first block `type=="text"` with non-empty Clean(text) — Sessions/SessionStore.cs:259-284
+- [c] SES-050 Clean: Trim; if starts with `<` and contains `>` -> ""; if starts with "Caveat:" -> "" — Sessions/SessionStore.cs:286-293
+- [c] SES-051 Shorten: collapse all whitespace runs to single space; if > max chars, cut to max, TrimEnd, append `…` (U+2026) — Sessions/SessionStore.cs:295-299
+- [c] SES-052 Tail: last 96 KiB; if not at 0, discard first partial line; only lines containing `"ai-title"` or `"last-prompt"` are parsed; last `type=="ai-title"` -> `aiTitle`, last `type=="last-prompt"` -> `lastPrompt` — Sessions/SessionStore.cs:188-239
+- [c] SES-053 AiTitle = Shorten(Clean(title), 90) or null; LastPrompt = Shorten(Clean(prompt), 120) or null — Sessions/SessionStore.cs:234-238
+- [c] SES-054 SessionId fallback = file name without extension — Sessions/SessionStore.cs:161
+- [c] SES-055 ProjectDir fallback (no cwd) = mangled folder name (display only), else "(unknown)" — Sessions/SessionStore.cs:163-168
+- [c] SES-056 Preview placeholder "(no prompt yet)" — Sessions/SessionStore.cs:175
+- [c] SES-057 LastActivity (Claude) = file LastWriteTime (local) — Sessions/SessionStore.cs:178
+- [c] SES-058 ProjectName = last path segment of ProjectDir (trim `\`/`/`), else ProjectDir — Sessions/SessionStore.cs:23-25
 
 #### Codex session list
-- [ ] SES-059 Home: `%CODEX_HOME%` if non-empty else `%USERPROFILE%\.codex`; sessions dir = `<home>\sessions` — Sessions/CodexSessionStore.cs:26-31
-- [ ] SES-060 Enumerate `rollout-*.jsonl` recursively under sessions; any path not under `<sessions>\` or not named `rollout-*` ignored (watcher covers whole home) — Sessions/CodexSessionStore.cs:42,50-51
-- [ ] SES-061 Size 0/missing -> drop; cache key = size only (resume keeps old mtime) — Sessions/CodexSessionStore.cs:17-19,53-62
-- [ ] SES-062 Unparseable -> keep old row, re-queue — Sessions/CodexSessionStore.cs:64-69
-- [ ] SES-063 Titles re-read every scan from `<home>\session_index.jsonl`; last line per id wins; title = Shorten(Clean(thread_name), 90); ids case-insensitive — Sessions/CodexSessionStore.cs:76-102
-- [ ] SES-064 Line 0 must be `type=="session_meta"` with `payload`, and `payload.id` non-null, else not a session — Sessions/CodexSessionStore.cs:118-128
-- [ ] SES-065 ParentId = `payload.forked_from_id` — Sessions/CodexSessionStore.cs:125
-- [ ] SES-066 Started = `payload.timestamp` parsed (DateTimeOffset -> local) else file mtime — Sessions/CodexSessionStore.cs:126
-- [ ] SES-067 Preview: lines 1..60 until first UserText found; Codex's own `<environment_context>` etc. dropped by Clean — Sessions/CodexSessionStore.cs:133-138
-- [ ] SES-068 Model/effort from first `turn_context` in the head (only scanned while preview not yet found); overridden by tail's last turn_context — Sessions/CodexSessionStore.cs:136-144
-- [ ] SES-069 ProjectDir = payload.cwd else directory of file — Sessions/CodexSessionStore.cs:151
-- [ ] SES-070 LastActivity = last parseable line's timestamp in the 96 KiB tail, else Started (not file mtime) — Sessions/CodexSessionStore.cs:154,236
-- [ ] SES-071 LastPrompt = Shorten(last UserText in tail, 120) — Sessions/CodexSessionStore.cs:153,250
-- [ ] SES-072 Turn: last of event_msg payload.type task_started->Working, task_complete->Done, turn_aborted->Stopped — Sessions/CodexSessionStore.cs:243-245
-- [ ] SES-073 Status (strip) built only if context window >0 or model known: SessionStatus(id, model, cwd, used, size, percent, effort ?? "", fiveHour, sevenDay, updated = last ?? started) — Sessions/CodexSessionStore.cs:158-163
-- [ ] SES-074 Context: Baseline=12000; window<=12000 -> (used, window, window>0?100:0); else size=window-12000, mine=max(0,used-12000), left=round_away_from_zero(clamp((size-mine)*100/size,0,100)), percent=100-left — Sessions/CodexSessionStore.cs:169-183
-- [ ] SES-075 token_count: used = info.last_token_usage.total_tokens; size = info.model_context_window; rate_limits.primary/secondary with used_percent (double, floored to int), window_minutes (300 -> five-hour, 10080 -> seven-day, others ignored), resets_at (unix s, optional) — Sessions/CodexSessionStore.cs:279-299
-- [ ] SES-076 Sorted by LastActivity desc — Sessions/CodexSessionStore.cs:78
+- [c] SES-059 Home: `%CODEX_HOME%` if non-empty else `%USERPROFILE%\.codex`; sessions dir = `<home>\sessions` — Sessions/CodexSessionStore.cs:26-31
+- [c] SES-060 Enumerate `rollout-*.jsonl` recursively under sessions; any path not under `<sessions>\` or not named `rollout-*` ignored (watcher covers whole home) — Sessions/CodexSessionStore.cs:42,50-51
+- [c] SES-061 Size 0/missing -> drop; cache key = size only (resume keeps old mtime) — Sessions/CodexSessionStore.cs:17-19,53-62
+- [c] SES-062 Unparseable -> keep old row, re-queue — Sessions/CodexSessionStore.cs:64-69
+- [c] SES-063 Titles re-read every scan from `<home>\session_index.jsonl`; last line per id wins; title = Shorten(Clean(thread_name), 90); ids case-insensitive — Sessions/CodexSessionStore.cs:76-102
+- [c] SES-064 Line 0 must be `type=="session_meta"` with `payload`, and `payload.id` non-null, else not a session — Sessions/CodexSessionStore.cs:118-128
+- [c] SES-065 ParentId = `payload.forked_from_id` — Sessions/CodexSessionStore.cs:125
+- [c] SES-066 Started = `payload.timestamp` parsed (DateTimeOffset -> local) else file mtime — Sessions/CodexSessionStore.cs:126
+- [c] SES-067 Preview: lines 1..60 until first UserText found; Codex's own `<environment_context>` etc. dropped by Clean — Sessions/CodexSessionStore.cs:133-138
+- [c] SES-068 Model/effort from first `turn_context` in the head (only scanned while preview not yet found); overridden by tail's last turn_context — Sessions/CodexSessionStore.cs:136-144
+- [c] SES-069 ProjectDir = payload.cwd else directory of file — Sessions/CodexSessionStore.cs:151
+- [c] SES-070 LastActivity = last parseable line's timestamp in the 96 KiB tail, else Started (not file mtime) — Sessions/CodexSessionStore.cs:154,236
+- [c] SES-071 LastPrompt = Shorten(last UserText in tail, 120) — Sessions/CodexSessionStore.cs:153,250
+- [c] SES-072 Turn: last of event_msg payload.type task_started->Working, task_complete->Done, turn_aborted->Stopped — Sessions/CodexSessionStore.cs:243-245
+- [c] SES-073 Status (strip) built only if context window >0 or model known: SessionStatus(id, model, cwd, used, size, percent, effort ?? "", fiveHour, sevenDay, updated = last ?? started) — Sessions/CodexSessionStore.cs:158-163
+- [c] SES-074 Context: Baseline=12000; window<=12000 -> (used, window, window>0?100:0); else size=window-12000, mine=max(0,used-12000), left=round_away_from_zero(clamp((size-mine)*100/size,0,100)), percent=100-left — Sessions/CodexSessionStore.cs:169-183
+- [c] SES-075 token_count: used = info.last_token_usage.total_tokens; size = info.model_context_window; rate_limits.primary/secondary with used_percent (double, floored to int), window_minutes (300 -> five-hour, 10080 -> seven-day, others ignored), resets_at (unix s, optional) — Sessions/CodexSessionStore.cs:279-299
+- [c] SES-076 Sorted by LastActivity desc — Sessions/CodexSessionStore.cs:78
 
 #### Watching
-- [ ] SES-077 FileSystemWatcher filter `*.jsonl`, recursive, NotifyFilter LastWrite|FileName|Size; Claude watches `projects` root, Codex watches whole `home` (for session_index renames) — Sessions/SessionStore.cs:305-310, Sessions/CodexSessionStore.cs:333-338
-- [ ] SES-078 Each Changed/Created/Deleted/Renamed event: add FullPath (and OldFullPath on rename) to ChangedFiles; (re)arm one-shot debounce of 600 ms; when it fires raise `Changed` (bg thread) -> UI RefreshSessions — Sessions/SessionStore.cs:313-321, Sessions/CodexSessionStore.cs:339-345, MainWindow.xaml.cs:344
-- [ ] SES-079 Watcher Error (buffer overflow): AddAll -> next scan enumerates everything; re-arm 600 ms — Sessions/SessionStore.cs:325-329
-- [ ] SES-080 ChangedFiles.Take(watching): returns (all = _all || !watching, paths) then clears; sets _all = !watching. Starts _all=true, so first scan after watcher starts is a full scan — Sessions/ChangedFiles.cs:11,22-31
-- [ ] SES-081 Full scan also drops cache entries no longer on disk; partial scan handles deleted files via fi.Exists==false — Sessions/SessionStore.cs:83-85,98
-- [ ] SES-082 StartWatching no-op if root missing or already watching; StopWatching disposes watcher+timer — Sessions/SessionStore.cs:303,332-338
+- [c] SES-077 FileSystemWatcher filter `*.jsonl`, recursive, NotifyFilter LastWrite|FileName|Size; Claude watches `projects` root, Codex watches whole `home` (for session_index renames) — Sessions/SessionStore.cs:305-310, Sessions/CodexSessionStore.cs:333-338
+- [c] SES-078 Each Changed/Created/Deleted/Renamed event: add FullPath (and OldFullPath on rename) to ChangedFiles; (re)arm one-shot debounce of 600 ms; when it fires raise `Changed` (bg thread) -> UI RefreshSessions — Sessions/SessionStore.cs:313-321, Sessions/CodexSessionStore.cs:339-345, MainWindow.xaml.cs:344
+- [c] SES-079 Watcher Error (buffer overflow): AddAll -> next scan enumerates everything; re-arm 600 ms — Sessions/SessionStore.cs:325-329
+- [c] SES-080 ChangedFiles.Take(watching): returns (all = _all || !watching, paths) then clears; sets _all = !watching. Starts _all=true, so first scan after watcher starts is a full scan — Sessions/ChangedFiles.cs:11,22-31
+- [c] SES-081 Full scan also drops cache entries no longer on disk; partial scan handles deleted files via fi.Exists==false — Sessions/SessionStore.cs:83-85,98
+- [c] SES-082 StartWatching no-op if root missing or already watching; StopWatching disposes watcher+timer — Sessions/SessionStore.cs:303,332-338
 
 #### Sidebar (consumer logic, MainWindow)
-- [ ] SES-083 Scan Claude (if UseClaude) + Codex (if UseCodex); tag rows `CC`/`CX` only when both enabled — MainWindow.xaml.cs:623-626, SessionRow.AgentTag
-- [ ] SES-084 Row name priority: custom name (names.json) > AiTitle > Preview (unless "(no prompt yet)") > FallbackTitle — MainWindow.xaml.cs SessionRow.Name
-- [ ] SES-085 Tooltip: `Name\n<ProjectDir or Folder>\n<SessionId>` + `\n\nBranched from: <parent name>` + `\n\nLast: <LastPrompt>` — SessionRow.Tip
-- [ ] SES-086 Subtitle: open pane -> status text, else age: <1 min "just now", <60 "N min ago", <24h "N h ago", <7d "N d ago", else `d MMM` — SessionRow.Age
-- [ ] SES-087 Buckets: Open (pane open, order 0), Today (When.Date==today, 1), Earlier (2) — SessionRow.Bucket
-- [ ] SES-088 When = Info.LastActivity, or now if no transcript yet — SessionRow.When
-- [ ] SES-089 Rows whose transcript vanished are removed unless open — MainWindow.xaml.cs:690-694
-- [ ] SES-090 Group by folder (GroupBy index 0) under bucket; folder groups ordered by FolderRank = newest When in that folder (desc for newest, asc for oldest; tie-break project name asc); sort=name -> project asc — MainWindow.xaml.cs:697-701,745-759
-- [ ] SES-091 Sort modes: 0 newest, 1 oldest, 2 name (alphabetical, branches not threaded) — MainWindow.xaml.cs:731,764-766
-- [ ] SES-092 Threading: ParentId = Info.ParentId (Codex) ?? parents.json; Depth = chain length-1 walking parents present in list, max 8 hops; ThreadOrder = concat over chain root..row of `Stamp(When)+SessionId+"/"`, Stamp = 19-digit ticks (MaxValue.Ticks - ticks for newest-first) — MainWindow.xaml.cs:826-865
-- [ ] SES-093 Filter text: name contains, project contains, or session id starts-with (case-insens.) — MainWindow.xaml.cs:719-726
-- [ ] SES-094 List view swapped only when layout string `id|bucket|project|depth|parent` per row changes, and not while a rename box is open — MainWindow.xaml.cs:774-780
-- [ ] SES-095 Empty state text "No transcripts found under ~\.claude or ~\.codex.\nStart a session and it will show up here." when neither root exists — MainWindow.xaml.cs:708-709
+- [c] SES-083 Scan Claude (if UseClaude) + Codex (if UseCodex); tag rows `CC`/`CX` only when both enabled — MainWindow.xaml.cs:623-626, SessionRow.AgentTag
+- [c] SES-084 Row name priority: custom name (names.json) > AiTitle > Preview (unless "(no prompt yet)") > FallbackTitle — MainWindow.xaml.cs SessionRow.Name
+- [c] SES-085 Tooltip: `Name\n<ProjectDir or Folder>\n<SessionId>` + `\n\nBranched from: <parent name>` + `\n\nLast: <LastPrompt>` — SessionRow.Tip
+- [c] SES-086 Subtitle: open pane -> status text, else age: <1 min "just now", <60 "N min ago", <24h "N h ago", <7d "N d ago", else `d MMM` — SessionRow.Age
+- [c] SES-087 Buckets: Open (pane open, order 0), Today (When.Date==today, 1), Earlier (2) — SessionRow.Bucket
+- [c] SES-088 When = Info.LastActivity, or now if no transcript yet — SessionRow.When
+- [c] SES-089 Rows whose transcript vanished are removed unless open — MainWindow.xaml.cs:690-694
+- [c] SES-090 Group by folder (GroupBy index 0) under bucket; folder groups ordered by FolderRank = newest When in that folder (desc for newest, asc for oldest; tie-break project name asc); sort=name -> project asc — MainWindow.xaml.cs:697-701,745-759
+- [c] SES-091 Sort modes: 0 newest, 1 oldest, 2 name (alphabetical, branches not threaded) — MainWindow.xaml.cs:731,764-766
+- [c] SES-092 Threading: ParentId = Info.ParentId (Codex) ?? parents.json; Depth = chain length-1 walking parents present in list, max 8 hops; ThreadOrder = concat over chain root..row of `Stamp(When)+SessionId+"/"`, Stamp = 19-digit ticks (MaxValue.Ticks - ticks for newest-first) — MainWindow.xaml.cs:826-865
+- [c] SES-093 Filter text: name contains, project contains, or session id starts-with (case-insens.) — MainWindow.xaml.cs:719-726
+- [c] SES-094 List view swapped only when layout string `id|bucket|project|depth|parent` per row changes, and not while a rename box is open — MainWindow.xaml.cs:774-780
+- [c] SES-095 Empty state text "No transcripts found under ~\.claude or ~\.codex.\nStart a session and it will show up here." when neither root exists — MainWindow.xaml.cs:708-709
 - [ ] SES-096 Rename: F2; blank clears override; Enter opens; double-click opens; open row activates its pane — MainWindow.xaml.cs:925-950, SessionNames.cs:32-40
-- [ ] SES-097 Fork button: parent = active pane's SessionId (disabled until a Codex pane is bound); Claude child link written to parents.json immediately — MainWindow.xaml.cs:1104-1120
-- [ ] SES-098 New pane gets a row immediately (key = expected id, or a random placeholder guid for Codex), status Starting — MainWindow.xaml.cs:1244-1268
-- [ ] SES-099 Codex unbound panes rebound each refresh (see HARD POINTS) — MainWindow.xaml.cs:712-741
+- [c] SES-097 Fork button: parent = active pane's SessionId (disabled until a Codex pane is bound); Claude child link written to parents.json immediately — MainWindow.xaml.cs:1104-1120
+- [c] SES-098 New pane gets a row immediately (key = expected id, or a random placeholder guid for Codex), status Starting — MainWindow.xaml.cs:1244-1268
+- [c] SES-099 Codex unbound panes rebound each refresh (see HARD POINTS) — MainWindow.xaml.cs:712-741
 - [ ] SES-100 Codex pane status from transcript each refresh: `pane.ShowTurn(info.Turn, info.LastActivity)` — MainWindow.xaml.cs:629-632
 
 #### Open-pane transcript tail (doc / pages / image chips)
-- [ ] SES-101 Each refresh, each open pane with a transcript file: TranscriptTail(folder=pane cwd, since=pane OpenedAt, codex) created once and Read(file) — MainWindow.xaml.cs:661-686
-- [ ] SES-102 First read starts at max(0, len - 512 KiB); if mid-file the first (partial) line is skipped — Sessions/TranscriptTail.cs:18,59-64,77
-- [ ] SES-103 Only whole lines consumed (up to last `\n`); offset advances; partial last line re-read later — Sessions/TranscriptTail.cs:71-74
-- [ ] SES-104 File switch (different path, case-insens.) resets offset — Sessions/TranscriptTail.cs:59
-- [ ] SES-105 Lines considered only if containing `.md`/`.html` (case-insens.) or a prompt marker — Sessions/TranscriptTail.cs:87-97
-- [ ] SES-106 Claude prompt marker: contains `"type":"user"` and not `"tool_result"` and not `"isMeta":true`; Codex: contains `"role":"user"` and CodexSessionStore.UserText(line) non-null — Sessions/TranscriptTail.cs:92-96,109
-- [ ] SES-107 PromptAt = line `timestamp` (UTC) if >= since; earlier prompts ignored (image chip cleared only by new prompts) — Sessions/TranscriptTail.cs:105-109
-- [ ] SES-108 Docs from before pane opened still count (resumed session shows its last doc if file still exists) — Sessions/TranscriptTail.cs:103-104
-- [ ] SES-109 Claude paths: assistant `message.content[]` blocks `type=="tool_use"`, name Write/Edit/MultiEdit, `input.file_path` — Sessions/TranscriptTail.cs:131-142
-- [ ] SES-110 Codex paths: `payload.item.type=="FileChange"` -> each key of `payload.item.changes`; plus regex `\*\*\* (?:Add|Update) File: ((?:[^\\"]|\\.)+?)\\n` on raw line, captured group JSON-unescaped — Sessions/TranscriptTail.cs:147-167
-- [ ] SES-111 Path resolution: relative to pane folder; `.md` inside folder (prefix match on full path + `\`, case-insens.) and File.Exists -> Doc (latest wins); else `.html` inside `<folder>\.clayo\pages\` and exists -> page (move to end of list, PageWrites++) — Sessions/TranscriptTail.cs:113-127,170-179
-- [ ] SES-112 Read returns true iff a doc or page was seen in this read — Sessions/TranscriptTail.cs:52,81
+- [c] SES-101 Each refresh, each open pane with a transcript file: TranscriptTail(folder=pane cwd, since=pane OpenedAt, codex) created once and Read(file) — MainWindow.xaml.cs:661-686
+- [c] SES-102 First read starts at max(0, len - 512 KiB); if mid-file the first (partial) line is skipped — Sessions/TranscriptTail.cs:18,59-64,77
+- [c] SES-103 Only whole lines consumed (up to last `\n`); offset advances; partial last line re-read later — Sessions/TranscriptTail.cs:71-74
+- [c] SES-104 File switch (different path, case-insens.) resets offset — Sessions/TranscriptTail.cs:59
+- [c] SES-105 Lines considered only if containing `.md`/`.html` (case-insens.) or a prompt marker — Sessions/TranscriptTail.cs:87-97
+- [c] SES-106 Claude prompt marker: contains `"type":"user"` and not `"tool_result"` and not `"isMeta":true`; Codex: contains `"role":"user"` and CodexSessionStore.UserText(line) non-null — Sessions/TranscriptTail.cs:92-96,109
+- [c] SES-107 PromptAt = line `timestamp` (UTC) if >= since; earlier prompts ignored (image chip cleared only by new prompts) — Sessions/TranscriptTail.cs:105-109
+- [c] SES-108 Docs from before pane opened still count (resumed session shows its last doc if file still exists) — Sessions/TranscriptTail.cs:103-104
+- [c] SES-109 Claude paths: assistant `message.content[]` blocks `type=="tool_use"`, name Write/Edit/MultiEdit, `input.file_path` — Sessions/TranscriptTail.cs:131-142
+- [c] SES-110 Codex paths: `payload.item.type=="FileChange"` -> each key of `payload.item.changes`; plus regex `\*\*\* (?:Add|Update) File: ((?:[^\\"]|\\.)+?)\\n` on raw line, captured group JSON-unescaped — Sessions/TranscriptTail.cs:147-167
+- [c] SES-111 Path resolution: relative to pane folder; `.md` inside folder (prefix match on full path + `\`, case-insens.) and File.Exists -> Doc (latest wins); else `.html` inside `<folder>\.clayo\pages\` and exists -> page (move to end of list, PageWrites++) — Sessions/TranscriptTail.cs:113-127,170-179
+- [c] SES-112 Read returns true iff a doc or page was seen in this read — Sessions/TranscriptTail.cs:52,81
 - [ ] SES-113 A newly written page auto-opens unless it was from the first (history) read; open doc viewer follows newest doc; `PageFolder.HideFromGit` called — MainWindow.xaml.cs:671-683
 
 #### Pasted images (panefiles.cs)
-- [ ] SES-114 Claude root = `%CLAUDE_CODE_TMPDIR%` or %TEMP%, + `\claude`; session images dir = `<root>\<any project>\<sessionId>\images` (first match) — Terminal/PastedImages.cs:21-38
-- [ ] SES-115 Since(dir, sinceUtc, pattern="*"): image ext (.png .jpg .jpeg .gif .webp .bmp), mtime > since, ordered by numeric file stem (non-numeric last) then mtime; missing dir -> [] — Terminal/PastedImages.cs:41-53
-- [ ] SES-116 Codex pasted images: `%TEMP%\codex-clipboard-*` — Terminal/PastedImages.cs:17
+- [c] SES-114 Claude root = `%CLAUDE_CODE_TMPDIR%` or %TEMP%, + `\claude`; session images dir = `<root>\<any project>\<sessionId>\images` (first match) — Terminal/PastedImages.cs:21-38
+- [c] SES-115 Since(dir, sinceUtc, pattern="*"): image ext (.png .jpg .jpeg .gif .webp .bmp), mtime > since, ordered by numeric file stem (non-numeric last) then mtime; missing dir -> [] — Terminal/PastedImages.cs:41-53
+- [c] SES-116 Codex pasted images: `%TEMP%\codex-clipboard-*` — Terminal/PastedImages.cs:17
 
 ### 3. DATA FORMATS
 
@@ -1105,74 +1105,74 @@ Files read in full: src/Status/{StatusRelay,StatusStore,StatusStrip,StatusStripV
 
 #### Relay / entry
 - [ ] STA-001 `clayo.exe --statusline` as FIRST arg (exact, case-sensitive) runs the relay and returns its exit code without starting the app; `--pass` only honored as SECOND arg — src/Program.cs:15
-- [ ] STA-002 Relay reads ALL of stdin to EOF first (not streamed), then if `--pass` writes the identical bytes to stdout, then saves; always exit code 0 — src/Status/StatusRelay.cs:92-110
-- [ ] STA-003 Stdout write IOException (their command didn't read) is swallowed; save still happens — src/Status/StatusRelay.cs:105
-- [ ] STA-004 Without `--pass` the relay prints nothing — src/Status/StatusRelay.cs:17,98
-- [ ] STA-005 Save: parses JSON, takes `session_id`; non-JSON / missing / non-string / not-a-GUID id => nothing saved, silently — src/Status/StatusRelay.cs:119-123
-- [ ] STA-006 Save path `%LOCALAPPDATA%\Clayo\status\<guid>.json` (guid normalized to lowercase hyphenated "D" format); written to `<guid>.<pid>.tmp` then `File.Move(overwrite)`; on IO/Access error tmp is deleted — src/Status/StatusRelay.cs:125-136
-- [ ] STA-007 Status dir created on demand — src/Status/StatusRelay.cs:129
-- [ ] STA-008 Saved bytes are the raw stdin bytes (no re-serialization) — src/Status/StatusRelay.cs:130
-- [ ] STA-009 Per-pane settings file: `%LOCALAPPDATA%\Clayo\statusline.json` (release) / `statusline.dev.json` (DEBUG build) — src/Status/StatusRelay.cs:39-43
-- [ ] STA-010 Settings file regenerated on every Claude launch (new/resume/fork); only rewritten if content differs; returns null on IO/Access error (then no `--settings` arg) — src/Status/StatusRelay.cs:50-62
-- [ ] STA-011 Relay command = `'<exe path with \ -> / and ' -> '\''>' --statusline` — src/Status/StatusRelay.cs:78
-- [ ] STA-012 With user command: `<relay> --pass | {\n<their command>\n}`; without (missing, non-string or empty): just `<relay>` — src/Status/StatusRelay.cs:72,80
-- [ ] STA-013 Other statusLine keys of the user (padding etc.) copied verbatim; `type` forced to `"command"` — src/Status/StatusRelay.cs:71,79
-- [ ] STA-014 `permissions.ask` added only when ask list non-empty; otherwise no `permissions` key — src/Status/StatusRelay.cs:82-84
-- [ ] STA-015 User's `<ClaudeConfigDir>\settings.json` `statusLine` only read; parse/IO failure or non-object => treated as no user statusLine — src/Status/StatusRelay.cs:139-147
-- [ ] STA-016 ClaudeConfigDir = `%CLAUDE_CONFIG_DIR%` if non-empty else `%USERPROFILE%\.claude` — src/Status/StatusRelay.cs:30-33
+- [c] STA-002 Relay reads ALL of stdin to EOF first (not streamed), then if `--pass` writes the identical bytes to stdout, then saves; always exit code 0 — src/Status/StatusRelay.cs:92-110
+- [c] STA-003 Stdout write IOException (their command didn't read) is swallowed; save still happens — src/Status/StatusRelay.cs:105
+- [c] STA-004 Without `--pass` the relay prints nothing — src/Status/StatusRelay.cs:17,98
+- [c] STA-005 Save: parses JSON, takes `session_id`; non-JSON / missing / non-string / not-a-GUID id => nothing saved, silently — src/Status/StatusRelay.cs:119-123
+- [c] STA-006 Save path `%LOCALAPPDATA%\Clayo\status\<guid>.json` (guid normalized to lowercase hyphenated "D" format); written to `<guid>.<pid>.tmp` then `File.Move(overwrite)`; on IO/Access error tmp is deleted — src/Status/StatusRelay.cs:125-136
+- [c] STA-007 Status dir created on demand — src/Status/StatusRelay.cs:129
+- [c] STA-008 Saved bytes are the raw stdin bytes (no re-serialization) — src/Status/StatusRelay.cs:130
+- [c] STA-009 Per-pane settings file: `%LOCALAPPDATA%\Clayo\statusline.json` (release) / `statusline.dev.json` (DEBUG build) — src/Status/StatusRelay.cs:39-43
+- [c] STA-010 Settings file regenerated on every Claude launch (new/resume/fork); only rewritten if content differs; returns null on IO/Access error (then no `--settings` arg) — src/Status/StatusRelay.cs:50-62
+- [c] STA-011 Relay command = `'<exe path with \ -> / and ' -> '\''>' --statusline` — src/Status/StatusRelay.cs:78
+- [c] STA-012 With user command: `<relay> --pass | {\n<their command>\n}`; without (missing, non-string or empty): just `<relay>` — src/Status/StatusRelay.cs:72,80
+- [c] STA-013 Other statusLine keys of the user (padding etc.) copied verbatim; `type` forced to `"command"` — src/Status/StatusRelay.cs:71,79
+- [c] STA-014 `permissions.ask` added only when ask list non-empty; otherwise no `permissions` key — src/Status/StatusRelay.cs:82-84
+- [c] STA-015 User's `<ClaudeConfigDir>\settings.json` `statusLine` only read; parse/IO failure or non-object => treated as no user statusLine — src/Status/StatusRelay.cs:139-147
+- [c] STA-016 ClaudeConfigDir = `%CLAUDE_CONFIG_DIR%` if non-empty else `%USERPROFILE%\.claude` — src/Status/StatusRelay.cs:30-33
 - [ ] STA-017 Claude command gets ` --settings '<path>'` (PowerShell single-quote; `'` and smart quotes ‘ ’ ‚ ‛ doubled) — src/Agents/ClaudeAgent.cs:43, src/Agents/AgentHelper.cs:48-56
 - [ ] STA-018 WriteSettings uses `Environment.ProcessPath` (own exe) and current AskRules.ClaudeAsk(settings) — src/Agents/ClaudeAgent.cs:18
 
 #### Status store
-- [ ] STA-019 Payload accepted only if whole JSON object with string `session_id` that parses as GUID; else ignored — src/Status/StatusStore.cs:174-181
-- [ ] STA-020 Context size = `context_window.context_window_size` if number > 0 else 200000 — src/Status/StatusStore.cs:184
-- [ ] STA-021 Context used = input_tokens + cache_creation_input_tokens + cache_read_input_tokens from `context_window.current_usage` (missing/null => 0; output_tokens NOT counted) — src/Status/StatusStore.cs:187-190
-- [ ] STA-022 Context percent = integer `used*100/size` (truncation; can exceed 100) — src/Status/StatusStore.cs:200
-- [ ] STA-023 Model = `model.display_name` (string) else null — src/Status/StatusStore.cs:196
-- [ ] STA-024 Cwd = `cwd` string — src/Status/StatusStore.cs:197
-- [ ] STA-025 Effort = `effort.level` if non-empty, else fallback(): env `CLAUDE_CODE_EFFORT_LEVEL`, then `effortLevel` in Claude settings.json, else `"medium"` (first non-whitespace wins) — src/Status/StatusStore.cs:201,211-226
-- [ ] STA-026 Limits from `rate_limits.five_hour` / `rate_limits.seven_day`: `used_percentage` number (floored to int); absent => null — src/Status/StatusStore.cs:202-203,228-243
-- [ ] STA-027 `resets_at`: number epoch seconds (>0, int64) or ISO string (invariant, assume UTC); anything else => no reset time — src/Status/StatusStore.cs:233-242
-- [ ] STA-028 Updated = file's last-write time UTC — src/Status/StatusStore.cs:155
-- [ ] STA-029 Store lookup by session id is case-insensitive — src/Status/StatusStore.cs:36
-- [ ] STA-030 Unreadable/partial file keeps last good status; identical status doesn't fire Changed — src/Status/StatusStore.cs:144-168
-- [ ] STA-031 File read with share ReadWrite|Delete so relay's rename isn't blocked — src/Status/StatusStore.cs:150-152
-- [ ] STA-032 Start: creates dir, watches `*.json` (Created/Changed/Renamed, LastWrite|FileName), prunes files older than 7 days, loads all existing — src/Status/StatusStore.cs:110-127
-- [ ] STA-033 Prune deletes `*.json` with last-write < now-7d (errors ignored) — src/Status/StatusStore.cs:130-141
-- [ ] STA-034 Account limits = newest (by Updated) session that has any limit; sessions with no limits never blank them — src/Status/StatusStore.cs:60-78
-- [ ] STA-035 Usage-cache fallback: `%TEMP%\claude\statusline-usage-cache.json` (user's statusline.ps1 cache; read-only), keys `five_hour`/`seven_day` with `utilization`, `resets_at`; Updated = file mtime — src/Status/StatusStore.cs:84-107
-- [ ] STA-036 Cache wins only if newer than Claude's newest report (Claude wins on tie: `fromClaude.Updated >= cached.Updated`) — src/Status/StatusStore.cs:67
+- [c] STA-019 Payload accepted only if whole JSON object with string `session_id` that parses as GUID; else ignored — src/Status/StatusStore.cs:174-181
+- [c] STA-020 Context size = `context_window.context_window_size` if number > 0 else 200000 — src/Status/StatusStore.cs:184
+- [c] STA-021 Context used = input_tokens + cache_creation_input_tokens + cache_read_input_tokens from `context_window.current_usage` (missing/null => 0; output_tokens NOT counted) — src/Status/StatusStore.cs:187-190
+- [c] STA-022 Context percent = integer `used*100/size` (truncation; can exceed 100) — src/Status/StatusStore.cs:200
+- [c] STA-023 Model = `model.display_name` (string) else null — src/Status/StatusStore.cs:196
+- [c] STA-024 Cwd = `cwd` string — src/Status/StatusStore.cs:197
+- [c] STA-025 Effort = `effort.level` if non-empty, else fallback(): env `CLAUDE_CODE_EFFORT_LEVEL`, then `effortLevel` in Claude settings.json, else `"medium"` (first non-whitespace wins) — src/Status/StatusStore.cs:201,211-226
+- [c] STA-026 Limits from `rate_limits.five_hour` / `rate_limits.seven_day`: `used_percentage` number (floored to int); absent => null — src/Status/StatusStore.cs:202-203,228-243
+- [c] STA-027 `resets_at`: number epoch seconds (>0, int64) or ISO string (invariant, assume UTC); anything else => no reset time — src/Status/StatusStore.cs:233-242
+- [c] STA-028 Updated = file's last-write time UTC — src/Status/StatusStore.cs:155
+- [c] STA-029 Store lookup by session id is case-insensitive — src/Status/StatusStore.cs:36
+- [c] STA-030 Unreadable/partial file keeps last good status; identical status doesn't fire Changed — src/Status/StatusStore.cs:144-168
+- [c] STA-031 File read with share ReadWrite|Delete so relay's rename isn't blocked — src/Status/StatusStore.cs:150-152
+- [c] STA-032 Start: creates dir, watches `*.json` (Created/Changed/Renamed, LastWrite|FileName), prunes files older than 7 days, loads all existing — src/Status/StatusStore.cs:110-127
+- [c] STA-033 Prune deletes `*.json` with last-write < now-7d (errors ignored) — src/Status/StatusStore.cs:130-141
+- [c] STA-034 Account limits = newest (by Updated) session that has any limit; sessions with no limits never blank them — src/Status/StatusStore.cs:60-78
+- [c] STA-035 Usage-cache fallback: `%TEMP%\claude\statusline-usage-cache.json` (user's statusline.ps1 cache; read-only), keys `five_hour`/`seven_day` with `utilization`, `resets_at`; Updated = file mtime — src/Status/StatusStore.cs:84-107
+- [c] STA-036 Cache wins only if newer than Claude's newest report (Claude wins on tie: `fromClaude.Updated >= cached.Updated`) — src/Status/StatusStore.cs:67
 - [ ] STA-037 Codex panes: status/limits come from Codex transcript (CodexSessionStore), limits = StatusStore.Newest over Codex sessions — src/MainWindow.xaml.cs:1577-1586
 - [ ] STA-038 Footer shows open pane's agent's limits; with no pane, Codex's if Claude not in use — src/MainWindow.xaml.cs:1564-1574
 
 #### Git
-- [ ] STA-039 Branch via `git rev-parse --abbrev-ref HEAD` (trimmed, empty => null) — src/Status/GitInfo.cs:56
-- [ ] STA-040 Counts via `git diff --numstat --no-ext-diff --no-textconv` (unstaged vs index only; staged not counted), sum col1/col2, `-` (binary) contributes 0 — src/Status/GitInfo.cs:57,80-91
-- [ ] STA-041 Every git call prefixed `-c core.fsmonitor=false --no-optional-locks -C <folder>`, no window, stdout+stderr drained, 5 s timeout => kill tree, null; nonzero exit => null; git missing => null — src/Status/GitInfo.cs:94-124
-- [ ] STA-042 Repo detection walks up the tree for `.git` dir OR file (no process if not in a repo) — src/Status/GitInfo.cs:65-77
-- [ ] STA-043 Cache: per folder (case-insensitive), at most one read per 3 s interval, at most one in flight; read on thread pool; Changed fires only if status differs — src/Status/GitInfo.cs:14-50, src/MainWindow.xaml.cs:259
+- [c] STA-039 Branch via `git rev-parse --abbrev-ref HEAD` (trimmed, empty => null) — src/Status/GitInfo.cs:56
+- [c] STA-040 Counts via `git diff --numstat --no-ext-diff --no-textconv` (unstaged vs index only; staged not counted), sum col1/col2, `-` (binary) contributes 0 — src/Status/GitInfo.cs:57,80-91
+- [c] STA-041 Every git call prefixed `-c core.fsmonitor=false --no-optional-locks -C <folder>`, no window, stdout+stderr drained, 5 s timeout => kill tree, null; nonzero exit => null; git missing => null — src/Status/GitInfo.cs:94-124
+- [c] STA-042 Repo detection walks up the tree for `.git` dir OR file (no process if not in a repo) — src/Status/GitInfo.cs:65-77
+- [c] STA-043 Cache: per folder (case-insensitive), at most one read per 3 s interval, at most one in flight; read on thread pool; Changed fires only if status differs — src/Status/GitInfo.cs:14-50, src/MainWindow.xaml.cs:259
 - [ ] STA-044 Git poll every 3 s for all open panes' working dirs, only while window visible; also on pane activation — src/MainWindow.xaml.cs:261,353-357,1325
 
 #### Strip composition (header)
-- [ ] STA-045 No strip when no status yet, header off, or every field empty/unticked (never zeros) — src/Status/StatusStrip.cs:38,51
-- [ ] STA-046 Order: Model, Branch(+diff), Context, Effort, 5h, 7d — src/Status/StatusStrip.cs:22,42-49
-- [ ] STA-047 Model shown if StatusModel && model present, via ModelName: `"Opus 5.5 (1M context)"` -> `"Opus 5.5 1M"` (regex `\s*\((\d+\.?\d*[kKmM])\s+context\)` -> ` $1`, trimmed) — src/Status/StatusStrip.cs:43,128-129
-- [ ] STA-048 Branch shown if StatusBranch and folder is a repo — src/Status/StatusStrip.cs:44
-- [ ] STA-049 Context meter: label `ctx`, detail `"{used}/{size}"`, tip `"Context: {used} of {size} tokens used ({pct}%)"`, no Reset — src/Status/StatusStrip.cs:54-59
-- [ ] STA-050 Effort shown if StatusEffort and non-empty (Codex default effort => absent) — src/Status/StatusStrip.cs:47
-- [ ] STA-051 5h/7d in header ONLY when footer is off (StatusFooter=false) and their tick is on and limit reported — src/Status/StatusStrip.cs:41,48-49
-- [ ] STA-052 Tokens: <1000 => plain int; >=1000 => `(n/1000.0)` F0 + "k" (so 999_999 -> "1000k"); >=1M => round(n/1e6, 1) (.NET Math.Round = banker's), F0 if within 0.05 of integer else F1, + "M" — src/Status/StatusStrip.cs:116-125
-- [ ] STA-053 ResetIn: `<=0` -> "now"; days>0 -> "{d}d{h}h" (h unpadded); hours>0 -> "{h}h{mm}m" (minutes 2-digit); else "{m}m" (truncated, so <1 min = "0m") — src/Status/StatusStrip.cs:132-139
-- [ ] STA-054 Bands: >=90 Red, >=70 Orange, >=50 Yellow, else Green — src/Status/StatusStrip.cs:96-102
-- [ ] STA-055 Meter.Band = Red if Reserve else BandFor(percent) — src/Status/StatusStrip.cs:18
-- [ ] STA-056 EffortStep: low 0, medium/med 1, high 2, xhigh 3, max 4, else -1 (case-sensitive) — src/Status/StatusStrip.cs:105-113
-- [ ] STA-057 LimitMeter labels: "5h"/"7d"; names "5-hour"/"7-day" — src/Status/StatusStrip.cs:74
-- [ ] STA-058 Stale (ResetsAt <= now; null reset never stale): Detail null, Reset null, tip `"{name} limit: reset since the last report, which said {p}%"`, Stale=true, never Reserve — src/Status/StatusStrip.cs:77-79
-- [ ] STA-059 Current limit: Detail `"↻ {reset}"` (U+21BB + space) or null without reset time; tip `"{name} limit: {p}% used"` + `", resets in {reset}"` + `". Past your {R}% reserve"` when past; Reset = bare countdown — src/Status/StatusStrip.cs:81-85
-- [ ] STA-060 ReserveFor: ReserveAt if that limit's reserve tick on, else 0 — src/Status/StatusStrip.cs:89-90
-- [ ] STA-061 PastReserve: reserveAt>0 && percent>=reserveAt && not stale — src/Status/StatusStrip.cs:93-94
-- [ ] STA-062 Footer: empty if footer off or no limits; 5h then 7d, each if ticked and reported; header switch irrelevant — src/Status/StatusStrip.cs:62-69
-- [ ] STA-063 ReserveWatch: warns once per (limit kind, ResetsAt) window; set never cleared; returns crossed meters (5h before 7d) — src/Status/StatusStrip.cs:146-161
+- [c] STA-045 No strip when no status yet, header off, or every field empty/unticked (never zeros) — src/Status/StatusStrip.cs:38,51
+- [c] STA-046 Order: Model, Branch(+diff), Context, Effort, 5h, 7d — src/Status/StatusStrip.cs:22,42-49
+- [c] STA-047 Model shown if StatusModel && model present, via ModelName: `"Opus 5.5 (1M context)"` -> `"Opus 5.5 1M"` (regex `\s*\((\d+\.?\d*[kKmM])\s+context\)` -> ` $1`, trimmed) — src/Status/StatusStrip.cs:43,128-129
+- [c] STA-048 Branch shown if StatusBranch and folder is a repo — src/Status/StatusStrip.cs:44
+- [c] STA-049 Context meter: label `ctx`, detail `"{used}/{size}"`, tip `"Context: {used} of {size} tokens used ({pct}%)"`, no Reset — src/Status/StatusStrip.cs:54-59
+- [c] STA-050 Effort shown if StatusEffort and non-empty (Codex default effort => absent) — src/Status/StatusStrip.cs:47
+- [c] STA-051 5h/7d in header ONLY when footer is off (StatusFooter=false) and their tick is on and limit reported — src/Status/StatusStrip.cs:41,48-49
+- [c] STA-052 Tokens: <1000 => plain int; >=1000 => `(n/1000.0)` F0 + "k" (so 999_999 -> "1000k"); >=1M => round(n/1e6, 1) (.NET Math.Round = banker's), F0 if within 0.05 of integer else F1, + "M" — src/Status/StatusStrip.cs:116-125
+- [c] STA-053 ResetIn: `<=0` -> "now"; days>0 -> "{d}d{h}h" (h unpadded); hours>0 -> "{h}h{mm}m" (minutes 2-digit); else "{m}m" (truncated, so <1 min = "0m") — src/Status/StatusStrip.cs:132-139
+- [c] STA-054 Bands: >=90 Red, >=70 Orange, >=50 Yellow, else Green — src/Status/StatusStrip.cs:96-102
+- [c] STA-055 Meter.Band = Red if Reserve else BandFor(percent) — src/Status/StatusStrip.cs:18
+- [c] STA-056 EffortStep: low 0, medium/med 1, high 2, xhigh 3, max 4, else -1 (case-sensitive) — src/Status/StatusStrip.cs:105-113
+- [c] STA-057 LimitMeter labels: "5h"/"7d"; names "5-hour"/"7-day" — src/Status/StatusStrip.cs:74
+- [c] STA-058 Stale (ResetsAt <= now; null reset never stale): Detail null, Reset null, tip `"{name} limit: reset since the last report, which said {p}%"`, Stale=true, never Reserve — src/Status/StatusStrip.cs:77-79
+- [c] STA-059 Current limit: Detail `"↻ {reset}"` (U+21BB + space) or null without reset time; tip `"{name} limit: {p}% used"` + `", resets in {reset}"` + `". Past your {R}% reserve"` when past; Reset = bare countdown — src/Status/StatusStrip.cs:81-85
+- [c] STA-060 ReserveFor: ReserveAt if that limit's reserve tick on, else 0 — src/Status/StatusStrip.cs:89-90
+- [c] STA-061 PastReserve: reserveAt>0 && percent>=reserveAt && not stale — src/Status/StatusStrip.cs:93-94
+- [c] STA-062 Footer: empty if footer off or no limits; 5h then 7d, each if ticked and reported; header switch irrelevant — src/Status/StatusStrip.cs:62-69
+- [c] STA-063 ReserveWatch: warns once per (limit kind, ResetsAt) window; set never cleared; returns crossed meters (5h before 7d) — src/Status/StatusStrip.cs:146-161
 - [ ] STA-064 Reserve crossing -> island notification `IslandNote(label, "{label} at {p}%", NoteKind.Reserve)`; only a warning, prompts never blocked — src/Island/IslandWindow.xaml.cs:114, src/MainWindow.xaml.cs:1588-1595
 - [ ] STA-065 WarnReserve runs on status change, settings change, and every 30 s clock tick even when hidden (uses Claude limits only: `_status.Limits`) — src/MainWindow.xaml.cs:335-339,358-363,1594
 - [ ] STA-066 Strip/footer redraw every 30 s while visible (countdowns, staleness) and on status/git/settings change — src/MainWindow.xaml.cs:263,335-363
@@ -1239,25 +1239,25 @@ Files read in full: src/Status/{StatusRelay,StatusStore,StatusStrip,StatusStripV
 - [ ] STA-123 Card/Ask state is not persisted (cards open state reset each open) — src/Settings/SettingsPane.xaml.cs:215-217
 
 #### Settings model
-- [ ] STA-124 Load never fails: missing/unreadable/broken/non-object file => all defaults; per key fallback on wrong type; unknown keys ignored — src/Settings/ClayoSettings.cs:73-135
-- [ ] STA-125 reserveAt accepted only if int32 in {0,70,80,90}, else 0 — src/Settings/ClayoSettings.cs:53,118-119
-- [ ] STA-126 Enums (theme, defaultAgent) parsed by name case-insensitively, numbers/unknown => default — src/Settings/ClayoSettings.cs:104-107
-- [ ] STA-127 Paths: empty string or non-string => null — src/Settings/ClayoSettings.cs:90-93
-- [ ] STA-128 Lists (askGroupsOn, askOff): array of non-empty strings without commas, distinct, ordinal sorted, kept internally as comma string; non-array => default "" — src/Settings/ClayoSettings.cs:96-101
-- [ ] STA-129 NewSessionKind: !useCodex => Claude; !useClaude => Codex; else defaultAgent (Ask => null => ask each time) — src/Settings/ClayoSettings.cs:56-64
-- [ ] STA-130 Save: write `settings.json.tmp` indented then rename over; IO errors swallowed — src/Settings/ClayoSettings.cs:138-183
-- [ ] STA-131 Start at login is NOT in settings.json (Run key) — src/Settings/ClayoSettings.cs:13-14
+- [c] STA-124 Load never fails: missing/unreadable/broken/non-object file => all defaults; per key fallback on wrong type; unknown keys ignored — src/Settings/ClayoSettings.cs:73-135
+- [c] STA-125 reserveAt accepted only if int32 in {0,70,80,90}, else 0 — src/Settings/ClayoSettings.cs:53,118-119
+- [c] STA-126 Enums (theme, defaultAgent) parsed by name case-insensitively, numbers/unknown => default — src/Settings/ClayoSettings.cs:104-107
+- [c] STA-127 Paths: empty string or non-string => null — src/Settings/ClayoSettings.cs:90-93
+- [c] STA-128 Lists (askGroupsOn, askOff): array of non-empty strings without commas, distinct, ordinal sorted, kept internally as comma string; non-array => default "" — src/Settings/ClayoSettings.cs:96-101
+- [c] STA-129 NewSessionKind: !useCodex => Claude; !useClaude => Codex; else defaultAgent (Ask => null => ask each time) — src/Settings/ClayoSettings.cs:56-64
+- [c] STA-130 Save: write `settings.json.tmp` indented then rename over; IO errors swallowed — src/Settings/ClayoSettings.cs:138-183
+- [c] STA-131 Start at login is NOT in settings.json (Run key) — src/Settings/ClayoSettings.cs:13-14
 
 #### AskRules / Codex
-- [ ] STA-132 Group "publishing" "Publishing" "Pushing, tags, releases, anything that changes GitHub." icon U+EA18 — src/Settings/AskRules.cs:25
-- [ ] STA-133 Rules (id / label / line / Claude patterns / Codex prefixes): push "Push code" "git push" [`git push*`,`git -C * push*`] [git push]; tags "Tags" "git tag: making or moving a version tag" [`git tag*`,`git -C * tag*`] [git tag]; releases "Releases" "gh release: drafting or publishing one" [`gh release*`] [gh release]; merge "Merge pull requests" "gh pr merge" [`gh pr merge*`] [gh pr merge]; repo "Repo settings" "Renaming, deleting, rulesets" [`gh repo edit*`,`gh repo delete*`,`gh repo rename*`,`gh ruleset*`] [gh repo edit][gh repo delete][gh repo rename][gh ruleset]; secrets "Secrets" "gh secret" [`gh secret*`] [gh secret]; workflows "Workflows" "gh workflow: running or turning one on or off" [`gh workflow*`] [gh workflow]; api "Other GitHub changes" "gh api calls that write" [`gh api *-X*`,`gh api *--method*`,`gh api *-f *`,`gh api *-F *`,`gh api *--field*`,`gh api *--raw-field*`,`gh api *--input*`] [gh api] — src/Settings/AskRules.cs:27-46
-- [ ] STA-134 Default: every group off (askGroupsOn ""), every rule ticked (askOff ""); new groups arrive off, new rules arrive ticked — src/Settings/ClayoSettings.cs:44-50
-- [ ] STA-135 ClaudeAsk = for each ticked rule of each on group, each pattern p => `Bash(p)` then `PowerShell(p)` (interleaved per pattern) — src/Settings/AskRules.cs:57-58
-- [ ] STA-136 Codex `clayo.rules` at `<CODEX_HOME or ~/.codex>\rules\clayo.rules`; exists only if alsoForCodex && ≥1 ticked rule in an on group; written/rewritten (only if differs)/deleted on every settings change and at startup; Codex home not created if missing — src/Settings/AskRules.cs:60-106, src/MainWindow.xaml.cs:313,326,581
+- [c] STA-132 Group "publishing" "Publishing" "Pushing, tags, releases, anything that changes GitHub." icon U+EA18 — src/Settings/AskRules.cs:25
+- [c] STA-133 Rules (id / label / line / Claude patterns / Codex prefixes): push "Push code" "git push" [`git push*`,`git -C * push*`] [git push]; tags "Tags" "git tag: making or moving a version tag" [`git tag*`,`git -C * tag*`] [git tag]; releases "Releases" "gh release: drafting or publishing one" [`gh release*`] [gh release]; merge "Merge pull requests" "gh pr merge" [`gh pr merge*`] [gh pr merge]; repo "Repo settings" "Renaming, deleting, rulesets" [`gh repo edit*`,`gh repo delete*`,`gh repo rename*`,`gh ruleset*`] [gh repo edit][gh repo delete][gh repo rename][gh ruleset]; secrets "Secrets" "gh secret" [`gh secret*`] [gh secret]; workflows "Workflows" "gh workflow: running or turning one on or off" [`gh workflow*`] [gh workflow]; api "Other GitHub changes" "gh api calls that write" [`gh api *-X*`,`gh api *--method*`,`gh api *-f *`,`gh api *-F *`,`gh api *--field*`,`gh api *--raw-field*`,`gh api *--input*`] [gh api] — src/Settings/AskRules.cs:27-46
+- [c] STA-134 Default: every group off (askGroupsOn ""), every rule ticked (askOff ""); new groups arrive off, new rules arrive ticked — src/Settings/ClayoSettings.cs:44-50
+- [c] STA-135 ClaudeAsk = for each ticked rule of each on group, each pattern p => `Bash(p)` then `PowerShell(p)` (interleaved per pattern) — src/Settings/AskRules.cs:57-58
+- [c] STA-136 Codex `clayo.rules` at `<CODEX_HOME or ~/.codex>\rules\clayo.rules`; exists only if alsoForCodex && ≥1 ticked rule in an on group; written/rewritten (only if differs)/deleted on every settings change and at startup; Codex home not created if missing — src/Settings/AskRules.cs:60-106, src/MainWindow.xaml.cs:313,326,581
 - [ ] STA-137 Settings › General intro "How Clayo starts and what the window's close button does." — Settings/SettingsPane.xaml:248
 - [ ] STA-138 Settings › Island page heading "Screenshots" and intro "Send a screenshot to a session: the island asks which one, and the image lands in its prompt, ready for your question." — Settings/SettingsPane.xaml:534-536
 - [ ] STA-139 Settings section headings "Coming later", "Where it shows", "Per session", "Ask before" — Settings/SettingsPane.xaml:317,360,412,498
-- [ ] STA-140 (D1) When alsoForCodex is true and `<CODEX_HOME>\rules\clayo.rules` exists, Security shows "Still active in Codex; delete this file to turn it off" + Open file link; the Rust build never writes or deletes it — PORTING.md §6 D1
+- [c] STA-140 (D1) When alsoForCodex is true and `<CODEX_HOME>\rules\clayo.rules` exists, Security shows "Still active in Codex; delete this file to turn it off" + Open file link; the Rust build never writes or deletes it — PORTING.md §6 D1
 
 ### 3. DATA FORMATS
 
@@ -1495,17 +1495,17 @@ Paths below are relative to `D:\Clayo\Clayo\src\Clayo\` unless prefixed `checks/
 ### 2. BEHAVIORS
 
 #### States, kinds, notes
-- [ ] ISL-001 States: Hidden, Compact, Peek, Notify, Drop, Pick — IT:9
-- [ ] ISL-002 Kinds: NeedsYou, Error, Done, Reserve, Tip; Urgent = NeedsYou|Error (Reserve/Tip/Done not urgent) — IT:16,24
-- [ ] ISL-003 PxRect is right/bottom-exclusive; Contains(x,y)= L<=x<R && T<=y<B — IT:28-31
-- [ ] ISL-004 Notify(note) removes any queued note with same Source then appends with ++seq (one note per session; newer replaces) — IT:161-165
-- [ ] ISL-005 Resolve(source) drops queued notes from that source (session moved on/closed) — IT:171
-- [ ] ISL-006 Note choice: urgent before non-urgent, then highest seq (newest) — IT:410-415
-- [ ] ISL-007 A note becomes Note when best != current; `_shownAt` = now (Done's 4 s counts from on-screen, not queue time) — IT:418-425
-- [ ] ISL-008 Non-urgent note (Done/Reserve/Tip) expires when now-shownAt>=4000 AND cursor not over island AND it has been away >=400 ms (hover holds) -> resolved — IT:404-408,438-441
-- [ ] ISL-009 Urgent notes (NeedsYou/Error) never time out; stay until Resolve or Dismiss — IT:402-432; checks/island.cs:146,154-157
-- [ ] ISL-010 Notes outrank Peek and Compact (Notify replaces a peek/compact) — IT:247; checks/island.cs:163,440
-- [ ] ISL-011 While a note shows and none remain, state Notify -> Hidden — IT:248
+- [c] ISL-001 States: Hidden, Compact, Peek, Notify, Drop, Pick — IT:9
+- [c] ISL-002 Kinds: NeedsYou, Error, Done, Reserve, Tip; Urgent = NeedsYou|Error (Reserve/Tip/Done not urgent) — IT:16,24
+- [c] ISL-003 PxRect is right/bottom-exclusive; Contains(x,y)= L<=x<R && T<=y<B — IT:28-31
+- [c] ISL-004 Notify(note) removes any queued note with same Source then appends with ++seq (one note per session; newer replaces) — IT:161-165
+- [c] ISL-005 Resolve(source) drops queued notes from that source (session moved on/closed) — IT:171
+- [c] ISL-006 Note choice: urgent before non-urgent, then highest seq (newest) — IT:410-415
+- [c] ISL-007 A note becomes Note when best != current; `_shownAt` = now (Done's 4 s counts from on-screen, not queue time) — IT:418-425
+- [c] ISL-008 Non-urgent note (Done/Reserve/Tip) expires when now-shownAt>=4000 AND cursor not over island AND it has been away >=400 ms (hover holds) -> resolved — IT:404-408,438-441
+- [c] ISL-009 Urgent notes (NeedsYou/Error) never time out; stay until Resolve or Dismiss — IT:402-432; checks/island.cs:146,154-157
+- [c] ISL-010 Notes outrank Peek and Compact (Notify replaces a peek/compact) — IT:247; checks/island.cs:163,440
+- [c] ISL-011 While a note shows and none remain, state Notify -> Hidden — IT:248
 - [ ] ISL-012 Pane status -> note kind: NeedsInput->NeedsYou, Error->Error, Done only when previous status was Working ->Done, anything else -> null (Resolve) — MW:1279-1288
 - [ ] ISL-013 Pane goes Working -> SetWorking(pane,true); leaves Working -> SetWorking(false) — MW:1289-1290
 - [ ] ISL-014 Closing a pane -> Resolve(pane) + SetWorking(pane,false) — MW:1138-1139
@@ -1514,49 +1514,49 @@ Paths below are relative to `D:\Clayo\Clayo\src\Clayo\` unless prefixed `checks/
 - [ ] ISL-017 Tip "Copy a screenshot first (Win+Shift+S)" (source "Screenshots") when hotkey pressed with no image, or save failed — IW:575,584-585,642
 
 #### Edge dwell -> Peek
-- [ ] ISL-018 Edge zone: cursor y in [monTop, monTop+2) physical px (EdgePx=2, NOT scaled) and |x - centreX| <= 240*scale/2 — IT:58,61,144-150
+- [c] ISL-018 Edge zone: cursor y in [monTop, monTop+2) physical px (EdgePx=2, NOT scaled) and |x - centreX| <= 240*scale/2 — IT:58,61,144-150
 - [ ] ISL-019 Monitor = MonitorFromPoint(cursor, NEAREST); scale = GetDpiForMonitor(MDT_EFFECTIVE_DPI)/96, fallback 1.0 — IW:153-159
-- [ ] ISL-020 Dwell 600 ms in zone -> Peek; progress = dwelt/600 for dwell bar; DwellLengthMs = 600 — IT:63,274-286
-- [ ] ISL-021 Dwell resets on leaving zone, on primary button down (window snap drag), on move/size mode; held time does not count — IT:268-272
-- [ ] ISL-022 `_mustLeaveFirst` (after Dismiss/EndPick/Release): no new dwell until cursor leaves the zone once — IT:103,220,268
-- [ ] ISL-023 Peek stays while cursor in zone or over island (pill rect or open context menu); hides 400 ms after leaving — IT:64,252-260; IW:200
-- [ ] ISL-024 DwellProgress is 0 whenever not dwelling (out of zone, button, busy, peeking) — IT:222
+- [c] ISL-020 Dwell 600 ms in zone -> Peek; progress = dwelt/600 for dwell bar; DwellLengthMs = 600 — IT:63,274-286
+- [c] ISL-021 Dwell resets on leaving zone, on primary button down (window snap drag), on move/size mode; held time does not count — IT:268-272
+- [c] ISL-022 `_mustLeaveFirst` (after Dismiss/EndPick/Release): no new dwell until cursor leaves the zone once — IT:103,220,268
+- [c] ISL-023 Peek stays while cursor in zone or over island (pill rect or open context menu); hides 400 ms after leaving — IT:64,252-260; IW:200
+- [c] ISL-024 DwellProgress is 0 whenever not dwelling (out of zone, button, busy, peeking) — IT:222
 - [ ] ISL-025 Peek shows "clayo" + "N sessions" ("1 session" when 1) where N = number of live panes — IW:346-353; MW:283
 
 #### Busy / Clayo-in-front ("quiet hours" = Windows Focus Assist/DND, no own setting)
 - [ ] ISL-026 Busy = SHQueryUserNotificationState in {QUNS_RUNNING_D3D_FULL_SCREEN(3), QUNS_PRESENTATION_MODE(4), QUNS_QUIET_TIME(6)}, or QUNS_BUSY(2) only if foreground window is visible, not iconic, not class Progman/WorkerW, and its rect covers its monitor — IW:270-290
 - [ ] ISL-027 Busy checked at most once per second (first tick always) — IW:69,165-169
 - [ ] ISL-028 ClayoActive = main window visible && not minimized && GetAncestor(GetForegroundWindow(), GA_ROOTOWNER) == main hwnd (owned windows like Setup count) — IW:298-301
-- [ ] ISL-029 While Busy or ClayoActive: anything showing (except Pick) hides; dwell reset; notes held (not dropped) — IT:230-241
-- [ ] ISL-030 ClayoActive additionally drops all non-urgent queued notes and cancels a pending greeting — IT:233,236
-- [ ] ISL-031 Held Done gets a full 4 s once busy clears — checks/island.cs:198-205
+- [c] ISL-029 While Busy or ClayoActive: anything showing (except Pick) hides; dwell reset; notes held (not dropped) — IT:230-241
+- [c] ISL-030 ClayoActive additionally drops all non-urgent queued notes and cancels a pending greeting — IT:233,236
+- [c] ISL-031 Held Done gets a full 4 s once busy clears — checks/island.cs:198-205
 
 #### Compact (self-peek while a session works)
 - [ ] ISL-032 Compact pill = mascot + 8px status dot only, 92 logical wide, click-through — IW:28,319,324-326; IT:4-8
-- [ ] ISL-033 Shows when any working session not yet "peeked" in this run of work, rate limit at most one self-peek per 180 s; a start blocked by the limit is skipped (marked peeked), not held — IT:77,347-358
-- [ ] ISL-034 Session stopping work clears its peeked mark (next run counts) — IT:178-186
-- [ ] ISL-035 Compact hides when no session works, or after 10 s — IT:80,394-397
-- [ ] ISL-036 Resting cursor in zone or over pill (button up, not move/size) for 600 ms opens full Peek; a rest under way holds it past 10 s — IT:83,379-391
+- [c] ISL-033 Shows when any working session not yet "peeked" in this run of work, rate limit at most one self-peek per 180 s; a start blocked by the limit is skipped (marked peeked), not held — IT:77,347-358
+- [c] ISL-034 Session stopping work clears its peeked mark (next run counts) — IT:178-186
+- [c] ISL-035 Compact hides when no session works, or after 10 s — IT:80,394-397
+- [c] ISL-036 Resting cursor in zone or over pill (button up, not move/size) for 600 ms opens full Peek; a rest under way holds it past 10 s — IT:83,379-391
 - [ ] ISL-037 Compact: dot Blue (#78A5FF) normally; Warm when greeting — IW:325
 - [ ] ISL-038 Compact pose Walk; light Blue (greeting: Warm) — IW:381,391
 
 #### Login greeting
 - [ ] ISL-039 App started with background (login) arg -> island.Greet() — App.xaml.cs:25,67; IW:777
-- [ ] ISL-040 Greeting = Compact pill with Warm dot, mascot Wave, Warm glow, out 2500 ms then hides; only once — IT:89,364-374,394-395; IW:379
-- [ ] ISL-041 Greeting held while busy; given up if not shown within 60 s; dropped if Clayo comes to front — IT:95,224-233
-- [ ] ISL-042 Greeting does not consume the self-peek; resting on it opens Peek (no longer greeting) — IT:385; checks/island.cs:500-515
+- [c] ISL-040 Greeting = Compact pill with Warm dot, mascot Wave, Warm glow, out 2500 ms then hides; only once — IT:89,364-374,394-395; IW:379
+- [c] ISL-041 Greeting held while busy; given up if not shown within 60 s; dropped if Clayo comes to front — IT:95,224-233
+- [c] ISL-042 Greeting does not consume the self-peek; resting on it opens Peek (no longer greeting) — IT:385; checks/island.cs:500-515
 
 #### Drop (file drag)
 - [ ] ISL-043 Only an OLE drag counts (foreground thread's capture hwnd has class "CLIPBRDWNDCLASS"); not move/size — IW:255-262; IT:297
-- [ ] ISL-044 Drag zone: y in [top, top+40*scale), |x-centre| <= 480*scale/2 — IT:70-71,152-158
-- [ ] ISL-045 Drag dwell 250 ms (dwell bar uses DwellLengthMs=250) -> Drop, replacing any note/peek/compact (note returns after) — IT:72,295-313
-- [ ] ISL-046 Drop stays while dragging inside drag zone or over island; 1500 ms grace when dragged away; 400 ms when the drag ended elsewhere — IT:73,320-329
-- [ ] ISL-047 `_dragEndFirst` after Dismiss/Release: the same drag ignored until it ends; a new drag may bring it straight back — IT:108,221,335-340,447-453
+- [c] ISL-044 Drag zone: y in [top, top+40*scale), |x-centre| <= 480*scale/2 — IT:70-71,152-158
+- [c] ISL-045 Drag dwell 250 ms (dwell bar uses DwellLengthMs=250) -> Drop, replacing any note/peek/compact (note returns after) — IT:72,295-313
+- [c] ISL-046 Drop stays while dragging inside drag zone or over island; 1500 ms grace when dragged away; 400 ms when the drag ended elsewhere — IT:73,320-329
+- [c] ISL-047 `_dragEndFirst` after Dismiss/Release: the same drag ignored until it ends; a new drag may bring it straight back — IT:108,221,335-340,447-453
 - [ ] ISL-048 Drop UI: header "clayo" / sub "drop to start"; body 110 tall: dashed rounded target "Drop here" / "A file to ask about it · a folder to open it in Clayo" — IW:339-345; IX:52-61
 - [ ] ISL-049 Target fill faint warm (alpha 0x0F) idle, 0x29 while a valid file drag is over — IW:732-752
 - [ ] ISL-050 Only the first path of a FileDrop accepted (text/browser image refused, effect None); Copy effect — IW:725-737
 - [ ] ISL-051 Drop of folder -> main.AdoptFolder(path) (new session there, window revealed) — IW:766; MW:511-521
-- [ ] ISL-052 Drop of file -> AdoptFolder(fileDir, prefill "@name " or `@"name with space" `) typed into Claude input when ready, not sent — IW:767,774
+- [c] ISL-052 Drop of file -> AdoptFolder(fileDir, prefill "@name " or `@"name with space" `) typed into Claude input when ready, not sent — IW:767,774
 - [ ] ISL-053 After drop: trigger.Release() + SlideOut — IW:763-764
 - [ ] ISL-054 Click on drop target does nothing (not "open Clayo") — IW:508
 
@@ -1570,9 +1570,9 @@ Paths below are relative to `D:\Clayo\Clayo\src\Clayo\` unless prefixed `checks/
 - [ ] ISL-061 Choice row = (pane, row name or "new session", project/folder name, pane status) — MW:1530-1531
 - [ ] ISL-062 While Pick: global hotkeys (no modifier, MOD_NOREPEAT) 1,2,3,N,Esc registered (ids 10..14); failures silently ignored (click still works) — IW:55-56,609
 - [ ] ISL-063 Keys: 1..3 -> choose index if < count; N -> new session; Esc -> cancel — IW:578-581
-- [ ] ISL-064 Pick shows immediately (tick run synchronously) over everything, regardless of busy/ClayoActive; notes wait behind — IW:612; IT:195-200,212-217
-- [ ] ISL-065 Pick times out after 15 s without answer; cursor over it resets the timer — IT:86,214-215
-- [ ] ISL-066 After EndPick (answer/cancel), no edge peek until cursor leaves zone — IT:203-208
+- [c] ISL-064 Pick shows immediately (tick run synchronously) over everything, regardless of busy/ClayoActive; notes wait behind — IW:612; IT:195-200,212-217
+- [c] ISL-065 Pick times out after 15 s without answer; cursor over it resets the timer — IT:86,214-215
+- [c] ISL-066 After EndPick (answer/cancel), no edge peek until cursor leaves zone — IT:203-208
 - [ ] ISL-067 Pick keys released whenever state leaves Pick — IW:207,615-621
 - [ ] ISL-068 Pick header: "send screenshot" (semibold) + " to…"; sub "1–{n} or N · Esc to cancel", or "N for a new session · Esc to cancel" when n=0 — IW:333-336
 - [ ] ISL-069 Rows: key badge, name (semibold), "  folder" (faint), status dot right; last row "N" / "New session…" + first choice's folder, no dot — IW:649-659,674-720
@@ -1581,17 +1581,17 @@ Paths below are relative to `D:\Clayo\Clayo\src\Clayo\` unless prefixed `checks/
 - [ ] ISL-072 Send to existing live non-exited pane: Reveal, ShowSession, write bracketed paste `ESC[200~{path}ESC[201~` to its PTY (no Enter); Codex pane also records (path, utcNow) in CodexImages — MW:1539-1548; Terminal/TerminalPane.xaml.cs:374,377
 - [ ] ISL-073 New session / dead pane: AdoptFolder(folder of picked pane, else last-used pane, else current folder; fallback current folder if missing) with prefill = bracketed paste of path; Codex new pane records image — MW:1549-1553
 - [ ] ISL-074 Status dot colours (App.xaml:21-29): Working/Starting #D4A24C, NeedsInput #5AA9E6, Done #6BBF8A, Error #D2605F, Exited #5A6472, other #39404B — MW:164-172
-- [ ] ISL-075 Screenshot file: %LOCALAPPDATA%\Clayo\shots\yyyy-MM-dd_HH-mm-ss.png (local time), -2, -3... if exists — SS:15-16,50-56
+- [c] ISL-075 Screenshot file: %LOCALAPPDATA%\Clayo\shots\yyyy-MM-dd_HH-mm-ss.png (local time), -2, -3... if exists — SS:15-16,50-56
 - [ ] ISL-076 Save converts to Bgr32 (alpha discarded, avoids fully transparent images) — SS:37-41
 - [ ] ISL-077 Save retries up to 5 times with 50 ms sleep on COMException (clipboard held); IO/Unauthorized -> null — SS:30-45
 - [ ] ISL-078 OnClipboard() returns false on COMException — SS:20-24
-- [ ] ISL-079 Prune at main window load: delete *.png in shots dir with LastWriteTimeUtc < now-7 days; ignores IO errors; missing dir ok — SS:18,59-68; MW:350
+- [c] ISL-079 Prune at main window load: delete *.png in shots dir with LastWriteTimeUtc < now-7 days; ignores IO errors; missing dir ok — SS:18,59-68; MW:350
 
 #### Click / Esc / menu
 - [ ] ISL-080 Left click (mouse up) on pill in Peek/Notify: Dismiss (resolve note), SlideOut, main.Reveal() (Show, restore if minimized, Activate; Setup first if needed), and if the note came from a pane, ShowSession(pane) — IW:504-519; MW:530-540,1301-1306
 - [ ] ISL-081 Pill cursor: Hand; Arrow in Drop/Pick — IW:330
 - [ ] ISL-082 Esc (GetAsyncKeyState edge-detected, not swallowed, still reaches foreground app) while anything shows -> Dismiss — IW:174-179
-- [ ] ISL-083 Dismiss: resolve showing note, hide, must leave zone first, ignore current drag — IT:447-453
+- [c] ISL-083 Dismiss: resolve showing note, hide, must leave zone first, ignore current drag — IT:447-453
 - [ ] ISL-084 Right-click context menu: "Start at login" (checkable; on open reads Run-key state, disabled if build can't write) / separator / "Quit Clayo" (main.Quit ends app) — IX:25-31; IW:780-784; MW:1616-1628,1602-1606
 - [ ] ISL-085 Open context menu counts as "over island" — IW:199-200
 - [ ] ISL-086 Compact and Hidden: whole window WS_EX_TRANSPARENT (clicks pass to tabs); also during slide out — IW:219-222,488-494
@@ -1618,7 +1618,7 @@ Paths below are relative to `D:\Clayo\Clayo\src\Clayo\` unless prefixed `checks/
 - [ ] ISL-103 Poll: 50 ms; 250 ms when Hidden and cursor > 200*scale px below monitor top; interval changed only on change; GetCursorPos failure (secure desktop) -> skip tick — IW:51,151,228-229
 - [ ] ISL-104 Pose second step 1400 ms — IW:97
 - [ ] ISL-105 Header: 52 tall, padding left 8 right 22; mascot 44x44 + 10 gap; texts 13 px head, 12 px sub; font "Segoe UI Variable Text, Segoe UI", Display text mode, ellipsis trimming — IX:9-10,36-47; App.xaml:31
-- [ ] ISL-106 Constants: DwellMs 600, LeaveMs 400, DragDwellMs 250, DragLeaveMs 1500, DoneMs 4000, SelfPeekEveryMs 180000, CompactMs 10000, RestMs 600, PickMs 15000, GreetMs 2500, GreetWithinMs 60000 — IT:63-95
+- [c] ISL-106 Constants: DwellMs 600, LeaveMs 400, DragDwellMs 250, DragLeaveMs 1500, DoneMs 4000, SelfPeekEveryMs 180000, CompactMs 10000, RestMs 600, PickMs 15000, GreetMs 2500, GreetWithinMs 60000 — IT:63-95
 - [ ] ISL-107 No sounds anywhere in island code.
 - [ ] ISL-108 On close: stop timers, unregister pick keys, unregister Ctrl+Alt+S, remove clipboard listener, close glow — IW:133-144
 - [ ] ISL-109 Main window close only hides; island is the way back and holds Quit — IX:24; MW:1752-1760
@@ -1912,10 +1912,10 @@ Abbreviations: TP = Terminal/TerminalPane.xaml.cs, TH = Assets/terminal.html, MW
 - [ ] TRM-052 Output is batched: pty reads are added to a buffer under a lock, and the first read schedules an 8 ms dispatcher timer at Normal priority (not Background, so key echo is not delayed, issue #21). The whole buffer is posted as one base64 message, so a redraw split over several reads paints in one go (no flicker) — TP:411-421, 155-159, 581-592
 
 #### Status detection (drives the sidebar dot, island, notifications)
-- [ ] TRM-053 The output stream is scanned per chunk. `ESC[1C` is replaced with a space (ConPTY sends spaces as cursor moves). A carry of (max marker len − 1) = 16 bytes joins markers split across reads — TP:497-508, 538-550
-- [ ] TRM-054 "API Error:" → Error. "Do you want to" → NeedsInput. "Would you like to" → NeedsInput in Codex panes only. Error has priority over the ask markers. A scan hit resets `answered` and records askedAt (local time) — TP:481-488, 403-409
-- [ ] TRM-055 Idle timer, every 400 ms: if Exited, skip. If a Codex turn is known: only type the prefill after 1.5 s of quiet. Else: burst = chunks counted as work in the last 900 ms (the queue keeps the last 12). NeedsInput/Error stay until answered. burst ≥ 3 → Working. Quiet > 1500 ms → Done (and type the prefill). Otherwise unchanged — TP:128-151, 523-531
-- [ ] TRM-056 Codex panes, once the transcript reports a turn: Working/Done comes from the transcript (`FromTurn`). Exited never changes. NeedsInput stays unless answered and the transcript line is newer than the question — TP:563-579
+- [c] TRM-053 The output stream is scanned per chunk. `ESC[1C` is replaced with a space (ConPTY sends spaces as cursor moves). A carry of (max marker len − 1) = 16 bytes joins markers split across reads — TP:497-508, 538-550
+- [c] TRM-054 "API Error:" → Error. "Do you want to" → NeedsInput. "Would you like to" → NeedsInput in Codex panes only. Error has priority over the ask markers. A scan hit resets `answered` and records askedAt (local time) — TP:481-488, 403-409
+- [c] TRM-055 Idle timer, every 400 ms: if Exited, skip. If a Codex turn is known: only type the prefill after 1.5 s of quiet. Else: burst = chunks counted as work in the last 900 ms (the queue keeps the last 12). NeedsInput/Error stay until answered. burst ≥ 3 → Working. Quiet > 1500 ms → Done (and type the prefill). Otherwise unchanged — TP:128-151, 523-531
+- [c] TRM-056 Codex panes, once the transcript reports a turn: Working/Done comes from the transcript (`FromTurn`). Exited never changes. NeedsInput stays unless answered and the transcript line is newer than the question — TP:563-579
 
 #### Image chip (pane header; MW logic using TP state)
 - [ ] TRM-057 The page reports the set of `[Image #n]` tags visible on the bottom screen (rows baseY..baseY+rows, not scrollback), 250 ms after output is parsed, and only when the set changes (comma-joined, sorted) — TH:198-228, TP:320-324
@@ -1939,11 +1939,11 @@ Abbreviations: TP = Terminal/TerminalPane.xaml.cs, TH = Assets/terminal.html, MW
 
 #### HTML pages
 - [ ] TRM-073 What: a single HTML file an agent writes at `<project>/.clayo/pages/<name>.html` (report/dashboard/slides), using clayo-page.css/js. Charts are JSON in `<script type="application/json" class="chart">` (Chart.js: bar/line/area/pie/doughnut/scatter, stacked/horizontal, xLabel/yLabel). Diagrams are `<pre class="mermaid">`. Tables are sortable with `data-sortable`. Decks use `.deck > .slide` (16:9) — Assets/pages/page-guide.md:1-153
-- [ ] TRM-074 Detection (TT): an .html Write/Edit (or Codex patch/FileChange) inside `<folder>\.clayo\pages\`. A page written again moves to the end. `Pages` lists each one once, newest last. PageWrites counts every write — TT:118-125
+- [c] TRM-074 Detection (TT): an .html Write/Edit (or Codex patch/FileChange) inside `<folder>\.clayo\pages\`. A page written again moves to the end. `Pages` lists each one once, newest last. PageWrites counts every write — TT:118-125
 - [ ] TRM-075 A new page write after the first transcript read opens the page in the viewer automatically. A page from history (the first read) only appears in the chip. On a page write, `.clayo/` is appended to `.git/info/exclude` of the enclosing repo (searched upward). If the page is open and the file still exists, it is shown again on change (mtime) — MW:663-677, Pages/PageFolder.cs:15-32
 - [ ] TRM-076 Page chip: visible when any page is known. Tooltip: "<name>\n<path>\nClick to see it here, again to close it. Right-click for the session's other pages." Click toggles. The right-click menu lists the session's existing pages, newest first, with the open one checked — MW:1489-1515
 - [ ] TRM-077 The page shows in the same panel as the doc (one at a time). The same page again keeps its scroll y and slide (reported by the page via postMessage `place`, debounced 150 ms). A different page starts at the top — TH:294-323, clayo-page.js:433-453
-- [ ] TRM-078 Sealing: a CSP meta is inserted straight after the doctype (or at offset 0 if there is none), so the page cannot comment it out. CSP = `default-src 'none'; script-src 'unsafe-inline' https://ccx.assets https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src` (same list)`; img-src data: blob: https://ccx.assets; font-src data: https://ccx.assets; connect-src 'none'; form-action 'none'`. `href|src = "./clayo-page.css|js"` (either quote style, optional ./) is rewritten to `https://ccx.assets/pages/clayo-page.(css|js)`. Nothing else is touched — Pages/PageHtml.cs:43-81
+- [c] TRM-078 Sealing: a CSP meta is inserted straight after the doctype (or at offset 0 if there is none), so the page cannot comment it out. CSP = `default-src 'none'; script-src 'unsafe-inline' https://ccx.assets https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src` (same list)`; img-src data: blob: https://ccx.assets; font-src data: https://ccx.assets; connect-src 'none'; form-action 'none'`. `href|src = "./clayo-page.css|js"` (either quote style, optional ./) is rewritten to `https://ccx.assets/pages/clayo-page.(css|js)`. Nothing else is touched — Pages/PageHtml.cs:43-81
 - [ ] TRM-079 Frame sandbox: `allow-scripts` only (opaque origin; it cannot reach the host, files or the network). The doc frame is `allow-same-origin` with no scripts — TH:60-66
 - [ ] TRM-080 Over 5 MB: a dark note "<name> is too big to show here." A read error: "Couldn't read <name>: <msg>" (HTML-encoded, on #14171c, color #7a828f) — TP:643-677
 - [ ] TRM-081 Page runtime: dark/light via `light-dark()` tokens (Clayo forces dark). Charts and Mermaid redraw on theme change. Decks: ←/→/↑/↓/PgUp/PgDn/Space/Home/End and nav buttons, with a "n / N" counter. Tables: numeric columns right-aligned, header click or Enter/Space sorts ascending then descending — clayo-page.js:337-431, 480-482; clayo-page.css:1-184

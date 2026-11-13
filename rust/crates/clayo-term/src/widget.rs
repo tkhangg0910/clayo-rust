@@ -541,7 +541,7 @@ fn paint(ui: &Ui, term: &Terminal, state: &mut ViewState, rect: Rect, origin: Po
         if focused {
             let epoch = *state.blink_epoch.get_or_insert_with(Instant::now);
             let phase = epoch.elapsed().as_millis() / BLINK.as_millis();
-            if phase % 2 == 0 {
+            if phase.is_multiple_of(2) {
                 painter.rect_filled(Rect::from_min_size(pos, Vec2::new(2.0, cell.y)), 0.0, c32(palette::CURSOR));
             }
             let next = BLINK - Duration::from_millis((epoch.elapsed().as_millis() % BLINK.as_millis()) as u64);

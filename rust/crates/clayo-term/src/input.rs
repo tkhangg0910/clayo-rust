@@ -118,7 +118,7 @@ pub fn paste_bytes(text: &str, mode: TermMode) -> Vec<u8> {
     let body = text.replace("\r\n", "\r").replace('\n', "\r");
     if mode.contains(TermMode::BRACKETED_PASTE) {
         // A pasted end marker would end the paste early and run the rest as typed keys.
-        let body = body.replace("\x1b[201~", "");
+        let body = strip_esc(&body);
         format!("\x1b[200~{body}\x1b[201~").into_bytes()
     } else {
         body.into_bytes()
@@ -127,7 +127,13 @@ pub fn paste_bytes(text: &str, mode: TermMode) -> Vec<u8> {
 
 /// A path pasted so the agent attaches it: always bracketed, whatever the mode (TP:374).
 pub fn bracketed_path(path: &str) -> Vec<u8> {
-    format!("\x1b[200~{path}\x1b[201~").into_bytes()
+    format!("\x1b[200~{}\x1b[201~", strip_esc(path)).into_bytes()
+}
+
+/// Without ESC a pasted text cannot contain (or reassemble) the end-of-paste marker, so it can
+/// never break out of the bracket and run as typed keys.
+fn strip_esc(s: &str) -> String {
+    s.chars().filter(|&c| c != '\x1b').collect()
 }
 
 /// Mouse buttons and wheel as xterm numbers them.
@@ -229,7 +235,10 @@ mod tests {
     fn pastes() {
         assert_eq!(paste_bytes("a\r\nb\nc", TermMode::NONE), b"a\rb\rc");
         assert_eq!(paste_bytes("x", TermMode::BRACKETED_PASTE), b"\x1b[200~x\x1b[201~");
-        assert_eq!(paste_bytes("a\x1b[201~b", TermMode::BRACKETED_PASTE), b"\x1b[200~ab\x1b[201~");
+        assert_eq!(paste_bytes("a\x1b[201~b", TermMode::BRACKETED_PASTE), b"\x1b[200~a[201~b\x1b[201~");
+        // A marker that would reassemble after removing an inner one still cannot appear.
+        let nested = paste_bytes("\x1b[20\x1b[201~1~x", TermMode::BRACKETED_PASTE);
+        assert_eq!(nested.iter().filter(|&&b| b == 0x1b).count(), 2);
         assert_eq!(bracketed_path("C:\\a.png"), b"\x1b[200~C:\\a.png\x1b[201~");
     }
 
