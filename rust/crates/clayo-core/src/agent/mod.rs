@@ -11,6 +11,20 @@ pub enum AgentKind {
     Codex,
 }
 
+/// What setup found for one agent. `exe` is None when nothing was found or what was found does
+/// not run. `npm` is for Codex's Install only (it installs through npm); None for Claude.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AgentInfo {
+    pub kind: AgentKind,
+    pub exe: Option<String>,
+    pub version: Option<String>,
+    pub signed_in: bool,
+    pub data_folder: String,
+    pub sessions: u32,
+    pub projects: u32,
+    pub npm: Option<String>,
+}
+
 impl AgentKind {
     pub fn name(self) -> &'static str {
         match self {
