@@ -12,6 +12,7 @@ path = "src/main.rs"
 clayo-core = { path = "../clayo-core" }
 clayo-pty = { path = "../clayo-pty" }
 clayo-term = { path = "../clayo-term" }
+clayo-island = { path = "../clayo-island" }
 eframe = { version = "0.37", default-features = false, features = ["glow", "accesskit"] }
 egui = { version = "0.37" }
 memmap2 = "0.9"

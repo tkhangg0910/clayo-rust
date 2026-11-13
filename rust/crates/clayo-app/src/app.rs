@@ -4,6 +4,7 @@
 //! sessions thread ([`crate::model`]), and pane events are handled in `App::logic`, which
 //! eframe keeps calling while the window is hidden. Closing the window only hides it.
 
+use crate::island_host::{Host, IslandCmd};
 use crate::model::{self, lock, Job, Model, Shared};
 use crate::pane::{AppEvent, Pane, Ticker, Waker};
 use crate::status::Status;
@@ -23,6 +24,7 @@ use clayo_core::sidebar::{self, Bucket, PaneRef, SortMode, UnboundPane, ViewOpti
 use clayo_core::status::strip::{self, Meter, Strip};
 use clayo_core::status::{parse, relay, AccountLimits};
 use clayo_core::system::login_startup::LoginStartup;
+use clayo_island::{Island, IslandHandle};
 use clayo_term::input::{bracketed_path, paste_bytes};
 use clayo_term::widget::{self, TermFont};
 use clayo_term::GridSize;
@@ -199,6 +201,10 @@ pub struct ClayoApp {
     revealer: Revealer,
     actions: Vec<Action>,
     first_frame_done: bool,
+    island: IslandHandle,
+    /// Another app holds Ctrl+Alt+S (the Settings page says so, phase 7).
+    #[allow(dead_code)]
+    screenshot_key_taken: bool,
     status: Status,
     status_frame: StatusFrame,
     /// Codex's account limits, recomputed when the rows change (model generation).
@@ -231,9 +237,32 @@ impl ClayoApp {
         let home = std::env::var("USERPROFILE").unwrap_or_default();
         let waker = Waker { ctx: cc.egui_ctx.clone(), tx };
 
+        // The island: on its own thread, after the main window (it never keeps Clayo alive).
+        let host = Host {
+            model: model.clone(),
+            revealer: revealer.clone(),
+            waker: waker.clone(),
+            data: data.clone(),
+            hwnd: main_hwnd(cc),
+        };
+        let island = Island::start(Arc::new(host));
+        let screenshot_key_taken = island.set_settings(settings.screenshot_hotkey, settings.screenshot_offer);
+        if start.background {
+            island.greet();
+        }
+        crate::mark("island");
+        // Screenshots are kept a week.
+        let shots = clayo_core::screenshots::dir(&data);
+        let _ = std::thread::Builder::new().name("prune shots".into()).spawn(move || {
+            let before = std::time::SystemTime::now() - clayo_core::screenshots::KEEP_FOR;
+            clayo_core::screenshots::prune(&shots, before);
+        });
         let status = {
             let ctx = cc.egui_ctx.clone();
-            Status::start(&data, settings.clone(), !start.background, move || ctx.request_repaint(), |_| {})
+            let island = island.clone();
+            Status::start(&data, settings.clone(), !start.background, move || ctx.request_repaint(), move |m| {
+                island.reserve(&m.label, m.percent.max(0) as u32)
+            })
         };
 
         let mut app = Self {
@@ -269,6 +298,8 @@ impl ClayoApp {
             revealer,
             actions: Vec::new(),
             first_frame_done: false,
+            island,
+            screenshot_key_taken,
             status,
             status_frame: StatusFrame::default(),
             codex_limits: (u64::MAX, None),
@@ -344,6 +375,44 @@ impl ClayoApp {
         }
         self.folder = folder.to_string();
         self.start_new(folder, typed);
+    }
+
+    /// AdoptFolder: the island's drop or screenshot. The window comes forward on a new session
+    /// in `folder`, `prefill` typed into its prompt once it is up, not sent.
+    fn adopt_folder(&mut self, folder: &str, prefill: Option<String>) {
+        if !std::path::Path::new(folder).is_dir() {
+            return;
+        }
+        self.revealer.reveal();
+        self.spawn_in(folder, prefill.map_or(Typed::Nothing, Typed::Prefill));
+    }
+
+    /// The island's screenshot: into the picked live pane's prompt (bracketed, not sent), or a
+    /// new session in its folder, the last-used pane's, or the current one (MainWindow.SendImage).
+    fn send_image(&mut self, pane: Option<u64>, path: std::path::PathBuf) {
+        let text = path.to_string_lossy().into_owned();
+        let live = pane.and_then(|id| self.pane(id)).filter(|p| p.status != PaneStatus::Exited);
+        if let Some(p) = live {
+            let id = p.id();
+            p.shared.write(&bracketed_path(&text));
+            // Claude copies it into the session's paste cache; Codex uses it where it is.
+            if p.agent == AgentKind::Codex {
+                p.shared.codex_images.lock().unwrap_or_else(|e| e.into_inner()).push((path, Utc::now()));
+            }
+            self.revealer.reveal();
+            self.activate(id);
+            return;
+        }
+        let picked = pane.and_then(|id| self.pane(id)).map(|p| p.cwd.to_string_lossy().into_owned());
+        let last = self.used.first().and_then(|id| self.pane(*id)).map(|p| p.cwd.to_string_lossy().into_owned());
+        let folder = picked.or(last).unwrap_or_else(|| self.folder.clone());
+        let folder = if std::path::Path::new(&folder).is_dir() { folder } else { self.folder.clone() };
+        let before = self.active;
+        let pasted = String::from_utf8_lossy(&bracketed_path(&text)).into_owned();
+        self.adopt_folder(&folder, Some(pasted));
+        if let Some(p) = self.active_pane().filter(|p| self.active != before && p.agent == AgentKind::Codex) {
+            p.shared.codex_images.lock().unwrap_or_else(|e| e.into_inner()).push((path, Utc::now()));
+        }
     }
 
     /// The row exists at once (status Starting), under Open, before any transcript.
@@ -425,6 +494,7 @@ impl ClayoApp {
             m.panes.retain(|p| p.id != id);
             m.generation += 1;
         }
+        self.island.pane_closed(id);
         self.used.retain(|u| *u != id);
         lock(&self.model).used = self.used.clone();
         self.panes_changed();
@@ -475,6 +545,7 @@ impl ClayoApp {
         self.panes.clear();
         lock(&self.model).panes.clear();
         self.status.stop();
+        self.island.shutdown();
         // A hidden window gets no egui pass that would carry out the Close (the island's Quit
         // comes while hidden): end here, as main would after the event loop.
         if !self.shown {
@@ -1229,10 +1300,30 @@ impl ClayoApp {
                         was = Some(p.status);
                         p.status = s;
                     }
-                    if was.is_some() {
-                        lock(&self.model).sidebar.set_pane_status(id, s);
+                    let Some(was) = was else { continue };
+                    let name = {
+                        let mut m = lock(&self.model);
+                        m.sidebar.set_pane_status(id, s);
+                        m.sidebar.by_pane(id).map(|r| r.name().to_string())
+                    };
+                    let name = name.or_else(|| self.pane(id).map(|p| p.title.clone())).unwrap_or_default();
+                    // A status change fires once per real change, so a repeat cannot notify twice.
+                    if was != s {
+                        self.island.pane_status(id, &name, was, s);
                     }
                 }
+                AppEvent::Island(cmd) => match cmd {
+                    IslandCmd::ShowSession(id) => {
+                        if self.pane(id).is_some() {
+                            let key = lock(&self.model).sidebar.by_pane(id).map(|r| r.session_id.clone());
+                            self.selected = key.or(self.selected.take());
+                            self.activate(id);
+                        }
+                    }
+                    IslandCmd::SendImage(pane, path) => self.send_image(pane, path),
+                    IslandCmd::Adopt(folder, prefill) => self.adopt_folder(&folder.to_string_lossy(), prefill),
+                    IslandCmd::Quit => self.quit(ctx),
+                },
             }
         }
     }
@@ -1280,6 +1371,18 @@ impl ClayoApp {
         }
         self.codex_limits.1.clone()
     }
+}
+
+/// The main window's handle, for the island's "Clayo is in front".
+fn main_hwnd(cc: &eframe::CreationContext<'_>) -> isize {
+    #[cfg(windows)]
+    if let Ok(h) = raw_window_handle::HasWindowHandle::window_handle(cc) {
+        if let raw_window_handle::RawWindowHandle::Win32(w) = h.as_raw() {
+            return w.hwnd.get();
+        }
+    }
+    let _ = cc;
+    0
 }
 
 fn clamp_sidebar(w: f32, total: f32) -> f32 {

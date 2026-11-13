@@ -291,7 +291,7 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-003 Any other invocation runs the GUI app — Program.cs:16,21-26
 - [ ] MAIN-004 Unhandled UI-thread and AppDomain exceptions append to `%LOCALAPPDATA%\Clayo\crash.log` as `yyyy-MM-dd HH:mm:ss  <exception>\n\n`; log >1 MiB is moved to `crash.old.log` (overwrite) first; crash still proceeds (not swallowed) — App.xaml.cs:14-18,109-125
 - [x] MAIN-005 On start, inherited Claude Code session env markers are removed from process env (SessionLauncher.ScrubInheritedSession) so every pane is top-level — App.xaml.cs:22
-- [ ] MAIN-006 `--background` arg (LoginStartup.BackgroundArg) = login start: no main window, island only, island Greet() — App.xaml.cs:25,62,67
+- [x] MAIN-006 `--background` arg (LoginStartup.BackgroundArg) = login start: no main window, island only, island Greet() — App.xaml.cs:25,62,67
 - [x] MAIN-007 Folder = first arg that is an existing directory (any position); else, unless background, the current working directory — App.xaml.cs:30-31
 - [x] MAIN-008 CWD is ignored (treated as "no folder") when it equals the exe's own folder (AppContext.BaseDirectory) or the System32 dir (Start menu/shortcut launches); compare is full-path, trailing separator trimmed, case-insensitive — App.xaml.cs:79-86
 - [ ] MAIN-009 `clayo` typed in Explorer's address bar works because Explorer runs the command with the current folder as CWD and the exe folder is on the user PATH (no App Paths registry key anywhere) — App.xaml.cs:27-31, UserPath.cs:7-10
@@ -300,7 +300,7 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [ ] MAIN-012 Running instance on receipt: "" -> Reveal(); path -> AdoptFolder(path) (on UI thread) — App.xaml.cs:51-55
 - [ ] MAIN-013 Windows sign-out (SessionEnding) performs a real Quit (panes closed) — App.xaml.cs:59
 - [ ] MAIN-014 Non-background start calls Reveal() (setup window first if setup needed) — App.xaml.cs:62
-- [ ] MAIN-015 Island window is created after main window; never keeps process alive (ShutdownMode=OnMainWindowClose) — App.xaml.cs:64-66, App.xaml:4
+- [x] MAIN-015 Island window is created after main window; never keeps process alive (ShutdownMode=OnMainWindowClose) — App.xaml.cs:64-66, App.xaml:4
 - [ ] MAIN-016 Every start re-registers the Run key to the current exe unless opted out — App.xaml.cs:71, LoginStartup.cs:44-47
 - [ ] MAIN-017 On exit: dispose single instance, then hard `Environment.Exit(code)` so no stray foreground threads keep the mutex — App.xaml.cs:88-101
 
@@ -385,21 +385,21 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-085 Multiple panes alive simultaneously but only ONE visible at a time (others Collapsed, keep running) — MainWindow.xaml.cs:272-273,1312-1313
 - [ ] MAIN-086 Activating a pane: hides Settings if shown, MRU list update, title, enable buttons, hide empty state, paint dot, refresh git immediately, strip, images, chips, focus terminal — MainWindow.xaml.cs:1308-1331
 - [x] MAIN-087 New pane gets a row immediately (status Starting) under Open before its transcript exists; Codex panes (no id) get a placeholder GUID and are re-keyed once their transcript appears (start-time + folder/parent match, within 10 min, not past the next same-kind pane's start) — MainWindow.xaml.cs:1244-1298,711-741
-- [ ] MAIN-088 Pane status change -> row status, header dot, island notices: NeedsInput->NeedsYou, Error->Error, Done only if previous was Working->Done, else null (clears); SessionWorking true on Working, false when leaving Working — MainWindow.xaml.cs:1270-1292
+- [x] MAIN-088 Pane status change -> row status, header dot, island notices: NeedsInput->NeedsYou, Error->Error, Done only if previous was Working->Done, else null (clears); SessionWorking true on Working, false when leaving Working — MainWindow.xaml.cs:1270-1292
 - [x] MAIN-089 Codex pane working/done driven from transcript turn info on each refresh — MainWindow.xaml.cs:629-632
 - [ ] MAIN-090 Doc chip (glyph F000): shown when active session wrote a .md; tooltip "<file>\n<path>\nClick to read it here, again to close it."; click toggles doc viewer; refocus terminal — MainWindow.xaml.cs:1471-1486
 - [ ] MAIN-091 Page chip (glyph E9D2): shown when session wrote pages in .clayo/pages; click toggles newest page; right-click menu lists the session's pages newest first (existing only), checked = open — MainWindow.xaml.cs:1489-1516
 - [ ] MAIN-092 New page written by session auto-opens (not for history on first read); open page/doc follows file; PageFolder.HideFromGit on write — MainWindow.xaml.cs:661-678
 - [ ] MAIN-093 Images chip (glyph EB9F + count): images pasted in active prompt since last sent prompt/pane open; Claude: files in paste cache dir for session; Codex: temp clipboard files matching pattern claimed per pane; only tags still in prompt text count; hover opens thumbnail popup (180px decode, 90 high, max 200 wide, "#n" label, wrap max 460); auto-hides 300ms after mouse leaves; new image flashes popup 1.5 s only if Clayo is active; click chip opens newest full-size overlay (#E614171C bg, margin 40, downscale only, ✕ / Esc / click closes, refocus terminal) — MainWindow.xaml.cs:1336-1468, MainWindow.xaml:418-461
 - [x] MAIN-094 Status strip/footer limits: active pane's strip (Claude via StatusStore, Codex via transcript status) + git info; footer limits = active agent's account (Codex: newest across Codex transcripts; with no pane, Codex if Claude unused) — MainWindow.xaml.cs:1565-1586
-- [ ] MAIN-095 Reserve threshold crossing emits ReserveCrossed to island (warning only) — MainWindow.xaml.cs:1592-1595
+- [x] MAIN-095 Reserve threshold crossing emits ReserveCrossed to island (warning only) — MainWindow.xaml.cs:1592-1595
 
 #### Timers
 - [x] MAIN-096 Git poll 3 s, only when window visible, for each pane cwd — MainWindow.xaml.cs:259,261,353-358
 - [x] MAIN-097 Clock 30 s: refresh strip if visible; reserve check always — MainWindow.xaml.cs:263,360-365
 - [ ] MAIN-098 Image poll 1 s; image popup hide check 300 ms — MainWindow.xaml.cs:266-267,366-373
 - [ ] MAIN-099 Update check at load and every 12 h — MainWindow.xaml.cs:270,375-377
-- [ ] MAIN-100 On load: refresh sessions, start transcript watchers, status store, prune screenshots older than KeepFor — MainWindow.xaml.cs:345-350
+- [x] MAIN-100 On load: refresh sessions, start transcript watchers, status store, prune screenshots older than KeepFor — MainWindow.xaml.cs:345-350
 
 #### Keyboard shortcuts
 - [x] MAIN-101 Ctrl+, opens Settings (window-level preview, not when focus in terminal webview) — MainWindow.xaml.cs:1667-1673
@@ -421,9 +421,9 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-113 No tray icon (the island is the background presence) — App.xaml.cs:24,64-67
 - [ ] MAIN-114 Reveal: if hidden and setup needed -> show setup window instead; else Show, restore if minimized (keeps prior maximized), Activate — MainWindow.xaml.cs:530-540
 - [ ] MAIN-115 NeedsSetup = !SetupDone || no in-use agent locatable (file check only, no run) — MainWindow.xaml.cs:546-555
-- [ ] MAIN-116 AdoptFolder(folder, prefill): if dir exists -> set current folder, Reveal; if main window is visible start a new session with optional prefill text typed (not sent) — MainWindow.xaml.cs:511-521
-- [ ] MAIN-117 Screenshot send (island): to chosen live non-exited pane -> reveal, switch, paste image path (Codex: track image); else new session in that pane's / last-used / current folder with pasted prefill — MainWindow.xaml.cs:1539-1554
-- [ ] MAIN-118 RecentSessions(max) for screenshot picker: MRU then others, distinct, live only; name/project/status ("new session" + cwd leaf if no row) — MainWindow.xaml.cs:1524-1532
+- [x] MAIN-116 AdoptFolder(folder, prefill): if dir exists -> set current folder, Reveal; if main window is visible start a new session with optional prefill text typed (not sent) — MainWindow.xaml.cs:511-521
+- [x] MAIN-117 Screenshot send (island): to chosen live non-exited pane -> reveal, switch, paste image path (Codex: track image); else new session in that pane's / last-used / current folder with pasted prefill — MainWindow.xaml.cs:1539-1554
+- [x] MAIN-118 RecentSessions(max) for screenshot picker: MRU then others, distinct, live only; name/project/status ("new session" + cwd leaf if no row) — MainWindow.xaml.cs:1524-1532
 
 #### Updater (System/Updater.cs + MainWindow)
 - [c] MAIN-119 GET `https://api.github.com/repos/YogiOnCode/Clayo/releases/latest`, User-Agent "Clayo", 15 s timeout; reads `tag_name`; errors -> null; disabled in Debug — Updater.cs:24,35-49
@@ -1495,133 +1495,133 @@ Paths below are relative to `D:\Clayo\Clayo\src\Clayo\` unless prefixed `checks/
 ### 2. BEHAVIORS
 
 #### States, kinds, notes
-- [c] ISL-001 States: Hidden, Compact, Peek, Notify, Drop, Pick — IT:9
-- [c] ISL-002 Kinds: NeedsYou, Error, Done, Reserve, Tip; Urgent = NeedsYou|Error (Reserve/Tip/Done not urgent) — IT:16,24
-- [c] ISL-003 PxRect is right/bottom-exclusive; Contains(x,y)= L<=x<R && T<=y<B — IT:28-31
-- [c] ISL-004 Notify(note) removes any queued note with same Source then appends with ++seq (one note per session; newer replaces) — IT:161-165
-- [c] ISL-005 Resolve(source) drops queued notes from that source (session moved on/closed) — IT:171
-- [c] ISL-006 Note choice: urgent before non-urgent, then highest seq (newest) — IT:410-415
-- [c] ISL-007 A note becomes Note when best != current; `_shownAt` = now (Done's 4 s counts from on-screen, not queue time) — IT:418-425
-- [c] ISL-008 Non-urgent note (Done/Reserve/Tip) expires when now-shownAt>=4000 AND cursor not over island AND it has been away >=400 ms (hover holds) -> resolved — IT:404-408,438-441
-- [c] ISL-009 Urgent notes (NeedsYou/Error) never time out; stay until Resolve or Dismiss — IT:402-432; checks/island.cs:146,154-157
-- [c] ISL-010 Notes outrank Peek and Compact (Notify replaces a peek/compact) — IT:247; checks/island.cs:163,440
-- [c] ISL-011 While a note shows and none remain, state Notify -> Hidden — IT:248
-- [ ] ISL-012 Pane status -> note kind: NeedsInput->NeedsYou, Error->Error, Done only when previous status was Working ->Done, anything else -> null (Resolve) — MW:1279-1288
-- [ ] ISL-013 Pane goes Working -> SetWorking(pane,true); leaves Working -> SetWorking(false) — MW:1289-1290
-- [ ] ISL-014 Closing a pane -> Resolve(pane) + SetWorking(pane,false) — MW:1138-1139
-- [ ] ISL-015 Reserve warning: Source = meter Label string, Name = "{Label} at {Percent}%", kind Reserve; newer warning for same limit replaces — IW:114
-- [ ] ISL-016 Tip "Ctrl+Alt+S is taken by another app" (source "ShotKey") when RegisterHotKey fails — IW:537
-- [ ] ISL-017 Tip "Copy a screenshot first (Win+Shift+S)" (source "Screenshots") when hotkey pressed with no image, or save failed — IW:575,584-585,642
+- [x] ISL-001 States: Hidden, Compact, Peek, Notify, Drop, Pick — IT:9
+- [x] ISL-002 Kinds: NeedsYou, Error, Done, Reserve, Tip; Urgent = NeedsYou|Error (Reserve/Tip/Done not urgent) — IT:16,24
+- [x] ISL-003 PxRect is right/bottom-exclusive; Contains(x,y)= L<=x<R && T<=y<B — IT:28-31
+- [x] ISL-004 Notify(note) removes any queued note with same Source then appends with ++seq (one note per session; newer replaces) — IT:161-165
+- [x] ISL-005 Resolve(source) drops queued notes from that source (session moved on/closed) — IT:171
+- [x] ISL-006 Note choice: urgent before non-urgent, then highest seq (newest) — IT:410-415
+- [x] ISL-007 A note becomes Note when best != current; `_shownAt` = now (Done's 4 s counts from on-screen, not queue time) — IT:418-425
+- [x] ISL-008 Non-urgent note (Done/Reserve/Tip) expires when now-shownAt>=4000 AND cursor not over island AND it has been away >=400 ms (hover holds) -> resolved — IT:404-408,438-441
+- [x] ISL-009 Urgent notes (NeedsYou/Error) never time out; stay until Resolve or Dismiss — IT:402-432; checks/island.cs:146,154-157
+- [x] ISL-010 Notes outrank Peek and Compact (Notify replaces a peek/compact) — IT:247; checks/island.cs:163,440
+- [x] ISL-011 While a note shows and none remain, state Notify -> Hidden — IT:248
+- [x] ISL-012 Pane status -> note kind: NeedsInput->NeedsYou, Error->Error, Done only when previous status was Working ->Done, anything else -> null (Resolve) — MW:1279-1288
+- [x] ISL-013 Pane goes Working -> SetWorking(pane,true); leaves Working -> SetWorking(false) — MW:1289-1290
+- [x] ISL-014 Closing a pane -> Resolve(pane) + SetWorking(pane,false) — MW:1138-1139
+- [x] ISL-015 Reserve warning: Source = meter Label string, Name = "{Label} at {Percent}%", kind Reserve; newer warning for same limit replaces — IW:114
+- [x] ISL-016 Tip "Ctrl+Alt+S is taken by another app" (source "ShotKey") when RegisterHotKey fails — IW:537
+- [x] ISL-017 Tip "Copy a screenshot first (Win+Shift+S)" (source "Screenshots") when hotkey pressed with no image, or save failed — IW:575,584-585,642
 
 #### Edge dwell -> Peek
-- [c] ISL-018 Edge zone: cursor y in [monTop, monTop+2) physical px (EdgePx=2, NOT scaled) and |x - centreX| <= 240*scale/2 — IT:58,61,144-150
-- [ ] ISL-019 Monitor = MonitorFromPoint(cursor, NEAREST); scale = GetDpiForMonitor(MDT_EFFECTIVE_DPI)/96, fallback 1.0 — IW:153-159
-- [c] ISL-020 Dwell 600 ms in zone -> Peek; progress = dwelt/600 for dwell bar; DwellLengthMs = 600 — IT:63,274-286
-- [c] ISL-021 Dwell resets on leaving zone, on primary button down (window snap drag), on move/size mode; held time does not count — IT:268-272
-- [c] ISL-022 `_mustLeaveFirst` (after Dismiss/EndPick/Release): no new dwell until cursor leaves the zone once — IT:103,220,268
-- [c] ISL-023 Peek stays while cursor in zone or over island (pill rect or open context menu); hides 400 ms after leaving — IT:64,252-260; IW:200
-- [c] ISL-024 DwellProgress is 0 whenever not dwelling (out of zone, button, busy, peeking) — IT:222
-- [ ] ISL-025 Peek shows "clayo" + "N sessions" ("1 session" when 1) where N = number of live panes — IW:346-353; MW:283
+- [x] ISL-018 Edge zone: cursor y in [monTop, monTop+2) physical px (EdgePx=2, NOT scaled) and |x - centreX| <= 240*scale/2 — IT:58,61,144-150
+- [x] ISL-019 Monitor = MonitorFromPoint(cursor, NEAREST); scale = GetDpiForMonitor(MDT_EFFECTIVE_DPI)/96, fallback 1.0 — IW:153-159
+- [x] ISL-020 Dwell 600 ms in zone -> Peek; progress = dwelt/600 for dwell bar; DwellLengthMs = 600 — IT:63,274-286
+- [x] ISL-021 Dwell resets on leaving zone, on primary button down (window snap drag), on move/size mode; held time does not count — IT:268-272
+- [x] ISL-022 `_mustLeaveFirst` (after Dismiss/EndPick/Release): no new dwell until cursor leaves the zone once — IT:103,220,268
+- [x] ISL-023 Peek stays while cursor in zone or over island (pill rect or open context menu); hides 400 ms after leaving — IT:64,252-260; IW:200
+- [x] ISL-024 DwellProgress is 0 whenever not dwelling (out of zone, button, busy, peeking) — IT:222
+- [x] ISL-025 Peek shows "clayo" + "N sessions" ("1 session" when 1) where N = number of live panes — IW:346-353; MW:283
 
 #### Busy / Clayo-in-front ("quiet hours" = Windows Focus Assist/DND, no own setting)
-- [ ] ISL-026 Busy = SHQueryUserNotificationState in {QUNS_RUNNING_D3D_FULL_SCREEN(3), QUNS_PRESENTATION_MODE(4), QUNS_QUIET_TIME(6)}, or QUNS_BUSY(2) only if foreground window is visible, not iconic, not class Progman/WorkerW, and its rect covers its monitor — IW:270-290
-- [ ] ISL-027 Busy checked at most once per second (first tick always) — IW:69,165-169
-- [ ] ISL-028 ClayoActive = main window visible && not minimized && GetAncestor(GetForegroundWindow(), GA_ROOTOWNER) == main hwnd (owned windows like Setup count) — IW:298-301
-- [c] ISL-029 While Busy or ClayoActive: anything showing (except Pick) hides; dwell reset; notes held (not dropped) — IT:230-241
-- [c] ISL-030 ClayoActive additionally drops all non-urgent queued notes and cancels a pending greeting — IT:233,236
-- [c] ISL-031 Held Done gets a full 4 s once busy clears — checks/island.cs:198-205
+- [x] ISL-026 Busy = SHQueryUserNotificationState in {QUNS_RUNNING_D3D_FULL_SCREEN(3), QUNS_PRESENTATION_MODE(4), QUNS_QUIET_TIME(6)}, or QUNS_BUSY(2) only if foreground window is visible, not iconic, not class Progman/WorkerW, and its rect covers its monitor — IW:270-290
+- [x] ISL-027 Busy checked at most once per second (first tick always) — IW:69,165-169
+- [x] ISL-028 ClayoActive = main window visible && not minimized && GetAncestor(GetForegroundWindow(), GA_ROOTOWNER) == main hwnd (owned windows like Setup count) — IW:298-301
+- [x] ISL-029 While Busy or ClayoActive: anything showing (except Pick) hides; dwell reset; notes held (not dropped) — IT:230-241
+- [x] ISL-030 ClayoActive additionally drops all non-urgent queued notes and cancels a pending greeting — IT:233,236
+- [x] ISL-031 Held Done gets a full 4 s once busy clears — checks/island.cs:198-205
 
 #### Compact (self-peek while a session works)
-- [ ] ISL-032 Compact pill = mascot + 8px status dot only, 92 logical wide, click-through — IW:28,319,324-326; IT:4-8
-- [c] ISL-033 Shows when any working session not yet "peeked" in this run of work, rate limit at most one self-peek per 180 s; a start blocked by the limit is skipped (marked peeked), not held — IT:77,347-358
-- [c] ISL-034 Session stopping work clears its peeked mark (next run counts) — IT:178-186
-- [c] ISL-035 Compact hides when no session works, or after 10 s — IT:80,394-397
-- [c] ISL-036 Resting cursor in zone or over pill (button up, not move/size) for 600 ms opens full Peek; a rest under way holds it past 10 s — IT:83,379-391
-- [ ] ISL-037 Compact: dot Blue (#78A5FF) normally; Warm when greeting — IW:325
-- [ ] ISL-038 Compact pose Walk; light Blue (greeting: Warm) — IW:381,391
+- [x] ISL-032 Compact pill = mascot + 8px status dot only, 92 logical wide, click-through — IW:28,319,324-326; IT:4-8
+- [x] ISL-033 Shows when any working session not yet "peeked" in this run of work, rate limit at most one self-peek per 180 s; a start blocked by the limit is skipped (marked peeked), not held — IT:77,347-358
+- [x] ISL-034 Session stopping work clears its peeked mark (next run counts) — IT:178-186
+- [x] ISL-035 Compact hides when no session works, or after 10 s — IT:80,394-397
+- [x] ISL-036 Resting cursor in zone or over pill (button up, not move/size) for 600 ms opens full Peek; a rest under way holds it past 10 s — IT:83,379-391
+- [x] ISL-037 Compact: dot Blue (#78A5FF) normally; Warm when greeting — IW:325
+- [x] ISL-038 Compact pose Walk; light Blue (greeting: Warm) — IW:381,391
 
 #### Login greeting
-- [ ] ISL-039 App started with background (login) arg -> island.Greet() — App.xaml.cs:25,67; IW:777
-- [c] ISL-040 Greeting = Compact pill with Warm dot, mascot Wave, Warm glow, out 2500 ms then hides; only once — IT:89,364-374,394-395; IW:379
-- [c] ISL-041 Greeting held while busy; given up if not shown within 60 s; dropped if Clayo comes to front — IT:95,224-233
-- [c] ISL-042 Greeting does not consume the self-peek; resting on it opens Peek (no longer greeting) — IT:385; checks/island.cs:500-515
+- [x] ISL-039 App started with background (login) arg -> island.Greet() — App.xaml.cs:25,67; IW:777
+- [x] ISL-040 Greeting = Compact pill with Warm dot, mascot Wave, Warm glow, out 2500 ms then hides; only once — IT:89,364-374,394-395; IW:379
+- [x] ISL-041 Greeting held while busy; given up if not shown within 60 s; dropped if Clayo comes to front — IT:95,224-233
+- [x] ISL-042 Greeting does not consume the self-peek; resting on it opens Peek (no longer greeting) — IT:385; checks/island.cs:500-515
 
 #### Drop (file drag)
-- [ ] ISL-043 Only an OLE drag counts (foreground thread's capture hwnd has class "CLIPBRDWNDCLASS"); not move/size — IW:255-262; IT:297
-- [c] ISL-044 Drag zone: y in [top, top+40*scale), |x-centre| <= 480*scale/2 — IT:70-71,152-158
-- [c] ISL-045 Drag dwell 250 ms (dwell bar uses DwellLengthMs=250) -> Drop, replacing any note/peek/compact (note returns after) — IT:72,295-313
-- [c] ISL-046 Drop stays while dragging inside drag zone or over island; 1500 ms grace when dragged away; 400 ms when the drag ended elsewhere — IT:73,320-329
-- [c] ISL-047 `_dragEndFirst` after Dismiss/Release: the same drag ignored until it ends; a new drag may bring it straight back — IT:108,221,335-340,447-453
-- [ ] ISL-048 Drop UI: header "clayo" / sub "drop to start"; body 110 tall: dashed rounded target "Drop here" / "A file to ask about it · a folder to open it in Clayo" — IW:339-345; IX:52-61
-- [ ] ISL-049 Target fill faint warm (alpha 0x0F) idle, 0x29 while a valid file drag is over — IW:732-752
-- [ ] ISL-050 Only the first path of a FileDrop accepted (text/browser image refused, effect None); Copy effect — IW:725-737
-- [ ] ISL-051 Drop of folder -> main.AdoptFolder(path) (new session there, window revealed) — IW:766; MW:511-521
-- [c] ISL-052 Drop of file -> AdoptFolder(fileDir, prefill "@name " or `@"name with space" `) typed into Claude input when ready, not sent — IW:767,774
-- [ ] ISL-053 After drop: trigger.Release() + SlideOut — IW:763-764
-- [ ] ISL-054 Click on drop target does nothing (not "open Clayo") — IW:508
+- [x] ISL-043 Only an OLE drag counts (foreground thread's capture hwnd has class "CLIPBRDWNDCLASS"); not move/size — IW:255-262; IT:297
+- [x] ISL-044 Drag zone: y in [top, top+40*scale), |x-centre| <= 480*scale/2 — IT:70-71,152-158
+- [x] ISL-045 Drag dwell 250 ms (dwell bar uses DwellLengthMs=250) -> Drop, replacing any note/peek/compact (note returns after) — IT:72,295-313
+- [x] ISL-046 Drop stays while dragging inside drag zone or over island; 1500 ms grace when dragged away; 400 ms when the drag ended elsewhere — IT:73,320-329
+- [x] ISL-047 `_dragEndFirst` after Dismiss/Release: the same drag ignored until it ends; a new drag may bring it straight back — IT:108,221,335-340,447-453
+- [x] ISL-048 Drop UI: header "clayo" / sub "drop to start"; body 110 tall: dashed rounded target "Drop here" / "A file to ask about it · a folder to open it in Clayo" — IW:339-345; IX:52-61
+- [x] ISL-049 Target fill faint warm (alpha 0x0F) idle, 0x29 while a valid file drag is over — IW:732-752
+- [x] ISL-050 Only the first path of a FileDrop accepted (text/browser image refused, effect None); Copy effect — IW:725-737
+- [x] ISL-051 Drop of folder -> main.AdoptFolder(path) (new session there, window revealed) — IW:766; MW:511-521
+- [x] ISL-052 Drop of file -> AdoptFolder(fileDir, prefill "@name " or `@"name with space" `) typed into Claude input when ready, not sent — IW:767,774
+- [x] ISL-053 After drop: trigger.Release() + SlideOut — IW:763-764
+- [x] ISL-054 Click on drop target does nothing (not "open Clayo") — IW:508
 
 #### Pick (screenshot picker)
-- [ ] ISL-055 Ctrl+Alt+S (RegisterHotKey id 1, MOD_CONTROL|MOD_ALT|MOD_NOREPEAT, VK 'S'=0x53) registered while setting ScreenshotHotkey (default true) — IW:533-543; Settings/ClayoSettings.cs:36
-- [ ] ISL-056 MainWindow.ScreenshotKeyTaken = setting on && registration failed; Settings view shows it — IW:544; MW:331
-- [ ] ISL-057 Hotkey: ignored if already Pick; if clipboard has image -> StartPick else Tip "Copy a screenshot first (Win+Shift+S)" — IW:571-576
-- [ ] ISL-058 Auto offer (setting ScreenshotOffer, default false): AddClipboardFormatListener; on WM_CLIPBOARDUPDATE with new GetClipboardSequenceNumber, if not Pick, Clayo not in front, not busy, image on clipboard -> StartPick — IW:546-555,592-601
-- [ ] ISL-059 Hotkey overrides busy/Clayo-in-front; auto-offer does not — IW:587-591; IT:192-200
-- [ ] ISL-060 StartPick: choices = up to 3 open panes, most recently used first (then remaining panes in host order) — IW:605; MW:1524-1532
-- [ ] ISL-061 Choice row = (pane, row name or "new session", project/folder name, pane status) — MW:1530-1531
-- [ ] ISL-062 While Pick: global hotkeys (no modifier, MOD_NOREPEAT) 1,2,3,N,Esc registered (ids 10..14); failures silently ignored (click still works) — IW:55-56,609
-- [ ] ISL-063 Keys: 1..3 -> choose index if < count; N -> new session; Esc -> cancel — IW:578-581
-- [c] ISL-064 Pick shows immediately (tick run synchronously) over everything, regardless of busy/ClayoActive; notes wait behind — IW:612; IT:195-200,212-217
-- [c] ISL-065 Pick times out after 15 s without answer; cursor over it resets the timer — IT:86,214-215
-- [c] ISL-066 After EndPick (answer/cancel), no edge peek until cursor leaves zone — IT:203-208
-- [ ] ISL-067 Pick keys released whenever state leaves Pick — IW:207,615-621
-- [ ] ISL-068 Pick header: "send screenshot" (semibold) + " to…"; sub "1–{n} or N · Esc to cancel", or "N for a new session · Esc to cancel" when n=0 — IW:333-336
-- [ ] ISL-069 Rows: key badge, name (semibold), "  folder" (faint), status dot right; last row "N" / "New session…" + first choice's folder, no dot — IW:649-659,674-720
-- [ ] ISL-070 Row hover bg #14FFFFFF; click (left up) chooses — IW:712-718
-- [ ] ISL-071 Choose: end pick, then save clipboard image to PNG only now (cancel leaves nothing); save fails -> Tip — IW:634-644
-- [ ] ISL-072 Send to existing live non-exited pane: Reveal, ShowSession, write bracketed paste `ESC[200~{path}ESC[201~` to its PTY (no Enter); Codex pane also records (path, utcNow) in CodexImages — MW:1539-1548; Terminal/TerminalPane.xaml.cs:374,377
-- [ ] ISL-073 New session / dead pane: AdoptFolder(folder of picked pane, else last-used pane, else current folder; fallback current folder if missing) with prefill = bracketed paste of path; Codex new pane records image — MW:1549-1553
-- [ ] ISL-074 Status dot colours (App.xaml:21-29): Working/Starting #D4A24C, NeedsInput #5AA9E6, Done #6BBF8A, Error #D2605F, Exited #5A6472, other #39404B — MW:164-172
-- [c] ISL-075 Screenshot file: %LOCALAPPDATA%\Clayo\shots\yyyy-MM-dd_HH-mm-ss.png (local time), -2, -3... if exists — SS:15-16,50-56
-- [ ] ISL-076 Save converts to Bgr32 (alpha discarded, avoids fully transparent images) — SS:37-41
-- [ ] ISL-077 Save retries up to 5 times with 50 ms sleep on COMException (clipboard held); IO/Unauthorized -> null — SS:30-45
-- [ ] ISL-078 OnClipboard() returns false on COMException — SS:20-24
-- [c] ISL-079 Prune at main window load: delete *.png in shots dir with LastWriteTimeUtc < now-7 days; ignores IO errors; missing dir ok — SS:18,59-68; MW:350
+- [x] ISL-055 Ctrl+Alt+S (RegisterHotKey id 1, MOD_CONTROL|MOD_ALT|MOD_NOREPEAT, VK 'S'=0x53) registered while setting ScreenshotHotkey (default true) — IW:533-543; Settings/ClayoSettings.cs:36
+- [x] ISL-056 MainWindow.ScreenshotKeyTaken = setting on && registration failed; Settings view shows it — IW:544; MW:331
+- [x] ISL-057 Hotkey: ignored if already Pick; if clipboard has image -> StartPick else Tip "Copy a screenshot first (Win+Shift+S)" — IW:571-576
+- [x] ISL-058 Auto offer (setting ScreenshotOffer, default false): AddClipboardFormatListener; on WM_CLIPBOARDUPDATE with new GetClipboardSequenceNumber, if not Pick, Clayo not in front, not busy, image on clipboard -> StartPick — IW:546-555,592-601
+- [x] ISL-059 Hotkey overrides busy/Clayo-in-front; auto-offer does not — IW:587-591; IT:192-200
+- [x] ISL-060 StartPick: choices = up to 3 open panes, most recently used first (then remaining panes in host order) — IW:605; MW:1524-1532
+- [x] ISL-061 Choice row = (pane, row name or "new session", project/folder name, pane status) — MW:1530-1531
+- [x] ISL-062 While Pick: global hotkeys (no modifier, MOD_NOREPEAT) 1,2,3,N,Esc registered (ids 10..14); failures silently ignored (click still works) — IW:55-56,609
+- [x] ISL-063 Keys: 1..3 -> choose index if < count; N -> new session; Esc -> cancel — IW:578-581
+- [x] ISL-064 Pick shows immediately (tick run synchronously) over everything, regardless of busy/ClayoActive; notes wait behind — IW:612; IT:195-200,212-217
+- [x] ISL-065 Pick times out after 15 s without answer; cursor over it resets the timer — IT:86,214-215
+- [x] ISL-066 After EndPick (answer/cancel), no edge peek until cursor leaves zone — IT:203-208
+- [x] ISL-067 Pick keys released whenever state leaves Pick — IW:207,615-621
+- [x] ISL-068 Pick header: "send screenshot" (semibold) + " to…"; sub "1–{n} or N · Esc to cancel", or "N for a new session · Esc to cancel" when n=0 — IW:333-336
+- [x] ISL-069 Rows: key badge, name (semibold), "  folder" (faint), status dot right; last row "N" / "New session…" + first choice's folder, no dot — IW:649-659,674-720
+- [x] ISL-070 Row hover bg #14FFFFFF; click (left up) chooses — IW:712-718
+- [x] ISL-071 Choose: end pick, then save clipboard image to PNG only now (cancel leaves nothing); save fails -> Tip — IW:634-644
+- [x] ISL-072 Send to existing live non-exited pane: Reveal, ShowSession, write bracketed paste `ESC[200~{path}ESC[201~` to its PTY (no Enter); Codex pane also records (path, utcNow) in CodexImages — MW:1539-1548; Terminal/TerminalPane.xaml.cs:374,377
+- [x] ISL-073 New session / dead pane: AdoptFolder(folder of picked pane, else last-used pane, else current folder; fallback current folder if missing) with prefill = bracketed paste of path; Codex new pane records image — MW:1549-1553
+- [x] ISL-074 Status dot colours (App.xaml:21-29): Working/Starting #D4A24C, NeedsInput #5AA9E6, Done #6BBF8A, Error #D2605F, Exited #5A6472, other #39404B — MW:164-172
+- [x] ISL-075 Screenshot file: %LOCALAPPDATA%\Clayo\shots\yyyy-MM-dd_HH-mm-ss.png (local time), -2, -3... if exists — SS:15-16,50-56
+- [x] ISL-076 Save converts to Bgr32 (alpha discarded, avoids fully transparent images) — SS:37-41
+- [x] ISL-077 Save retries up to 5 times with 50 ms sleep on COMException (clipboard held); IO/Unauthorized -> null — SS:30-45
+- [x] ISL-078 OnClipboard() returns false on COMException — SS:20-24
+- [x] ISL-079 Prune at main window load: delete *.png in shots dir with LastWriteTimeUtc < now-7 days; ignores IO errors; missing dir ok — SS:18,59-68; MW:350
 
 #### Click / Esc / menu
-- [ ] ISL-080 Left click (mouse up) on pill in Peek/Notify: Dismiss (resolve note), SlideOut, main.Reveal() (Show, restore if minimized, Activate; Setup first if needed), and if the note came from a pane, ShowSession(pane) — IW:504-519; MW:530-540,1301-1306
-- [ ] ISL-081 Pill cursor: Hand; Arrow in Drop/Pick — IW:330
-- [ ] ISL-082 Esc (GetAsyncKeyState edge-detected, not swallowed, still reaches foreground app) while anything shows -> Dismiss — IW:174-179
-- [c] ISL-083 Dismiss: resolve showing note, hide, must leave zone first, ignore current drag — IT:447-453
-- [ ] ISL-084 Right-click context menu: "Start at login" (checkable; on open reads Run-key state, disabled if build can't write) / separator / "Quit Clayo" (main.Quit ends app) — IX:25-31; IW:780-784; MW:1616-1628,1602-1606
-- [ ] ISL-085 Open context menu counts as "over island" — IW:199-200
-- [ ] ISL-086 Compact and Hidden: whole window WS_EX_TRANSPARENT (clicks pass to tabs); also during slide out — IW:219-222,488-494
+- [x] ISL-080 Left click (mouse up) on pill in Peek/Notify: Dismiss (resolve note), SlideOut, main.Reveal() (Show, restore if minimized, Activate; Setup first if needed), and if the note came from a pane, ShowSession(pane) — IW:504-519; MW:530-540,1301-1306
+- [x] ISL-081 Pill cursor: Hand; Arrow in Drop/Pick — IW:330
+- [x] ISL-082 Esc (GetAsyncKeyState edge-detected, not swallowed, still reaches foreground app) while anything shows -> Dismiss — IW:174-179
+- [x] ISL-083 Dismiss: resolve showing note, hide, must leave zone first, ignore current drag — IT:447-453
+- [x] ISL-084 Right-click context menu: "Start at login" (checkable; on open reads Run-key state, disabled if build can't write) / separator / "Quit Clayo" (main.Quit ends app) — IX:25-31; IW:780-784; MW:1616-1628,1602-1606
+- [x] ISL-085 Open context menu counts as "over island" — IW:199-200
+- [x] ISL-086 Compact and Hidden: whole window WS_EX_TRANSPARENT (clicks pass to tabs); also during slide out — IW:219-222,488-494
 
 #### Poses and lights per state
-- [ ] ISL-087 Poses: Drop/Pick -> Peek; greeting -> Wave; Compact -> Walk; Peek(no note) -> Wave then Idle after 1400 ms; NeedsYou -> Alert then Talk after 1400 ms; Error/Reserve -> Alert; Done -> Jump; Tip -> Wave then Idle — IW:97-98,375-387
-- [ ] ISL-088 Glow colours: Compact (non-greeting) Blue; no-note (peek/drop/pick/greeting) Warm; NeedsYou Blue; Done Green; Tip Warm; Error/Reserve Amber — IW:389-397
-- [ ] ISL-089 Colours: Warm rgb(255,186,140), Blue (120,165,255), Amber (255,168,60), Green (60,214,160) — IG:26-29
-- [ ] ISL-090 Note header text: Name (semibold #ECEEF1) + rest (#8B919A): " · needs you" / " · api error" / " · past your reserve" / "" (Tip) / " · finished" (Done); sub line hidden — IW:354-367
-- [ ] ISL-091 After 30 s on screen (restarted on each SlideIn): mascot Still (no animation) and glow breathing stops — IW:47,99-104,372-374
-- [ ] ISL-092 Mascot animates only when visible, Windows client-area animations enabled (SPI_GETCLIENTAREAANIMATION) and not Still — CM:129
-- [ ] ISL-093 Glow breath only if client-area animations enabled — IG:161
+- [x] ISL-087 Poses: Drop/Pick -> Peek; greeting -> Wave; Compact -> Walk; Peek(no note) -> Wave then Idle after 1400 ms; NeedsYou -> Alert then Talk after 1400 ms; Error/Reserve -> Alert; Done -> Jump; Tip -> Wave then Idle — IW:97-98,375-387
+- [x] ISL-088 Glow colours: Compact (non-greeting) Blue; no-note (peek/drop/pick/greeting) Warm; NeedsYou Blue; Done Green; Tip Warm; Error/Reserve Amber — IW:389-397
+- [x] ISL-089 Colours: Warm rgb(255,186,140), Blue (120,165,255), Amber (255,168,60), Green (60,214,160) — IG:26-29
+- [x] ISL-090 Note header text: Name (semibold #ECEEF1) + rest (#8B919A): " · needs you" / " · api error" / " · past your reserve" / "" (Tip) / " · finished" (Done); sub line hidden — IW:354-367
+- [x] ISL-091 After 30 s on screen (restarted on each SlideIn): mascot Still (no animation) and glow breathing stops — IW:47,99-104,372-374
+- [x] ISL-092 Mascot animates only when visible, Windows client-area animations enabled (SPI_GETCLIENTAREAANIMATION) and not Still — CM:129
+- [x] ISL-093 Glow breath only if client-area animations enabled — IG:161
 
 #### Sizes / position / timing
-- [ ] ISL-094 Window always 420 logical wide (NoteWidth), centred on monitor top; heights: 60 normal, 190 Drop, Pick 52+34*(n+1)+12+10 — IW:26-34,405-418
-- [ ] ISL-095 Pill widths: Compact 92, Peek 300, Note/Drop/Pick 420 — IW:319
-- [ ] ISL-096 Pill: black #000000, corners bottom-left/right radius 24, top square; top-centred in the window — IX:19-20
-- [ ] ISL-097 Over-island hit rect = pill: centred, width pillWidth*scale, height max(60, actual pill height)*scale, recomputed every poll — IW:189-192,420-424
-- [ ] ISL-098 Placement in physical px via SetWindowPos(NOZORDER|NOACTIVATE) before and after Show (WM_DPICHANGED fix) — IW:426-433,496-502
-- [ ] ISL-099 New show from Hidden -> monitor under cursor; state/note change while visible -> stays on previously chosen monitor — IW:211-216
-- [ ] ISL-100 Slide in: TranslateY from current (initially -60) to 0, 450 ms BackEase(EaseOut, amplitude .3) — IW:85,435-447
-- [ ] ISL-101 Width: set instantly when fresh; otherwise animate to new width 400 ms same spring — IW:437-445
-- [ ] ISL-102 Slide out: TranslateY to -max(60, pillHeight+8), 260 ms CubicEase InOut; window Hide at end only if still Hidden — IW:463-481
-- [ ] ISL-103 Poll: 50 ms; 250 ms when Hidden and cursor > 200*scale px below monitor top; interval changed only on change; GetCursorPos failure (secure desktop) -> skip tick — IW:51,151,228-229
-- [ ] ISL-104 Pose second step 1400 ms — IW:97
-- [ ] ISL-105 Header: 52 tall, padding left 8 right 22; mascot 44x44 + 10 gap; texts 13 px head, 12 px sub; font "Segoe UI Variable Text, Segoe UI", Display text mode, ellipsis trimming — IX:9-10,36-47; App.xaml:31
-- [c] ISL-106 Constants: DwellMs 600, LeaveMs 400, DragDwellMs 250, DragLeaveMs 1500, DoneMs 4000, SelfPeekEveryMs 180000, CompactMs 10000, RestMs 600, PickMs 15000, GreetMs 2500, GreetWithinMs 60000 — IT:63-95
-- [ ] ISL-107 No sounds anywhere in island code.
-- [ ] ISL-108 On close: stop timers, unregister pick keys, unregister Ctrl+Alt+S, remove clipboard listener, close glow — IW:133-144
-- [ ] ISL-109 Main window close only hides; island is the way back and holds Quit — IX:24; MW:1752-1760
+- [x] ISL-094 Window always 420 logical wide (NoteWidth), centred on monitor top; heights: 60 normal, 190 Drop, Pick 52+34*(n+1)+12+10 — IW:26-34,405-418
+- [x] ISL-095 Pill widths: Compact 92, Peek 300, Note/Drop/Pick 420 — IW:319
+- [x] ISL-096 Pill: black #000000, corners bottom-left/right radius 24, top square; top-centred in the window — IX:19-20
+- [x] ISL-097 Over-island hit rect = pill: centred, width pillWidth*scale, height max(60, actual pill height)*scale, recomputed every poll — IW:189-192,420-424
+- [x] ISL-098 Placement in physical px via SetWindowPos(NOZORDER|NOACTIVATE) before and after Show (WM_DPICHANGED fix) — IW:426-433,496-502
+- [x] ISL-099 New show from Hidden -> monitor under cursor; state/note change while visible -> stays on previously chosen monitor — IW:211-216
+- [x] ISL-100 Slide in: TranslateY from current (initially -60) to 0, 450 ms BackEase(EaseOut, amplitude .3) — IW:85,435-447
+- [x] ISL-101 Width: set instantly when fresh; otherwise animate to new width 400 ms same spring — IW:437-445
+- [x] ISL-102 Slide out: TranslateY to -max(60, pillHeight+8), 260 ms CubicEase InOut; window Hide at end only if still Hidden — IW:463-481
+- [x] ISL-103 Poll: 50 ms; 250 ms when Hidden and cursor > 200*scale px below monitor top; interval changed only on change; GetCursorPos failure (secure desktop) -> skip tick — IW:51,151,228-229
+- [x] ISL-104 Pose second step 1400 ms — IW:97
+- [x] ISL-105 Header: 52 tall, padding left 8 right 22; mascot 44x44 + 10 gap; texts 13 px head, 12 px sub; font "Segoe UI Variable Text, Segoe UI", Display text mode, ellipsis trimming — IX:9-10,36-47; App.xaml:31
+- [x] ISL-106 Constants: DwellMs 600, LeaveMs 400, DragDwellMs 250, DragLeaveMs 1500, DoneMs 4000, SelfPeekEveryMs 180000, CompactMs 10000, RestMs 600, PickMs 15000, GreetMs 2500, GreetWithinMs 60000 — IT:63-95
+- [x] ISL-107 No sounds anywhere in island code.
+- [x] ISL-108 On close: stop timers, unregister pick keys, unregister Ctrl+Alt+S, remove clipboard listener, close glow — IW:133-144
+- [x] ISL-109 Main window close only hides; island is the way back and holds Quit — IX:24; MW:1752-1760
 
 ### 3. DRAWING
 

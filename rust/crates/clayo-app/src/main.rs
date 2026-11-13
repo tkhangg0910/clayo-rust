@@ -3,6 +3,7 @@
 
 mod app;
 mod fonts;
+mod island_host;
 mod model;
 mod pane;
 mod status;

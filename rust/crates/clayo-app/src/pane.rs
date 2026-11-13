@@ -24,6 +24,8 @@ use std::time::Duration;
 #[derive(Debug)]
 pub enum AppEvent {
     Status(u64, PaneStatus),
+    /// The island asks the main window for something.
+    Island(crate::island_host::IslandCmd),
 }
 
 /// Wakes the UI from any thread.
