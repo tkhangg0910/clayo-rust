@@ -602,6 +602,14 @@ impl ClayoApp {
                 p.agent_command = cmd.replace("{id}", p.expected_session_id.as_deref().unwrap_or(""));
             }
         }
+        // The latency probe (BENCH.md) measures echo through a bare shell, not the agent.
+        if crate::latency::enabled() {
+            p.agent_command = String::new();
+        }
+        // BENCH.md runs (release builds too): a fixed command in place of the agent.
+        if let Ok(cmd) = std::env::var("CLAYO_BENCH_AGENT_CMD") {
+            p.agent_command = cmd;
+        }
         Some(p)
     }
 
@@ -2008,6 +2016,15 @@ impl eframe::App for ClayoApp {
             }
         }
         let ctx = ui.ctx().clone();
+        static FRAME_LOG: std::sync::OnceLock<Option<std::ffi::OsString>> = std::sync::OnceLock::new();
+        if let Some(path) = FRAME_LOG.get_or_init(|| std::env::var_os("CLAYO_FRAME_LOG")) {
+            // BENCH.md: when and why frames are drawn while idle.
+            use std::io::Write;
+            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+                let cause = ctx.repaint_causes().iter().map(|c| c.to_string()).collect::<Vec<_>>().join("; ");
+                let _ = writeln!(f, "{:?} {cause}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis());
+            }
+        }
         self.shown = ctx.input(|i| i.viewport().visible()).unwrap_or(true) && self.shown;
         self.setup_frame(&ctx);
         if !self.shown {
@@ -2034,6 +2051,9 @@ impl eframe::App for ClayoApp {
         // Ages ("3 min ago") and the Today bucket move with the clock, and the strip's and the
         // footer's countdowns and staleness (at most every 30 s while visible).
         ctx.request_repaint_after(crate::status::CLOCK);
+        if let Some(next) = crate::latency::on_frame(self.active_pane().map(|p| &*p.shared)) {
+            ctx.request_repaint_after(next);
+        }
     }
 }
 

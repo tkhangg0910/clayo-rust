@@ -672,6 +672,40 @@ mod tests {
         assert!(!in_run('\u{1f600}'));
     }
 
+    /// With eframe's `clipboard_shortcuts` off (clayo-app), Ctrl+V reaches the widget as a key
+    /// even when the clipboard holds only files (egui-winit would otherwise swallow it), and the
+    /// widget asks the pane to paste: the pane reads text or the Explorer file list itself.
+    #[test]
+    fn ctrl_v_as_a_plain_key_requests_a_paste() {
+        let term = Terminal::new(GridSize { cols: 20, rows: 4 }, std::sync::Arc::new(|_: &[u8]| {}));
+        let ctx = egui::Context::default();
+        let mut state = ViewState::default();
+        let tf = TermFont::default();
+        let mut pasted = false;
+        for frame in 0..3 {
+            let mut input = egui::RawInput::default();
+            if frame == 2 {
+                input.events.push(Event::Key {
+                    key: Key::V,
+                    physical_key: Some(Key::V),
+                    pressed: true,
+                    repeat: false,
+                    modifiers: Modifiers::CTRL,
+                });
+            }
+            let mut o = ctx.run_ui(input, |ui| {
+                let (resp, out) = show(ui, &term, &mut state, &tf, false);
+                if frame == 0 {
+                    resp.request_focus();
+                }
+                pasted |= out.paste_requested;
+                assert!(out.input.iter().all(|b| b != &vec![0x16]), "no raw ^V is sent");
+            });
+            o.textures_delta.clear();
+        }
+        assert!(pasted);
+    }
+
     #[test]
     fn decomposed_vietnamese_composes() {
         let s: String = "e\u{0302}\u{0301}".nfc().collect();

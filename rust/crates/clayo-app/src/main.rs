@@ -5,6 +5,7 @@ mod app;
 mod fonts;
 mod image_chip;
 mod island_host;
+mod latency;
 mod doc_view;
 mod model;
 mod pane;

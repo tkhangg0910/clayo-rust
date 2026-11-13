@@ -317,6 +317,7 @@ impl Pane {
                 PtyEvent::Output(bytes) => {
                     trace(&bytes);
                     p.term.feed(&bytes);
+                    crate::latency::on_output();
                     let s = p.tracker.lock().ok().and_then(|mut t| t.on_output(&bytes, Utc::now()));
                     p.status_changed(s);
                     if p.visible.load(Ordering::Relaxed) {
