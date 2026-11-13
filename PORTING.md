@@ -377,7 +377,7 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-079 Gear button (E713, tooltip "Settings"): left click opens menu above it: "Settings…" (gesture Ctrl+,), "Start at login" (checkable; state read fresh from registry on open; disabled if !CanWrite), separator, "Quit Clayo" — MainWindow.xaml:329-346, MainWindow.xaml.cs:1616-1637,1682-1684
 
 #### Pane header / panes
-- [ ] MAIN-080 Header: status dot (same color mapping), pane title, status strip (HeadStrip), doc chip, page chip, images chip, "Attach files…", "Branch from here", "✕" — MainWindow.xaml:378-487
+- [x] MAIN-080 Header: status dot (same color mapping), pane title, status strip (HeadStrip), doc chip, page chip, images chip, "Attach files…", "Branch from here", "✕" — MainWindow.xaml:378-487
 - [x] MAIN-081 Attach/Branch/✕ disabled when no pane; Branch also disabled until pane has a session id (Codex placeholder until bound) — MainWindow.xaml:468,476,485, MainWindow.xaml.cs:1319-1321,739,1169-1171
 - [x] MAIN-082 "Attach files…": multi-select OpenFileDialog "Attach files" in active pane's cwd; inserts paths at prompt, refocuses terminal — MainWindow.xaml.cs:1086-1103
 - [x] MAIN-083 "Branch from here": fork of active session (LaunchMode.Fork) in its cwd with its agent; if launcher allocated child id (Claude), record child->parent in parents.json immediately; new pane title "branch of <8 chars>" — MainWindow.xaml.cs:1105-1121
@@ -387,17 +387,17 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-087 New pane gets a row immediately (status Starting) under Open before its transcript exists; Codex panes (no id) get a placeholder GUID and are re-keyed once their transcript appears (start-time + folder/parent match, within 10 min, not past the next same-kind pane's start) — MainWindow.xaml.cs:1244-1298,711-741
 - [x] MAIN-088 Pane status change -> row status, header dot, island notices: NeedsInput->NeedsYou, Error->Error, Done only if previous was Working->Done, else null (clears); SessionWorking true on Working, false when leaving Working — MainWindow.xaml.cs:1270-1292
 - [x] MAIN-089 Codex pane working/done driven from transcript turn info on each refresh — MainWindow.xaml.cs:629-632
-- [ ] MAIN-090 Doc chip (glyph F000): shown when active session wrote a .md; tooltip "<file>\n<path>\nClick to read it here, again to close it."; click toggles doc viewer; refocus terminal — MainWindow.xaml.cs:1471-1486
-- [ ] MAIN-091 Page chip (glyph E9D2): shown when session wrote pages in .clayo/pages; click toggles newest page; right-click menu lists the session's pages newest first (existing only), checked = open — MainWindow.xaml.cs:1489-1516
-- [ ] MAIN-092 New page written by session auto-opens (not for history on first read); open page/doc follows file; PageFolder.HideFromGit on write — MainWindow.xaml.cs:661-678
-- [ ] MAIN-093 Images chip (glyph EB9F + count): images pasted in active prompt since last sent prompt/pane open; Claude: files in paste cache dir for session; Codex: temp clipboard files matching pattern claimed per pane; only tags still in prompt text count; hover opens thumbnail popup (180px decode, 90 high, max 200 wide, "#n" label, wrap max 460); auto-hides 300ms after mouse leaves; new image flashes popup 1.5 s only if Clayo is active; click chip opens newest full-size overlay (#E614171C bg, margin 40, downscale only, ✕ / Esc / click closes, refocus terminal) — MainWindow.xaml.cs:1336-1468, MainWindow.xaml:418-461
+- [x] MAIN-090 Doc chip (glyph F000): shown when active session wrote a .md; tooltip "<file>\n<path>\nClick to read it here, again to close it."; click toggles doc viewer; refocus terminal — MainWindow.xaml.cs:1471-1486
+- [x] MAIN-091 Page chip (glyph E9D2): shown when session wrote pages in .clayo/pages; click toggles newest page; right-click menu lists the session's pages newest first (existing only), checked = open — MainWindow.xaml.cs:1489-1516
+- [x] MAIN-092 New page written by session auto-opens (not for history on first read); open page/doc follows file; PageFolder.HideFromGit on write — MainWindow.xaml.cs:661-678
+- [x] MAIN-093 Images chip (glyph EB9F + count): images pasted in active prompt since last sent prompt/pane open; Claude: files in paste cache dir for session; Codex: temp clipboard files matching pattern claimed per pane; only tags still in prompt text count; hover opens thumbnail popup (180px decode, 90 high, max 200 wide, "#n" label, wrap max 460); auto-hides 300ms after mouse leaves; new image flashes popup 1.5 s only if Clayo is active; click chip opens newest full-size overlay (#E614171C bg, margin 40, downscale only, ✕ / Esc / click closes, refocus terminal) — MainWindow.xaml.cs:1336-1468, MainWindow.xaml:418-461
 - [x] MAIN-094 Status strip/footer limits: active pane's strip (Claude via StatusStore, Codex via transcript status) + git info; footer limits = active agent's account (Codex: newest across Codex transcripts; with no pane, Codex if Claude unused) — MainWindow.xaml.cs:1565-1586
 - [x] MAIN-095 Reserve threshold crossing emits ReserveCrossed to island (warning only) — MainWindow.xaml.cs:1592-1595
 
 #### Timers
 - [x] MAIN-096 Git poll 3 s, only when window visible, for each pane cwd — MainWindow.xaml.cs:259,261,353-358
 - [x] MAIN-097 Clock 30 s: refresh strip if visible; reserve check always — MainWindow.xaml.cs:263,360-365
-- [ ] MAIN-098 Image poll 1 s; image popup hide check 300 ms — MainWindow.xaml.cs:266-267,366-373
+- [x] MAIN-098 Image poll 1 s; image popup hide check 300 ms — MainWindow.xaml.cs:266-267,366-373
 - [x] MAIN-099 Update check at load and every 12 h — MainWindow.xaml.cs:270,375-377
 - [x] MAIN-100 On load: refresh sessions, start transcript watchers, status store, prune screenshots older than KeepFor — MainWindow.xaml.cs:345-350
 
@@ -761,7 +761,7 @@ Paths below are relative to D:\Clayo\Clayo. Namespace in C# is `CcxShell.Core` t
 - [c] SES-110 Codex paths: `payload.item.type=="FileChange"` -> each key of `payload.item.changes`; plus regex `\*\*\* (?:Add|Update) File: ((?:[^\\"]|\\.)+?)\\n` on raw line, captured group JSON-unescaped — Sessions/TranscriptTail.cs:147-167
 - [c] SES-111 Path resolution: relative to pane folder; `.md` inside folder (prefix match on full path + `\`, case-insens.) and File.Exists -> Doc (latest wins); else `.html` inside `<folder>\.clayo\pages\` and exists -> page (move to end of list, PageWrites++) — Sessions/TranscriptTail.cs:113-127,170-179
 - [c] SES-112 Read returns true iff a doc or page was seen in this read — Sessions/TranscriptTail.cs:52,81
-- [ ] SES-113 A newly written page auto-opens unless it was from the first (history) read; open doc viewer follows newest doc; `PageFolder.HideFromGit` called — MainWindow.xaml.cs:671-683
+- [x] SES-113 A newly written page auto-opens unless it was from the first (history) read; open doc viewer follows newest doc; `PageFolder.HideFromGit` called — MainWindow.xaml.cs:671-683
 
 #### Pasted images (panefiles.cs)
 - [c] SES-114 Claude root = `%CLAUDE_CODE_TMPDIR%` or %TEMP%, + `\claude`; session images dir = `<root>\<any project>\<sessionId>\images` (first match) — Terminal/PastedImages.cs:21-38
@@ -1893,13 +1893,13 @@ Abbreviations: TP = Terminal/TerminalPane.xaml.cs, TH = Assets/terminal.html, MW
 - [ ] TRM-039 The view fits cols/rows to the container (FitAddon). The resize is debounced 60 ms after the last ResizeObserver callback, and "r" is sent only when cols/rows changed — TH:360-378
 - [ ] TRM-040 The host ignores a resize while the window is minimized (a false 124→105 col reflow was seen) and ignores a same-size resize. Otherwise it calls ResizePseudoConsole and records `_resizedAt` — TP:297-309
 - [ ] TRM-041 Output within 500 ms after a resize, or within 250 ms after a key, does not count as "work" (it is a repaint or echo) but does reset the quiet timer — TP:387-388, 396-402
-- [ ] TRM-042 Dragging the doc-split grip resizes the terminal through the same debounce — TH:325-341
+- [x] TRM-042 Dragging the doc-split grip resizes the terminal through the same debounce — TH:325-341
 
 #### Links
-- [ ] TRM-043 OSC 8 hyperlinks in the output: on click, the confirm dialog "Open this link in your browser?\n\n<uri>" appears. If confirmed, the link opens in the default browser — TH:93-97
-- [ ] TRM-044 The host opens only absolute http/https URIs (file: and other schemes are dropped) with ShellExecute — TP:326-331
-- [ ] TRM-045 Plain-text URLs (no OSC 8) are not linkified (the web-links addon is not loaded) — TH:69-71
-- [ ] TRM-046 Links in a doc: http(s) only, same confirm, open in the browser. Other links do nothing (default is prevented) — TH:274-280
+- [x] TRM-043 OSC 8 hyperlinks in the output: on click, the confirm dialog "Open this link in your browser?\n\n<uri>" appears. If confirmed, the link opens in the default browser — TH:93-97
+- [x] TRM-044 The host opens only absolute http/https URIs (file: and other schemes are dropped) with ShellExecute — TP:326-331
+- [x] TRM-045 Plain-text URLs (no OSC 8) are not linkified (the web-links addon is not loaded) — TH:69-71
+- [x] TRM-046 Links in a doc: http(s) only, same confirm, open in the browser. Other links do nothing (default is prevented) — TH:274-280
 - [ ] TRM-047 Links in a page: same confirm, http(s) only. `#anchor` links scroll inside the page — TH:314-316, Assets/pages/clayo-page.js:457-471
 - [ ] TRM-048 New windows are never opened inside Clayo. Top navigation outside `https://ccx.assets/` is cancelled. Frame navigation other than `about:` (srcdoc) is cancelled — TP:217-230
 
@@ -1918,30 +1918,30 @@ Abbreviations: TP = Terminal/TerminalPane.xaml.cs, TH = Assets/terminal.html, MW
 - [c] TRM-056 Codex panes, once the transcript reports a turn: Working/Done comes from the transcript (`FromTurn`). Exited never changes. NeedsInput stays unless answered and the transcript line is newer than the question — TP:563-579
 
 #### Image chip (pane header; MW logic using TP state)
-- [ ] TRM-057 The page reports the set of `[Image #n]` tags visible on the bottom screen (rows baseY..baseY+rows, not scrollback), 250 ms after output is parsed, and only when the set changes (comma-joined, sorted) — TH:198-228, TP:320-324
-- [ ] TRM-058 Polled every 1 s while the window is visible: images "since" = the last prompt sent after the pane opened (TT.PromptAt), else the time the pane opened — MW:266,1342-1345
-- [ ] TRM-059 Claude: images dir = `<CLAUDE_CODE_TMPDIR or %TEMP%>\claude\<any project>\<sessionId>\images`. Files are images with mtime > since, sorted by numeric file name (the tag), then by mtime — PastedImages.cs:21-53, MW:1357-1362
-- [ ] TRM-060 Codex: loose `%TEMP%\codex-clipboard-*` images newer than since, claimed by the active pane only (a global claimed set). Images Clayo pasted are added too. Entries older than since, or deleted, drop out. Tag = position + 1 — PastedImages.cs:17, MW:1348-1355, 1364-1368
-- [ ] TRM-061 Only images whose tag is still on screen are shown. Deleting `[Image #2]` from the prompt removes it from the chip — MW:1366-1369
-- [ ] TRM-062 The chip (icon + count) is hidden when there are 0 images. Hovering opens a popup of 90 px-high thumbnails labelled `#n`, which auto-hides 300 ms after the mouse leaves. A thumbnail click opens the full-size image over the pane (Esc, a click or the close button closes it, then focus returns to the terminal). A chip click opens the newest image full size. A newly added image flashes the popup for 1.5 s, only while Clayo is the active window — MW:1370-1470
-- [ ] TRM-063 Thumbnails are decoded with OnLoad and the file is released at once, so the agent's file is never locked. Undecodable formats show the tag only — MW:1418-1437
+- [x] TRM-057 The page reports the set of `[Image #n]` tags visible on the bottom screen (rows baseY..baseY+rows, not scrollback), 250 ms after output is parsed, and only when the set changes (comma-joined, sorted) — TH:198-228, TP:320-324
+- [x] TRM-058 Polled every 1 s while the window is visible: images "since" = the last prompt sent after the pane opened (TT.PromptAt), else the time the pane opened — MW:266,1342-1345
+- [x] TRM-059 Claude: images dir = `<CLAUDE_CODE_TMPDIR or %TEMP%>\claude\<any project>\<sessionId>\images`. Files are images with mtime > since, sorted by numeric file name (the tag), then by mtime — PastedImages.cs:21-53, MW:1357-1362
+- [x] TRM-060 Codex: loose `%TEMP%\codex-clipboard-*` images newer than since, claimed by the active pane only (a global claimed set). Images Clayo pasted are added too. Entries older than since, or deleted, drop out. Tag = position + 1 — PastedImages.cs:17, MW:1348-1355, 1364-1368
+- [x] TRM-061 Only images whose tag is still on screen are shown. Deleting `[Image #2]` from the prompt removes it from the chip — MW:1366-1369
+- [x] TRM-062 The chip (icon + count) is hidden when there are 0 images. Hovering opens a popup of 90 px-high thumbnails labelled `#n`, which auto-hides 300 ms after the mouse leaves. A thumbnail click opens the full-size image over the pane (Esc, a click or the close button closes it, then focus returns to the terminal). A chip click opens the newest image full size. A newly added image flashes the popup for 1.5 s, only while Clayo is the active window — MW:1370-1470
+- [x] TRM-063 Thumbnails are decoded with OnLoad and the file is released at once, so the agent's file is never locked. Undecodable formats show the tag only — MW:1418-1437
 
 #### Doc chip / doc viewer (.md written by the session)
-- [ ] TRM-064 Detection (TT): the newest `.md` that the session Write/Edit/MultiEdit-ed (Claude) or apply_patch Add/Update-d or FileChange-d (Codex), resolved against the session folder. It must be inside that folder and still exist. A doc from before the pane opened (a resumed session) also counts — TT:87-127,169-178
-- [ ] TRM-065 The chip is visible when a doc is known. Tooltip: "<name>\n<full path>\nClick to read it here, again to close it." Click toggles show/hide, then refocuses the terminal — MW:1471-1486
-- [ ] TRM-066 The viewer opens in split mode (50% of the pane width, on the right, terminal shrinks and reflows) unless it is already open. "◧ Split" / "⛶ Full" (full = overlay over the terminal; the terminal keeps its size) / "✕" close. The active mode button is amber #d4a24c. The name bar shows the file name — TH:28-58, 255-269
-- [ ] TRM-067 The split grip (8 px over the left border, col-resize, amber 2 px line on hover/drag) sets the doc width to 20–80%. The width is kept for the next open within this page load — TH:31-36, 325-341
-- [ ] TRM-068 Follow edits: on every transcript change, if the doc is open, the current Doc is shown again if its path or mtime changed (an Edit reaches the transcript before the file). The same doc keeps its scroll position; a different doc starts at the top — MW:658-669, TP:613-617, TH:261-264
-- [ ] TRM-069 Files over 2 MB show "*<name> is too big to show here.*". A read error shows "*Couldn't read <name>: <msg>*" — TP:603-629
+- [x] TRM-064 Detection (TT): the newest `.md` that the session Write/Edit/MultiEdit-ed (Claude) or apply_patch Add/Update-d or FileChange-d (Codex), resolved against the session folder. It must be inside that folder and still exist. A doc from before the pane opened (a resumed session) also counts — TT:87-127,169-178
+- [x] TRM-065 The chip is visible when a doc is known. Tooltip: "<name>\n<full path>\nClick to read it here, again to close it." Click toggles show/hide, then refocuses the terminal — MW:1471-1486
+- [x] TRM-066 The viewer opens in split mode (50% of the pane width, on the right, terminal shrinks and reflows) unless it is already open. "◧ Split" / "⛶ Full" (full = overlay over the terminal; the terminal keeps its size) / "✕" close. The active mode button is amber #d4a24c. The name bar shows the file name — TH:28-58, 255-269
+- [x] TRM-067 The split grip (8 px over the left border, col-resize, amber 2 px line on hover/drag) sets the doc width to 20–80%. The width is kept for the next open within this page load — TH:31-36, 325-341
+- [x] TRM-068 Follow edits: on every transcript change, if the doc is open, the current Doc is shown again if its path or mtime changed (an Edit reaches the transcript before the file). The same doc keeps its scroll position; a different doc starts at the top — MW:658-669, TP:613-617, TH:261-264
+- [x] TRM-069 Files over 2 MB show "*<name> is too big to show here.*". A read error shows "*Couldn't read <name>: <msg>*" — TP:603-629
 - [ ] TRM-070 Rendered with marked (GFM) in a sandboxed frame with no scripts, CSP `default-src 'none'; style-src 'unsafe-inline'; img-src https: data:` (remote https images load). Raw `<pre>` with escaped text is the fallback if marked is missing — TH:60-62, 238-249, 269
-- [ ] TRM-071 Doc CSS: body 14px/1.6 Segoe UI, padding 18 24 40, bg #14171c, fg #c8cdd6. h1–h4 #eceef1 (lh 1.3, margin 1.4em 0 .5em). h1/h2 have a bottom border #262c35. Links #d4a24c. Code 12.5px Cascadia Code on #1b1f26 with radius 3. pre #1b1f26, padding 10 12. blockquote: left border 3px #333a45, color #7a828f. Table cells: border #262c35, padding 4 10. Images max-width 100%. hr #262c35. Bar: 12px Segoe UI #7a828f, border #262c35, button hover bg #222731 — TH:38-45, 243-248
-- [ ] TRM-072 Closing the viewer (✕) tells the host (`mdclosed`) and refocuses the terminal. A host-side close (`mdclose`) does the same without telling the host back — TH:285-292, TP:315-318, 636-641
+- [x] TRM-071 Doc CSS: body 14px/1.6 Segoe UI, padding 18 24 40, bg #14171c, fg #c8cdd6. h1–h4 #eceef1 (lh 1.3, margin 1.4em 0 .5em). h1/h2 have a bottom border #262c35. Links #d4a24c. Code 12.5px Cascadia Code on #1b1f26 with radius 3. pre #1b1f26, padding 10 12. blockquote: left border 3px #333a45, color #7a828f. Table cells: border #262c35, padding 4 10. Images max-width 100%. hr #262c35. Bar: 12px Segoe UI #7a828f, border #262c35, button hover bg #222731 — TH:38-45, 243-248
+- [x] TRM-072 Closing the viewer (✕) tells the host (`mdclosed`) and refocuses the terminal. A host-side close (`mdclose`) does the same without telling the host back — TH:285-292, TP:315-318, 636-641
 
 #### HTML pages
 - [ ] TRM-073 What: a single HTML file an agent writes at `<project>/.clayo/pages/<name>.html` (report/dashboard/slides), using clayo-page.css/js. Charts are JSON in `<script type="application/json" class="chart">` (Chart.js: bar/line/area/pie/doughnut/scatter, stacked/horizontal, xLabel/yLabel). Diagrams are `<pre class="mermaid">`. Tables are sortable with `data-sortable`. Decks use `.deck > .slide` (16:9) — Assets/pages/page-guide.md:1-153
 - [c] TRM-074 Detection (TT): an .html Write/Edit (or Codex patch/FileChange) inside `<folder>\.clayo\pages\`. A page written again moves to the end. `Pages` lists each one once, newest last. PageWrites counts every write — TT:118-125
-- [ ] TRM-075 A new page write after the first transcript read opens the page in the viewer automatically. A page from history (the first read) only appears in the chip. On a page write, `.clayo/` is appended to `.git/info/exclude` of the enclosing repo (searched upward). If the page is open and the file still exists, it is shown again on change (mtime) — MW:663-677, Pages/PageFolder.cs:15-32
-- [ ] TRM-076 Page chip: visible when any page is known. Tooltip: "<name>\n<path>\nClick to see it here, again to close it. Right-click for the session's other pages." Click toggles. The right-click menu lists the session's existing pages, newest first, with the open one checked — MW:1489-1515
+- [x] TRM-075 A new page write after the first transcript read opens the page in the viewer automatically. A page from history (the first read) only appears in the chip. On a page write, `.clayo/` is appended to `.git/info/exclude` of the enclosing repo (searched upward). If the page is open and the file still exists, it is shown again on change (mtime) — MW:663-677, Pages/PageFolder.cs:15-32
+- [x] TRM-076 Page chip: visible when any page is known. Tooltip: "<name>\n<path>\nClick to see it here, again to close it. Right-click for the session's other pages." Click toggles. The right-click menu lists the session's existing pages, newest first, with the open one checked — MW:1489-1515
 - [ ] TRM-077 The page shows in the same panel as the doc (one at a time). The same page again keeps its scroll y and slide (reported by the page via postMessage `place`, debounced 150 ms). A different page starts at the top — TH:294-323, clayo-page.js:433-453
 - [c] TRM-078 Sealing: a CSP meta is inserted straight after the doctype (or at offset 0 if there is none), so the page cannot comment it out. CSP = `default-src 'none'; script-src 'unsafe-inline' https://ccx.assets https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src` (same list)`; img-src data: blob: https://ccx.assets; font-src data: https://ccx.assets; connect-src 'none'; form-action 'none'`. `href|src = "./clayo-page.css|js"` (either quote style, optional ./) is rewritten to `https://ccx.assets/pages/clayo-page.(css|js)`. Nothing else is touched — Pages/PageHtml.cs:43-81
 - [ ] TRM-079 Frame sandbox: `allow-scripts` only (opaque origin; it cannot reach the host, files or the network). The doc frame is `allow-same-origin` with no scripts — TH:60-66
@@ -1949,7 +1949,7 @@ Abbreviations: TP = Terminal/TerminalPane.xaml.cs, TH = Assets/terminal.html, MW
 - [ ] TRM-081 Page runtime: dark/light via `light-dark()` tokens (Clayo forces dark). Charts and Mermaid redraw on theme change. Decks: ←/→/↑/↓/PgUp/PgDn/Space/Home/End and nav buttons, with a "n / N" counter. Tables: numeric columns right-aligned, header click or Enter/Space sorts ascending then descending — clayo-page.js:337-431, 480-482; clayo-page.css:1-184
 - [ ] TRM-082 Not wired in the C# code: page-guide.md and templates/ are shipped in Assets, but no code copies them into `.clayo/templates` or tells the agent about them. The PageHtml doc mentions `clayo --page-check`, but no such CLI handler exists in src — grep of src (no hits)
 - [ ] TRM-083 IME composition (Vietnamese Telex, CJK IMEs): preedit shown at the cursor, candidate window placed at the cursor cell, committed text sent as UTF-8 (xterm.js behavior) — Assets/xterm/xterm.js (composition helper)
-- [ ] TRM-084 Viewer tooltips: grip "Drag to resize", Split "Half and half", Full "Fill the pane", ✕ "Back to the terminal" — Assets/terminal.html:52-57
+- [x] TRM-084 Viewer tooltips: grip "Drag to resize", Split "Half and half", Full "Fill the pane", ✕ "Back to the terminal" — Assets/terminal.html:52-57
 
 ### 3. HARD POINTS
 
