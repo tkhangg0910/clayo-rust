@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below, together with the original Clayo."
+title: "clayo-rust: a native Rust port of Clayo"
+type: software
+license: MIT
+repository-code: "https://github.com/tkhangg0910/clayo-rust"
+authors:
+  - name: "Yogeswaran Amsavalli"
+    alias: "YogiOnCode"
+  - alias: "tkhangg0910"
+references:
+  - type: software
+    title: "Clayo"
+    authors:
+      - name: "Yogeswaran Amsavalli"
+    repository-code: "https://github.com/YogiOnCode/Clayo"
+    license: MIT

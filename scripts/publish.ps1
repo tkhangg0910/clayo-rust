@@ -1,12 +1,22 @@
-# Builds the release zip: a self-contained Clayo, so the PC needs no .NET, in a Clayo\ folder.
+# Builds the release zip of the Rust Clayo: one clayo.exe in a Clayo\ folder, the same layout,
+# names and checksum file as the C# build's scripts/publish.ps1, so scripts/install.ps1 (and the
+# Update button of an installed C# Clayo) installs it unchanged.
 # Unzipped into %LOCALAPPDATA%\Programs it lands at %LOCALAPPDATA%\Programs\Clayo.
-# From the repo root:  .\scripts\publish.ps1
+# From the repo root:  .\scripts\publish.ps1     (builds and zips; uploads nothing)
 $ErrorActionPreference = 'Stop'
 
-$root = Split-Path $PSScriptRoot -Parent
-$project = Join-Path $root 'src\Clayo\CcxShell.csproj'
-$version = ([xml](Get-Content $project)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
-if (-not $version) { throw "No <Version> in $project" }
+$rust = Split-Path $PSScriptRoot -Parent
+$root = $rust
+$manifest = Join-Path $rust 'Cargo.toml'
+
+# [workspace.package] version = "x.y.z"
+$version = $null
+$section = ''
+foreach ($line in Get-Content $manifest) {
+    if ($line -match '^\s*\[(.+)\]\s*$') { $section = $Matches[1]; continue }
+    if ($section -eq 'workspace.package' -and $line -match '^\s*version\s*=\s*"([^"]+)"') { $version = $Matches[1]; break }
+}
+if (-not $version) { throw "No [workspace.package] version in $manifest" }
 
 $out = Join-Path $root 'publish'
 $folder = Join-Path $out 'Clayo'
@@ -15,14 +25,17 @@ if (Test-Path $folder) { Remove-Item $folder -Recurse -Force }
 if (Test-Path $zip) { Remove-Item $zip -Force }
 if (Test-Path "$zip.sha256") { Remove-Item "$zip.sha256" -Force }
 
-# English only: Clayo's own text is, so WPF's other languages are dead weight.
-dotnet publish $project -c Release -r win-x64 --self-contained true -p:SatelliteResourceLanguages=en -o $folder
-if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
-
-# The terminal pane loads Assets\ from next to the exe (TerminalPane), so both must be there.
-foreach ($need in 'clayo.exe', 'Assets\terminal.html', 'Assets\xterm\xterm.js') {
-    if (-not (Test-Path (Join-Path $folder $need))) { throw "Missing from the build: $need" }
+Push-Location $rust
+try {
+    cargo build --release -p clayo-app
+    if ($LASTEXITCODE -ne 0) { throw 'cargo build --release failed' }
 }
+finally { Pop-Location }
+
+$exe = Join-Path $rust 'target\release\clayo.exe'
+if (-not (Test-Path $exe)) { throw "Missing from the build: $exe" }
+New-Item -ItemType Directory -Force $folder | Out-Null
+Copy-Item $exe (Join-Path $folder 'clayo.exe')
 
 # Entry by entry, with forward slashes: Windows PowerShell 5.1's Compress-Archive and ZipFile
 # both write backslashes, which some unzip tools turn into files named "Clayo\clayo.exe".
@@ -39,6 +52,6 @@ finally { $archive.Dispose() }
 # Uploaded beside the zip: install.ps1 refuses a zip whose hash is not this one.
 $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
 Set-Content "$zip.sha256" "$hash  $(Split-Path $zip -Leaf)" -Encoding ascii -NoNewline
-$folderMb = (Get-ChildItem $folder -Recurse -File | Measure-Object Length -Sum).Sum / 1MB
+$exeMb = (Get-Item (Join-Path $folder 'clayo.exe')).Length / 1MB
 $zipMb = (Get-Item $zip).Length / 1MB
-'Clayo {0}: {1:N0} MB in {2}, zipped to {3} ({4:N0} MB), SHA-256 {5}' -f $version, $folderMb, $folder, $zip, $zipMb, $hash
+'Clayo {0}: clayo.exe {1:N1} MB in {2}, zipped to {3} ({4:N1} MB), SHA-256 {5}' -f $version, $exeMb, $folder, $zip, $zipMb, $hash

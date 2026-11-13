@@ -1,5 +1,10 @@
 # BENCH.md — Clayo Rust vs Clayo C# 1.0.6
 
+> **Layout note (clayo-rust).** This document was written in the original repository, where the Rust
+> workspace lived in `rust/` next to the C# app in `src/Clayo`. In clayo-rust the workspace is at the
+> repository root (`rust/crates/...` is now `crates/...`), the page assets are in `assets/pages`, and
+> the C# source and `checks/` are in the original project: https://github.com/YogiOnCode/Clayo
+
 Measured on 2026-11-13/14 on the same Windows 11 x64 laptop (150 % display scale), release builds:
 the Rust port from branch `rust-port` (`rust/target/release/clayo.exe`) and the C# 1.0.6 release
 (`%LOCALAPPDATA%\Programs\Clayo\clayo.exe`, installed by `scripts/install.ps1`).

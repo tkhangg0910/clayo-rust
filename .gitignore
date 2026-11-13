@@ -1,19 +1,7 @@
-# Build output
-bin/
-obj/
-*.user
-
-# Publish
-publish/
-*.pubxml.user
-
-# Editor / OS
+target/
+/publish/
 .vs/
 .idea/
 *.swp
 Thumbs.db
 desktop.ini
-brag-output
-design
-docs/*
-!docs/AGENTS.md

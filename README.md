@@ -1,186 +1,107 @@
-<div align="center">
+# clayo-rust
 
-<img src="media/icon.png" width="96" alt="Clayo mascot" />
+A native Rust port of [Clayo](https://github.com/YogiOnCode/Clayo): every Claude Code and Codex
+session in one Windows window, plus an island that tells you which one needs you. Same behaviour
+as Clayo 1.0.6, without WebView2: one `clayo.exe`, no runtime to install.
 
-# Clayo
+**Credit.** Clayo was created by **Yogeswaran Amsavalli** ([YogiOnCode/Clayo](https://github.com/YogiOnCode/Clayo)),
+MIT licensed. This port keeps that licence: see [`LICENSE`](LICENSE). The design, behaviour,
+texts, mascot and island are the original author's; the Rust code reimplements them.
+The Rust port is by [tkhangg0910](https://github.com/tkhangg0910); this repository keeps the full
+git history of the original C# project, so every original commit stays attributed to its author.
+Not affiliated with Anthropic or OpenAI.
 
-**Every Claude Code and Codex session in one Windows window, plus an island that tells you which one needs you.**
+| | Rust port | C# 1.0.6 |
+|---|---|---|
+| Start to first frame | ~150 ms | ~1 s (8.8 s first start) |
+| RAM, 1 pane | 33 MB | 80 MB + 144 MB WebView2 |
+| RAM, 5 panes | 48 MB | 65 MB + 345 MB WebView2 |
+| Install | one 18 MB exe | 135 MB, 260 files |
 
-![Latest release](https://img.shields.io/github/v/release/YogiOnCode/Clayo)
-![CI](https://github.com/YogiOnCode/Clayo/actions/workflows/ci.yml/badge.svg)
-![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4)
-![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)
-![License: MIT](https://img.shields.io/badge/license-MIT-green)
+Full numbers and how they were taken: [`BENCH.md`](BENCH.md). What maps to what, and every
+behaviour checked off against the C# source: [`PORTING.md`](PORTING.md).
 
-</div>
+## Requirements
 
-<!-- Video: drag brag.mp4 into a GitHub comment box, paste the
-     https://github.com/user-attachments/assets/… URL on its own line here, and it plays inline. -->
+- Windows 10 or 11, 64-bit.
+- [Claude Code](https://docs.claude.com/en/docs/claude-code) and/or [Codex](https://github.com/openai/codex)
+  (the first-run setup window finds them, or installs one in a PowerShell window you can watch).
+- To build: Rust stable (1.85+) with the MSVC toolchain (`rustup default stable-x86_64-pc-windows-msvc`)
+  and the Visual Studio C++ build tools. `git` on PATH is used at run time for the branch/diff in
+  the pane header.
 
-<p align="center"><img src="media/poster.jpg" alt="Clayo launch video" width="800" /></p>
+## Build
 
-## Why
+```powershell
+cargo build --release          # target\release\clayo.exe
+cargo test                     # all checks (the C# checks/*.cs, ported), ~430 tests
+cargo clippy --all-targets -- -D warnings
+```
 
-You run four or five coding agent sessions at once, Claude Code or Codex, each in its own
-terminal. One is waiting for a permission, one finished ten minutes ago, and you're in the
-browser. Clayo puts them all in one window and tells you when one needs you, without you
-switching windows.
+Workspace layout:
 
-## What you get
-
-![The Clayo window: sessions on the left, a branch nested under its parent, the real Claude Code terminal on the right](media/hero.png)
-
-- **The real Claude Code and Codex.** Each pane is a real terminal (ConPTY + xterm.js)
-  running the `claude` or `codex` you already use: slash commands, permission prompts, plan
-  mode, your status line.
-- **Both side by side, or just one.** Use Claude Code, Codex or both; with both, each
-  session in the sidebar is tagged **CC** or **CX**.
-- **Set up in one screen.** The first time it starts, Clayo finds your agents, installs or
-  signs in to the one you're missing, and turns on start at login and `clayo` in Explorer.
-- **Sessions on the left, grouped by folder.** Search, rename (F2), resume with a click.
-- **Branch from here.** Fork a conversation into a new session. The branch sits under its
-  parent; the original stays as it was.
-- **The island.** A small pill drops from the top of the screen when a session needs you or
-  has finished, even while you're in another app. It never takes focus. Click it to jump to
-  that session.
-
-  ![The island drops in when a session needs you, then turns green when one is finished](media/island.gif)
-
-- **Drop a file or folder on the island** and it opens in Clayo.
-- **Send a screenshot to a session.** Take one with Win+Shift+S, press **Ctrl+Alt+S**, and the
-  island asks which session it's for. The image lands in that session's prompt, ready for
-  your question. Works with Claude Code and Codex. Settings › Island can also offer it after
-  every screenshot.
-- **See what's in the prompt, and the docs a session writes.** Images pasted into the prompt
-  show as a small icon in the pane header: hover for thumbnails, click for full size. When a
-  session writes a `.md` in its folder, a doc icon opens it rendered, beside the terminal or
-  over it, and follows its edits. Works with Claude Code and Codex.
-- **Status at a glance.** Each pane's header shows model, branch and diff, context and
-  effort. The sidebar footer shows your 5-hour and 7-day limits, drawn as Numbers, Bars,
-  Rings or Chips, and the island warns you once when you get near one.
-- **Type `clayo` in any Explorer address bar** to open a session in that folder.
-- **Stays out of the way.** Start at login, hidden until the island has something to say.
-  Closing the window keeps sessions running.
-- **Updates itself.** When a new release is out, one click updates Clayo and opens it again,
-  once no session is working.
+| Crate | What it is |
+|---|---|
+| `clayo-core` | All logic with no UI: transcripts, sessions, status relay and store, settings, rules, island state machine, setup texts, login start, PATH, updater. Tested on its own. |
+| `clayo-pty` | ConPTY: spawn, read thread, write, resize, non-blocking teardown. |
+| `clayo-term` | VT parsing (`alacritty_terminal`), colours, key/mouse encoding, the egui terminal widget. |
+| `clayo-island` | The island: a layered Win32 window that never takes focus, glow, mascot, screenshot picker, drop target. |
+| `clayo-app` | `clayo.exe`: eframe/egui (OpenGL, Direct3D 12 fallback) main window, setup window, Settings. |
+| `bench` | `clayo-bench` and the scripts behind BENCH.md (not part of clayo.exe). |
 
 ## Install
 
-Open PowerShell, paste this and press Enter:
+Once a release is published:
 
 ```powershell
-irm https://raw.githubusercontent.com/YogiOnCode/Clayo/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/tkhangg0910/clayo-rust/main/scripts/install.ps1 | iex
 ```
 
-It runs [scripts/install.ps1](scripts/install.ps1): it downloads the latest release, checks it
-against the release's SHA-256, puts it in `%LOCALAPPDATA%\Programs\Clayo` and starts it. Every
-release zip is built on GitHub Actions; to check one yourself, run
-`gh attestation verify clayo-<version>-win-x64.zip --repo YogiOnCode/Clayo`.
-
-<details>
-<summary>Or by hand</summary>
-
-1. Download `clayo-<version>-win-x64.zip` from the
-   [latest release](https://github.com/YogiOnCode/Clayo/releases/latest).
-2. Unzip it into `%LOCALAPPDATA%\Programs` (paste that into Explorer's address bar), so you
-   have `%LOCALAPPDATA%\Programs\Clayo\clayo.exe`. Keep it there: start at login and `clayo`
-   in Explorer point at this folder.
-3. Run `clayo.exe`. Clayo isn't signed yet, so Windows may say "Windows protected your PC":
-   click **More info**, then **Run anyway**.
-
-</details>
-
-You need Windows 10 or 11, 64-bit, and nothing else first: .NET comes inside the zip, and the
-[WebView2 runtime](https://developer.microsoft.com/microsoft-edge/webview2/) is already on
-Windows 11 and on most Windows 10 PCs.
-
-### First run
-
-The setup window looks for [Claude Code](https://docs.claude.com/en/docs/claude-code) and
-[Codex](https://github.com/openai/codex). You need at least one.
-
-- Missing one? **Install** runs its own installer in a PowerShell window you can watch
-  (Codex needs [Node.js](https://nodejs.org) first). **Sign in** does the same for signing
-  in, and **Locate…** points Clayo at an install in an unusual folder.
-- Choose which ones to use and which one **New session** starts.
-- Keep **Start Clayo when I sign in** and **Add clayo to my PATH** ticked, then press
-  **Open Clayo**.
-
-**Settings › Agents** brings the setup window back. What works with each agent, and how to
-install them by hand: [docs/AGENTS.md](docs/AGENTS.md).
-
-### Updating
-
-When a new release is out, an **Update to …** button shows above **New session**. Press it:
-Clayo closes, updates and opens again. A session that is working or asking you something is
-never cut off: the update waits until none is. Idle sessions close; resume them from the
-sidebar. Clayo asks GitHub for the latest release when it starts and every 12 hours after.
-
-Or quit Clayo from the gear menu and run the install command again. Either way your settings
-are kept.
-
-### Uninstalling
-
-1. In **Settings › Agents**, untick **Start Clayo when I sign in** and **Add clayo to my
-   PATH**, and press **Open Clayo**.
-2. **Quit Clayo** from the gear menu.
-3. Delete `%LOCALAPPDATA%\Programs\Clayo`, and `%LOCALAPPDATA%\Clayo` too if you want your
-   settings gone. Your Claude Code and Codex sessions aren't touched.
-
-### Build from source
-
-You need the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
+Or build it yourself: Build the release zip and install it with the same script as the C# build:
 
 ```powershell
-git clone https://github.com/YogiOnCode/Clayo.git
-cd Clayo
-dotnet publish src/Clayo -c Release -r win-x64 --self-contained false -o $env:LOCALAPPDATA\Programs\Clayo
+.\scripts\publish.ps1      # publish\clayo-<version>-win-x64.zip + .sha256 (uploads nothing)
 ```
 
-Then run `clayo.exe` from there; the setup window takes care of `PATH`. Keep the `Assets\`
-folder next to `clayo.exe`, the terminal pane loads from it. `.\scripts\publish.ps1` builds
-the release zip instead. The self-checks in `checks/` are
-file-based apps and run with the same SDK.
+Then either unzip it into `%LOCALAPPDATA%\Programs` (giving `%LOCALAPPDATA%\Programs\Clayo\clayo.exe`)
+and run `clayo.exe`, or attach the zip and its `.sha256` to a GitHub release and use
+[`scripts/install.ps1`](scripts/install.ps1), which checks the SHA-256 and swaps the folder.
+Keep `clayo.exe` in that folder: start at login and `clayo` in Explorer's address bar point at it.
 
-## Use
+Updates: the Update button asks GitHub for the latest release of the repo set at build time
+(`CLAYO_UPDATE_REPO`, default `tkhangg0910/clayo-rust`). A fork that publishes its own releases
+builds with `$env:CLAYO_UPDATE_REPO = "<owner>/<repo>"` and points `scripts/install.ps1` at it.
 
-- **New session**: the button at the bottom of the sidebar, or `clayo` in a folder.
-- **Branch**: open a session, then **Branch from here** in its header.
-- **Settings**: the gear menu, or `Ctrl+,`. **Agents** there reopens the setup window.
-- **Quit**: **Quit Clayo** in the gear menu or the island's menu. The window's close button
-  only hides it.
+## Moving from the C# build
 
-More in the [wiki](https://github.com/YogiOnCode/Clayo/wiki).
+Quit the C# Clayo from its gear menu, then install this one into the same folder. Your settings
+(`%LOCALAPPDATA%\Clayo\settings.json`), custom session names, branch links and screenshots are read
+as they are. The two builds share the single-instance lock, so they never run side by side.
 
-## Docs
+## Licence and credits
 
-| | |
-|---|---|
-| [Claude Code and Codex](docs/AGENTS.md) | What works with each, installing them by hand |
-| [Install](https://github.com/YogiOnCode/Clayo/wiki/Install) | Download, first run, updating, uninstalling |
-| [Sessions and Branching](https://github.com/YogiOnCode/Clayo/wiki/Sessions-and-Branching) | What each button runs |
-| [The Island](https://github.com/YogiOnCode/Clayo/wiki/The-Island) | Notices, peek, drop to open |
-| [Status Bar and Limits](https://github.com/YogiOnCode/Clayo/wiki/Status-Bar-and-Limits) | Pane header, limits, themes |
-| [Settings](https://github.com/YogiOnCode/Clayo/wiki/Settings) | Every option |
-| [Troubleshooting](https://github.com/YogiOnCode/Clayo/wiki/Troubleshooting) | When something looks wrong |
-| [How It Works](https://github.com/YogiOnCode/Clayo/wiki/How-It-Works) | The code, module by module |
-| [Roadmap](https://github.com/YogiOnCode/Clayo/wiki/Roadmap) | What's next |
+MIT, see [`LICENSE`](LICENSE) (original author first, then the Rust port). Third-party crates and the
+embedded Chart.js / Mermaid files are listed with their licences in
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). Citation metadata: [`CITATION.cff`](CITATION.cff).
 
-## Contributing
+## What Clayo touches
 
-Issues and pull requests are welcome. Open an issue before a big change so we can agree on
-the approach first. Pull requests to `main` need one review and are squash-merged. See
-[Contributing](https://github.com/YogiOnCode/Clayo/wiki/Contributing) for building and
-running the checks. Found a security issue? Report it privately from the **Security** tab,
-not in an issue.
+- Reads only: `%USERPROFILE%\.claude` (or `%CLAUDE_CONFIG_DIR%`) and `%USERPROFILE%\.codex` (or
+  `%CODEX_HOME%`). It never writes there (`clayo-core/tests/invariants.rs`).
+- Writes its own files in `%LOCALAPPDATA%\Clayo` only; registry: `HKCU\...\Run` value `Clayo` and
+  the user `Path`, both from the setup window.
+- Network: only the GitHub releases check.
 
-## Notes
+## Differences from the C# build
 
-Not affiliated with Anthropic or OpenAI. Clayo reads `~/.claude` and `~/.codex` and never
-writes to either. Its only network call of its own is asking GitHub for the latest release,
-at start and every 12 hours. Where it does keep files is listed in
-[How It Works](https://github.com/YogiOnCode/Clayo/wiki/How-It-Works#where-clayo-keeps-its-files).
+Agreed in PORTING.md §6: HTML pages a session writes open in your browser instead of beside the
+terminal (D3); Markdown docs show no remote images (D4); emoji are monochrome (D7); "Also apply to
+Codex" is read-only, because Clayo does not write into `~/.codex` (D1); the terminal cursor stops
+blinking after 5 s of quiet (D14).
 
-MIT licensed, see [LICENSE](LICENSE). Bundles [xterm.js](https://github.com/xtermjs/xterm.js)
-and its fit and WebGL addons (MIT, see `src/Clayo/Assets/xterm/LICENSE.xterm`), and
-[marked](https://github.com/markedjs/marked) (MIT, see `src/Clayo/Assets/markdown/LICENSE.marked.md`).
+## Debugging hooks
+
+Environment variables read by `clayo.exe`: `CLAYO_STARTUP_LOG`, `CLAYO_FRAME_LOG`, `CLAYO_BENCH_TYPE`,
+`CLAYO_BENCH_AGENT_CMD` (benchmarks), and in debug builds `CLAYO_PTY_LOG`, `CLAYO_DEV_AGENT_CMD`,
+`CLAYO_DEV_SETTINGS`, `CLAYO_DEV_RENDERER`. Point `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and
+`LOCALAPPDATA` at temp folders to try a build without touching your real setup.

@@ -1,5 +1,10 @@
 # PORTING.md — Clayo C# → Rust native
 
+> **Layout note (clayo-rust).** This document was written in the original repository, where the Rust
+> workspace lived in `rust/` next to the C# app in `src/Clayo`. In clayo-rust the workspace is at the
+> repository root (`rust/crates/...` is now `crates/...`), the page assets are in `assets/pages`, and
+> the C# source and `checks/` are in the original project: https://github.com/YogiOnCode/Clayo
+
 Bản đồ port Clayo 1.0.6 (C# / WPF / .NET 10 + WebView2, `src/Clayo`) sang Rust native cho Windows 10/11 x64,
 không WebView. Nguồn yêu cầu: `RUST_PORT_PLAN.md`. Tài liệu này là hợp đồng của bản port: mỗi hành vi người
 dùng thấy được có một mã (`MAIN-…`, `SES-…`, `STA-…`, `ISL-…`, `TRM-…`) và một ô `[ ]`. Một giai đoạn chỉ

@@ -1,5 +1,5 @@
 # Installs Clayo, or updates it, into %LOCALAPPDATA%\Programs\Clayo, then starts it.
-#   irm https://raw.githubusercontent.com/YogiOnCode/Clayo/main/scripts/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/tkhangg0910/clayo-rust/main/scripts/install.ps1 | iex
 # Clayo's Update button runs this too, as it quits. Settings live in %LOCALAPPDATA%\Clayo and are kept.
 $ErrorActionPreference = 'Stop'
 # Windows PowerShell's progress bar slows a download to a crawl.
@@ -24,7 +24,7 @@ if (-not $env:CLAYO_DIR -and (Get-Clayo)) {
 }
 
 try {
-    $release = Invoke-RestMethod 'https://api.github.com/repos/YogiOnCode/Clayo/releases/latest'
+    $release = Invoke-RestMethod 'https://api.github.com/repos/tkhangg0910/clayo-rust/releases/latest'
     $asset = $release.assets | Where-Object name -like '*-win-x64.zip' | Select-Object -First 1
     if (-not $asset) { throw "Clayo $($release.tag_name) has no win-x64 zip." }
 
