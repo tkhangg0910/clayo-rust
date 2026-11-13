@@ -26,3 +26,11 @@ strip = true
 
 [workspace.lints.rust]
 unsafe_code = "deny"
+
+# Small dev builds: the disks are tight and nobody steps through this in a debugger.
+[profile.dev]
+debug = "line-tables-only"
+incremental = false
+
+[profile.dev.package."*"]
+debug = false
