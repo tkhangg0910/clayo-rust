@@ -292,6 +292,9 @@ pub struct ClayoApp {
     settings_page: crate::settings_page::SettingsPage,
     /// The image chip's thumbnails and full-size view.
     image_chip: ImageChip,
+    /// The grid the terminal area fits, as last drawn: a new pane starts its console at it, as
+    /// the C# pane waited for its view to report one (TP:264-278).
+    grid: GridSize,
 }
 
 impl ClayoApp {
@@ -424,6 +427,7 @@ impl ClayoApp {
             confirm_link: None,
             page_flash: None,
             image_chip: ImageChip::default(),
+            grid: GridSize { cols: 120, rows: 40 },
         };
         // Debug builds: CLAYO_DEV_SETTINGS=<General|Status bar|Security|Island> opens Settings
         // on that page at start (rendering checks).
@@ -687,7 +691,7 @@ impl ClayoApp {
             id,
             p,
             title.clone(),
-            GridSize { cols: 120, rows: 40 },
+            self.grid,
             prefill,
             self.waker.clone(),
             self.ticker.clone(),
@@ -825,18 +829,13 @@ impl ClayoApp {
         match win::read_clipboard() {
             win::Clip::Text(t) => pane.shared.type_keys(&paste_bytes(&t, mode)),
             win::Clip::Files(files) => {
-                // Images go as bracketed paths (the agent attaches them as [Image #n]); other
-                // files are typed, quoted when they hold a space (TP:342-368).
-                let mut out = Vec::new();
-                for f in files {
-                    if clayo_core::images::is_image(std::path::Path::new(&f)) {
-                        out.extend(bracketed_path(&f));
-                        out.push(b' ');
-                    } else {
-                        out.extend(clayo_core::text::insert_paths(&[f]).into_bytes());
-                    }
+                let (bytes, images) = file_paste(&files);
+                // Codex reads a pasted image where it is: the image chip remembers it.
+                if pane.agent == AgentKind::Codex {
+                    let now = Utc::now();
+                    pane.shared.codex_images.lock().unwrap_or_else(|e| e.into_inner()).extend(images.into_iter().map(|i| (i, now)));
                 }
-                pane.shared.type_keys(&out);
+                pane.shared.type_keys(&bytes);
             }
             win::Clip::Nothing => {}
         }
@@ -1657,6 +1656,9 @@ impl ClayoApp {
             for bytes in &out.input {
                 pane.shared.type_keys(bytes);
             }
+            if pane.doc.is_none() {
+                self.grid = pane.shared.term.size();
+            }
             if let Some(size) = out.resized {
                 pane.shared.resize(size);
             }
@@ -1861,6 +1863,21 @@ fn file_name(p: &std::path::Path) -> String {
     p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default()
 }
 
+/// Files copied in Explorer, pasted (TP:342-368): each image as a bracketed path and a space
+/// (the agent attaches it as [Image #n]), then the other files typed, quoted when they hold a
+/// space, with one trailing space. Also returns the images.
+fn file_paste(files: &[String]) -> (Vec<u8>, Vec<std::path::PathBuf>) {
+    let (images, others): (Vec<&String>, Vec<&String>) =
+        files.iter().partition(|f| clayo_core::images::is_image(std::path::Path::new(f)));
+    let mut out = Vec::new();
+    for i in &images {
+        out.extend(bracketed_path(i));
+        out.push(b' ');
+    }
+    out.extend(clayo_core::text::insert_paths(&others).into_bytes());
+    (out, images.into_iter().map(std::path::PathBuf::from).collect())
+}
+
 fn clamp_sidebar(w: f32, total: f32) -> f32 {
     let max = SIDEBAR_MAX.min(total - SPLITTER_W - TERMINAL_MIN).max(SIDEBAR_MIN);
     w.clamp(SIDEBAR_MIN, max)
@@ -2023,6 +2040,15 @@ impl eframe::App for ClayoApp {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pasted_files_put_images_first_as_attachments_then_type_the_rest() {
+        let files = [r"C:\a b.txt".to_string(), r"C:\shot.PNG".to_string(), r"C:\c.md".to_string()];
+        let (bytes, images) = file_paste(&files);
+        assert_eq!(String::from_utf8(bytes).unwrap(), "\x1b[200~C:\\shot.PNG\x1b[201~ \"C:\\a b.txt\" C:\\c.md ");
+        assert_eq!(images, vec![std::path::PathBuf::from(r"C:\shot.PNG")]);
+        assert_eq!(file_paste(&[]).0, Vec::<u8>::new());
+    }
 
     #[test]
     fn sidebar_width_stays_in_its_range_and_leaves_the_terminal_its_minimum() {

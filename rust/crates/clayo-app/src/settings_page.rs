@@ -211,6 +211,7 @@ impl SettingsPage {
             }
             p.text(Pos2::new(r.left() + 13.0, r.center().y), Align2::CENTER_CENTER, glyph, icon_font(13.0), MUTED_AA);
             p.text(Pos2::new(r.left() + 30.0, r.center().y), Align2::LEFT_CENTER, label, ui_font(12.5), TEXT_PRIMARY);
+            focus_ring(ui, &resp, r);
             if resp.clicked() {
                 match page {
                     Some(pg) => self.page = pg,
@@ -833,6 +834,7 @@ fn row(ui: &mut Ui, id: Id, r: Row) -> RowOut {
             let sw = Rect::from_min_size(Pos2::new(right - 40.0, cy - 10.0), Vec2::new(40.0, 20.0));
             let hover = ui.rect_contains_pointer(sw);
             paint_switch(ui, sw, id.with("switch"), on, enabled, hover);
+            focus_ring(ui, &resp, sw);
             ui.painter().text(Pos2::new(sw.left() - 20.0, cy), Align2::RIGHT_CENTER, view::on_off(on), ui_font(12.0), MUTED_AA);
             out.toggled = enabled && resp.clicked();
         }
@@ -854,6 +856,7 @@ fn row(ui: &mut Ui, id: Id, r: Row) -> RowOut {
                 p.rect_filled(sr, 6, bg);
                 p.rect_stroke(sr, 6, Stroke::new(1.0, rim), StrokeKind::Inside);
                 p.text(sr.center(), Align2::CENTER_CENTER, label, ui_font(12.0), fg);
+                focus_ring(ui, &sresp, sr);
                 if sresp.clicked() && !picked {
                     out.segment = Some(i);
                 }
@@ -877,6 +880,7 @@ fn row(ui: &mut Ui, id: Id, r: Row) -> RowOut {
             }
             p.rect_stroke(br, 6, Stroke::new(1.0, CLAY), StrokeKind::Inside);
             p.text(br.center(), Align2::CENTER_CENTER, label, semibold(12.0), LINK.gamma_multiply(face));
+            focus_ring(ui, &bresp, br);
             out.button = bresp.clicked();
         }
         Right::Later => {
@@ -888,6 +892,7 @@ fn row(ui: &mut Ui, id: Id, r: Row) -> RowOut {
             let sw = Rect::from_min_size(Pos2::new(ch.rect.left() - 10.0 - 40.0, cy - 10.0), Vec2::new(40.0, 20.0));
             let swr = ui.interact(sw, id.with("switch-hit"), Sense::click()).on_hover_cursor(CursorIcon::PointingHand);
             paint_switch(ui, sw, id.with("switch"), on, true, swr.hovered());
+            focus_ring(ui, &swr, sw);
             ui.painter().text(Pos2::new(sw.left() - 20.0, cy), Align2::RIGHT_CENTER, state, ui_font(12.0), MUTED_AA);
             out.toggled = swr.clicked();
             // A click on the header opens or closes the card; one on its switch or chevron is theirs.
@@ -983,6 +988,7 @@ fn tick(ui: &Ui, rect: Rect, id: Id, on: bool, enabled: bool, label: &str) -> Re
     let fg = if enabled { TEXT_PRIMARY } else { LATER_TEXT };
     let g = elided(ui, label, ui_font(12.5), fg, (rect.right() - bx.right() - 14.0).max(1.0));
     ui.painter().galley(Pos2::new(bx.right() + 10.0, rect.center().y - g.size().y / 2.0), g, fg);
+    focus_ring(ui, &resp, bx);
     resp
 }
 

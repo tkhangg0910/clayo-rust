@@ -116,6 +116,8 @@ pub fn install(ctx: &egui::Context) {
     w.active.expansion = 0.0;
     w.open = w.hovered;
     ctx.set_visuals(v);
+    // No zoom (the C# WebView had it off): Ctrl+- and Ctrl+= belong to the terminal.
+    ctx.options_mut(|o| o.zoom_with_keyboard = false);
     ctx.all_styles_mut(|s| {
         s.spacing.item_spacing = Vec2::new(0.0, 0.0);
         s.spacing.button_padding = Vec2::new(10.0, 5.0);
@@ -169,6 +171,20 @@ pub fn chevron(painter: &egui::Painter, center: Pos2, open: bool, color: Color32
     };
     painter.line_segment([pts[0], pts[1]], s);
     painter.line_segment([pts[1], pts[2]], s);
+}
+
+/// FocusRing: a clay 1 px outline, radius 9, 3 px outside the control, for keyboard focus only.
+/// egui gives a button focus by Tab alone (a click does not), so focus here is keyboard focus.
+/// `around` is the control the ring goes round (a settings row's switch, say).
+pub fn focus_ring(ui: &Ui, resp: &Response, around: Rect) {
+    if resp.has_focus() {
+        ui.ctx().layer_painter(resp.layer_id).rect_stroke(
+            around.expand(3.0),
+            9,
+            Stroke::new(1.0, CLAY),
+            StrokeKind::Inside,
+        );
+    }
 }
 
 /// QuietButton: transparent, hairline border, radius 4, padding 10,5, 12 px; hover RaisedBg and
@@ -239,6 +255,7 @@ pub fn ghost_button(ui: &mut Ui, glyph: Option<char>, label: &str, accent: bool,
             p.galley(Pos2::new(x, y), g, fg.gamma_multiply(face));
         }
     }
+    focus_ring(ui, &resp, rect);
     resp.on_hover_cursor(CursorIcon::PointingHand)
 }
 

@@ -595,6 +595,7 @@ impl SetupWindow {
             let fg = if enabled { fg } else { DISABLED_FG };
             ui.painter().rect_filled(r, 6, bg);
             ui.painter().text(r.center(), Align2::CENTER_CENTER, *text, font, fg);
+            focus_ring(ui, &resp, r);
             if enabled && resp.on_hover_cursor(CursorIcon::PointingHand).clicked() {
                 self.pick = *value;
             }
@@ -726,6 +727,7 @@ fn clay_button(ui: &mut Ui, rect: Rect, text: &str, enabled: bool) -> bool {
     };
     ui.painter().rect_filled(rect, 8, bg);
     ui.painter().text(rect.center(), Align2::CENTER_CENTER, text, semibold(14.0), fg);
+    focus_ring(ui, &resp, rect);
     enabled && resp.on_hover_cursor(CursorIcon::PointingHand).clicked()
 }
 

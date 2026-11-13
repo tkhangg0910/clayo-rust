@@ -28,6 +28,9 @@ const PAD_BOTTOM: f32 = 6.0;
 const LINE_HEIGHT: f32 = 1.25;
 const RESIZE_DEBOUNCE: Duration = Duration::from_millis(60);
 const BLINK: Duration = Duration::from_millis(600);
+/// The bar stops blinking (stays solid) after this long without input or output in the pane,
+/// so an idle pane asks for no repaints at all (PORTING.md D14).
+const BLINK_IDLE: Duration = Duration::from_secs(5);
 const MULTI_CLICK: Duration = Duration::from_millis(400);
 
 /// Per-pane widget state kept by the app between frames.
@@ -39,6 +42,9 @@ pub struct ViewState {
     selecting: bool,
     last_click: Option<(Instant, Point, u8)>,
     blink_epoch: Option<Instant>,
+    /// The terminal generation last seen, and when the pane last had input or output.
+    seen_generation: u64,
+    active_at: Option<Instant>,
     had_focus: bool,
     scroll_accum: f32,
 }
@@ -105,9 +111,11 @@ pub fn show(ui: &mut Ui, term: &Terminal, state: &mut ViewState, tf: &TermFont, 
     let cell = cell_size(ui, &tf.font);
     let origin = rect.min + Vec2::new(PAD_LEFT, PAD_TOP);
 
-    // Resize, debounced 60 ms after the last change, never while minimised (zero size).
+    // Resize, debounced 60 ms after the last change, never while minimised (a minimised window
+    // has been seen to report a false, narrower size) and never to the same size.
     let want = fit(avail, cell);
-    if avail.x > 1.0 && avail.y > 1.0 && want != term.size() {
+    let minimized = ui.input(|i| i.viewport().minimized == Some(true));
+    if !minimized && avail.x > 1.0 && avail.y > 1.0 && want != term.size() {
         let now = Instant::now();
         match state.pending_resize {
             Some((s, at)) if s == want && now.duration_since(at) >= RESIZE_DEBOUNCE => {
@@ -144,6 +152,22 @@ pub fn show(ui: &mut Ui, term: &Terminal, state: &mut ViewState, tf: &TermFont, 
                 EventFilter { tab: true, horizontal_arrows: true, vertical_arrows: true, escape: true },
             )
         });
+    }
+
+    // Output (anything that changed the grid) counts as activity for the blink.
+    let generation = term.generation();
+    if generation != state.seen_generation || state.active_at.is_none() {
+        state.seen_generation = generation;
+        state.active_at = Some(Instant::now());
+    }
+    // A synchronized update the app never ended shows once its timeout passes.
+    if let Some(at) = term.sync_deadline() {
+        let now = Instant::now();
+        if at <= now {
+            term.flush_sync();
+        } else {
+            ui.ctx().request_repaint_after(at - now);
+        }
     }
 
     let mode = term.mode();
@@ -401,7 +425,22 @@ fn handle_keys(ui: &Ui, term: &Terminal, state: &mut ViewState, mode: TermMode, 
             term.scroll(Scroll::Bottom);
         }
         state.blink_epoch = Some(Instant::now());
+        state.active_at = state.blink_epoch;
     }
+}
+
+/// The bar's blink: whether it shows now, and when to look again (None: it rests solid and needs
+/// no repaint). `since_epoch` is the time since the blink restarted, `since_active` the time
+/// since the pane's last input or output.
+pub fn blink(since_epoch: Duration, since_active: Duration) -> (bool, Option<Duration>) {
+    if since_active >= BLINK_IDLE {
+        return (true, None);
+    }
+    let ms = since_epoch.as_millis();
+    let period = BLINK.as_millis();
+    let on = (ms / period).is_multiple_of(2);
+    let next_toggle = Duration::from_millis((period - ms % period) as u64);
+    (on, Some(next_toggle.min(BLINK_IDLE - since_active)))
 }
 
 /// Cell foreground/background after bold-as-bright, dim, inverse and hidden.
@@ -540,12 +579,14 @@ fn paint(ui: &Ui, term: &Terminal, state: &mut ViewState, rect: Rect, origin: Po
         let pos = origin + Vec2::new(cursor.point.column.0 as f32 * cell.x, cur_line as f32 * cell.y);
         if focused {
             let epoch = *state.blink_epoch.get_or_insert_with(Instant::now);
-            let phase = epoch.elapsed().as_millis() / BLINK.as_millis();
-            if phase.is_multiple_of(2) {
+            let active = *state.active_at.get_or_insert(epoch);
+            let (on, next) = blink(epoch.elapsed(), active.elapsed());
+            if on {
                 painter.rect_filled(Rect::from_min_size(pos, Vec2::new(2.0, cell.y)), 0.0, c32(palette::CURSOR));
             }
-            let next = BLINK - Duration::from_millis((epoch.elapsed().as_millis() % BLINK.as_millis()) as u64);
-            ui.ctx().request_repaint_after(next);
+            if let Some(next) = next {
+                ui.ctx().request_repaint_after(next);
+            }
         } else {
             painter.rect_stroke(
                 Rect::from_min_size(pos, cell),
@@ -607,6 +648,19 @@ mod tests {
     fn fits_with_padding() {
         let s = fit(Vec2::new(12.0 + 4.0 + 80.0 * 8.0, 10.0 + 6.0 + 24.0 * 16.0), Vec2::new(8.0, 16.0));
         assert_eq!(s, GridSize { cols: 80, rows: 24 });
+    }
+
+    #[test]
+    fn the_bar_blinks_then_rests_solid_when_the_pane_is_idle() {
+        let ms = Duration::from_millis;
+        assert_eq!(blink(ms(0), ms(0)), (true, Some(ms(600))));
+        assert_eq!(blink(ms(700), ms(700)), (false, Some(ms(500))));
+        // The rest comes on time, not at the next toggle.
+        assert_eq!(blink(ms(4900), ms(4900)), (true, Some(ms(100))));
+        assert_eq!(blink(ms(5000), ms(5000)), (true, None));
+        assert_eq!(blink(ms(9000), ms(6000)), (true, None));
+        // Activity starts it again.
+        assert_eq!(blink(ms(9000), ms(10)).1, Some(ms(600)));
     }
 
     #[test]

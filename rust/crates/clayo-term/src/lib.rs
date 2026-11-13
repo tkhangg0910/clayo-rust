@@ -28,6 +28,12 @@ pub const SCROLLBACK: usize = 5000;
 /// Where replies the terminal itself must send (device status, colour queries) go: the PTY.
 pub type Writer = Arc<dyn Fn(&[u8]) + Send + Sync>;
 
+/// A host-side message in the terminal (terminal.html "notice"): on a new line, dim grey
+/// (SGR 38;5;244), then a line break, as xterm's `writeln`.
+pub fn notice(text: &str) -> Vec<u8> {
+    format!("\r\n\x1b[38;5;244m{text}\x1b[0m\r\n").into_bytes()
+}
+
 /// Grid size in cells.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct GridSize {
@@ -256,6 +262,15 @@ mod tests {
         t.feed("xin ch\u{e0}o \u{1ebf}\r\n".as_bytes());
         assert_eq!(t.screen_lines_text()[0], "xin ch\u{e0}o \u{1ebf}");
         assert!(t.generation() > 0);
+    }
+
+    #[test]
+    fn notices_are_dim_lines_of_their_own() {
+        assert_eq!(notice("[shell exited]"), b"\r\n\x1b[38;5;244m[shell exited]\x1b[0m\r\n".to_vec());
+        let (t, _) = term();
+        t.feed(b"PS C:\\x> ");
+        t.feed(&notice("no shell"));
+        assert_eq!(t.screen_lines_text()[1], "no shell");
     }
 
     #[test]

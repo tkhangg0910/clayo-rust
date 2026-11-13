@@ -324,7 +324,7 @@ impl Pane {
                     }
                 }
                 PtyEvent::Exited(_) => {
-                    p.term.feed(b"\r\n\x1b[38;5;244m[shell exited]\x1b[0m");
+                    p.term.feed(&clayo_term::notice("[shell exited]"));
                     let s = p.tracker.lock().ok().and_then(|mut t| t.on_exit());
                     p.status_changed(s);
                     if p.visible.load(Ordering::Relaxed) {
@@ -351,7 +351,7 @@ impl Pane {
                 });
             }
             Err(e) => {
-                term.feed(format!("Couldn't start the shell: {e}\r\n").as_bytes());
+                term.feed(&clayo_term::notice(&format!("Couldn't start the shell: {e}")));
                 if let Ok(mut t) = shared.tracker.lock() {
                     t.on_exit();
                 }
