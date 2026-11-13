@@ -102,6 +102,20 @@ fn in_run(c: char) -> bool {
     u < 0x0250 || (0x1E00..0x1F00).contains(&u) || (0x2010..0x2070).contains(&u) || (0x2500..0x25A0).contains(&u)
 }
 
+/// What a cell shows: its char plus any combining marks, composed (NFC) so a decomposed
+/// letter draws as its precomposed form; egui does no shaping (PORTING.md §4.6).
+fn cell_text(c: char, zerowidth: Option<&[char]>) -> String {
+    let mut s = String::new();
+    s.push(c);
+    match zerowidth {
+        Some(z) if !z.is_empty() => {
+            s.extend(z);
+            s.nfc().collect()
+        }
+        _ => s,
+    }
+}
+
 /// Draw the terminal in the available space and handle its input.
 pub fn show(ui: &mut Ui, term: &Terminal, state: &mut ViewState, tf: &TermFont, visible: bool) -> (Response, ViewOutput) {
     let mut out = ViewOutput::default();
@@ -539,20 +553,21 @@ fn paint(ui: &Ui, term: &Terminal, state: &mut ViewState, rect: Rect, origin: Po
                 bg_run = Some((col, col + width, bg));
             }
         }
-        let mut ch = String::new();
-        ch.push(c.c);
-        if let Some(z) = c.zerowidth() {
-            ch.extend(z);
-            ch = ch.nfc().collect();
-        }
-        let simple = width == 1 && ch.chars().count() == 1 && in_run(c.c);
+        let ch = cell_text(c.c, c.zerowidth());
+        // One char after composing: a decomposed Vietnamese letter becomes one precomposed letter.
+        let mut chars = ch.chars();
+        let single = match (chars.next(), chars.next()) {
+            (Some(g), None) => Some(g),
+            _ => None,
+        };
+        let simple = width == 1 && single.is_some_and(in_run);
         let fl = c.flags & (Flags::ALL_UNDERLINES | Flags::STRIKEOUT);
         if simple {
             if text_run.1.is_empty() || text_run.2 != fg || text_run.3 != fl || text_run.0 + text_run.1.chars().count() != col {
                 flush_text(&mut text_run, row);
                 text_run = (col, String::new(), fg, fl);
             }
-            text_run.1.push(c.c);
+            text_run.1.push_str(&ch);
         } else {
             flush_text(&mut text_run, row);
             text_run = (col + width, String::new(), fg, fl);
@@ -708,7 +723,18 @@ mod tests {
 
     #[test]
     fn decomposed_vietnamese_composes() {
-        let s: String = "e\u{0302}\u{0301}".nfc().collect();
-        assert_eq!(s, "\u{1ebf}");
+        assert_eq!(cell_text('e', Some(&['\u{0302}', '\u{0301}'])), "\u{1ebf}");
+        assert_eq!(cell_text('a', None), "a");
+        assert!(in_run('\u{1ebf}'), "the composed letter is drawn in the row's text run");
+    }
+
+    /// A decomposed letter fed through the terminal keeps its marks in the cell and composes.
+    #[test]
+    fn decomposed_input_keeps_marks_in_the_cell() {
+        let t = Terminal::new(GridSize { cols: 10, rows: 2 }, std::sync::Arc::new(|_: &[u8]| {}));
+        t.feed("e\u{0302}\u{0301}".as_bytes());
+        let g = t.lock();
+        let cell = &g.grid()[alacritty_terminal::index::Line(0)][alacritty_terminal::index::Column(0)];
+        assert_eq!(cell_text(cell.c, cell.zerowidth()), "\u{1ebf}");
     }
 }

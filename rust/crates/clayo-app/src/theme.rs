@@ -77,6 +77,9 @@ pub fn icon_font(size: f32) -> FontId {
 
 /// Install the chrome's visuals: dark graphite, thin scrollbars, clay-free popups.
 pub fn install(ctx: &egui::Context) {
+    // Dark always, like the C# window. egui keeps the native caption in sync with its theme
+    // preference; left at "System" it would turn the caption light on a light-mode Windows.
+    ctx.set_theme(egui::ThemePreference::Dark);
     let mut v = egui::Visuals::dark();
     v.panel_fill = TERMINAL_BG;
     v.window_fill = RAISED_BG;
