@@ -7,7 +7,10 @@
 use crate::island_host::{Host, IslandCmd};
 use crate::model::{self, lock, Job, Model, Shared};
 use crate::pane::{AppEvent, Pane, Ticker, Waker};
+use crate::setup_window::{self, SetupWindow};
 use crate::status::Status;
+use crate::updater::{UpdateState, Updater};
+use clayo_core::system::updater as update;
 use crate::status_view;
 use crate::theme::{self, *};
 use crate::win;
@@ -55,11 +58,16 @@ pub struct Startup {
 }
 
 pub fn run(start: Startup) -> i32 {
+    // Until setup is done the setup window comes first, in place of the main window.
+    let settings = ClayoSettings::load(&settings::default_path(&data_dir(&OsEnv)));
+    let setup_first = !start.background && needs_setup(&settings);
     let mut viewport = egui::ViewportBuilder::default()
         .with_title("C L A Y O")
         .with_inner_size([1280.0, 820.0])
         .with_min_inner_size([760.0, 420.0])
-        .with_visible(!start.background);
+        // The exe's own icon goes on by handle (win::shell::set_window_icon), not egui's.
+        .with_icon(Arc::new(egui::IconData::default()))
+        .with_visible(!start.background && !setup_first);
     let mut centered = true;
     #[cfg(windows)]
     if let Some((x, y, w, h)) = win::primary_work_area() {
@@ -79,10 +87,23 @@ pub fn run(start: Startup) -> i32 {
         ..Default::default()
     };
     crate::mark("run_native");
-    match eframe::run_native("Clayo", opts, Box::new(move |cc| Ok(Box::new(ClayoApp::new(cc, start))))) {
+    match eframe::run_native("Clayo", opts, Box::new(move |cc| Ok(Box::new(ClayoApp::new(cc, start, setup_first))))) {
         Ok(()) => 0,
-        Err(_) => 1,
+        Err(e) => {
+            // No window could be made (no usable OpenGL, PORTING.md D10): say so where it can
+            // be seen, and leave a record.
+            let what = format!("Clayo could not open its window: {e}");
+            crate::log_fatal(&what);
+            #[cfg(windows)]
+            win::shell::error_box("Clayo", &format!("{what}\n\nThe details are in %LOCALAPPDATA%\\Clayo\\crash.log."));
+            1
+        }
     }
+}
+
+/// NeedsSetup: never set up, or none of the agents in use is where it was (a file check only).
+fn needs_setup(s: &ClayoSettings) -> bool {
+    clayo_core::setup::needs_setup(s, |kind, saved| clayo_core::agent::detect::locate(&OsEnv, kind, saved))
 }
 
 /// Brings the main window forward from any thread (the island's click, a second instance):
@@ -162,6 +183,9 @@ enum Action {
     OpenSettings,
     CloseSettings,
     SetLogin(bool),
+    OpenSetup,
+    Update,
+    UpdateConfirmed,
     Quit,
 }
 
@@ -209,20 +233,27 @@ pub struct ClayoApp {
     status_frame: StatusFrame,
     /// Codex's account limits, recomputed when the rows change (model generation).
     codex_limits: (u64, Option<AccountLimits>),
+    /// The setup window while it is open (one at a time).
+    setup: Option<setup_window::Shared>,
+    /// Opening Clayo in a folder while setup came first: the session starts once the main
+    /// window shows.
+    pending_start: Option<String>,
+    updater: Updater,
+    update: UpdateState,
 }
 
 impl ClayoApp {
-    fn new(cc: &eframe::CreationContext<'_>, start: Startup) -> Self {
+    fn new(cc: &eframe::CreationContext<'_>, start: Startup, setup_first: bool) -> Self {
         crate::mark("app new (window + GL ready)");
         cc.egui_ctx.set_fonts(crate::fonts::definitions());
         crate::mark("fonts");
         theme::install(&cc.egui_ctx);
         cc.egui_ctx.send_viewport_cmd(ViewportCommand::SetTheme(egui::SystemTheme::Dark));
+        let hwnd = main_hwnd(cc);
         #[cfg(windows)]
-        if let Ok(h) = raw_window_handle::HasWindowHandle::window_handle(cc) {
-            if let raw_window_handle::RawWindowHandle::Win32(w) = h.as_raw() {
-                win::dark_caption(w.hwnd.get());
-            }
+        if hwnd != 0 {
+            win::dark_caption(hwnd);
+            win::shell::set_window_icon(hwnd);
         }
         let (tx, rx) = channel();
         let env = OsEnv;
@@ -243,7 +274,7 @@ impl ClayoApp {
             revealer: revealer.clone(),
             waker: waker.clone(),
             data: data.clone(),
-            hwnd: main_hwnd(cc),
+            hwnd,
         };
         let island = Island::start(Arc::new(host));
         let screenshot_key_taken = island.set_settings(settings.screenshot_hotkey, settings.screenshot_offer);
@@ -264,6 +295,32 @@ impl ClayoApp {
                 island.reserve(&m.label, m.percent.max(0) as u32)
             })
         };
+
+        #[cfg(windows)]
+        {
+            // A second launch's folder (or "" to just show the window) arrives here.
+            if let Some(name) = win::instance::pipe_name() {
+                let w = waker.clone();
+                let _ = win::instance::serve(name, move |msg| w.send(AppEvent::Handoff(msg)));
+            }
+            // Signing out ends the app as a real quit would, panes closed, rather than meeting
+            // a close that only hides.
+            if hwnd != 0 {
+                let m = model.clone();
+                win::shell::on_session_end(hwnd, move || {
+                    for p in lock(&m).panes.iter() {
+                        p.kill();
+                    }
+                    std::process::exit(0);
+                });
+            }
+            // Only the per-user Run key, and only from a release build (LoginStartup::can_write).
+            // The installed exe re-registers itself on every start unless turned off.
+            if let Ok(exe) = std::env::current_exe() {
+                let _ = LoginStartup::for_this_user(&data).keep(&exe);
+            }
+        }
+        let updater = Updater::start(settings.update_check, waker.clone());
 
         let mut app = Self {
             settings,
@@ -293,7 +350,7 @@ impl ClayoApp {
             open_agent_menu: false,
             login: (false, false),
             quitting: false,
-            shown: !start.background,
+            shown: !start.background && !setup_first,
             reveal,
             revealer,
             actions: Vec::new(),
@@ -303,13 +360,145 @@ impl ClayoApp {
             status,
             status_frame: StatusFrame::default(),
             codex_limits: (u64::MAX, None),
+            setup: None,
+            pending_start: None,
+            updater,
+            update: UpdateState::default(),
         };
-        // Opening Clayo in a folder lands you in a live session there.
+        // Opening Clayo in a folder lands you in a live session there (once setup is done).
         if let Some(folder) = start.folder {
-            app.start_new(&folder, Typed::Nothing);
-            crate::mark("pane started");
+            if setup_first {
+                app.pending_start = Some(folder);
+            } else {
+                app.start_new(&folder, Typed::Nothing);
+                crate::mark("pane started");
+            }
+        }
+        if setup_first {
+            app.show_setup(&cc.egui_ctx);
         }
         app
+    }
+
+    // ------------------------------------------------------------------ reveal and setup
+
+    /// Brings the main window forward from wherever it is: hidden (closed, or never shown after
+    /// a login start), minimized, or behind. While setup is needed and the window is hidden,
+    /// the setup window comes instead. True when the main window shows.
+    fn reveal(&mut self, ctx: &egui::Context) -> bool {
+        if !self.shown && needs_setup(&self.settings) {
+            self.show_setup(ctx);
+            return false;
+        }
+        ctx.send_viewport_cmd(ViewportCommand::Visible(true));
+        ctx.send_viewport_cmd(ViewportCommand::Minimized(false));
+        ctx.send_viewport_cmd(ViewportCommand::Focus);
+        self.shown = true;
+        if let Some(folder) = self.pending_start.take() {
+            self.start_new(&folder, Typed::Nothing);
+        }
+        true
+    }
+
+    /// The setup window, on its own or over the main window; asked for again while open, it
+    /// comes forward.
+    fn show_setup(&mut self, ctx: &egui::Context) {
+        if let Some(s) = &self.setup {
+            setup_window::lock(s).activate();
+            return;
+        }
+        self.setup = Some(Arc::new(std::sync::Mutex::new(SetupWindow::new(&self.settings, &self.data, ctx))));
+        // A hidden main window runs no ui pass that would open it; ask for one.
+        ctx.send_viewport_cmd(ViewportCommand::RequestPaintWhileHidden);
+        ctx.request_repaint();
+    }
+
+    /// Declares the setup viewport for this pass and acts on what came of it.
+    fn setup_frame(&mut self, ctx: &egui::Context) {
+        let Some(s) = self.setup.clone() else { return };
+        let outcome = setup_window::lock(&s).outcome.take();
+        match outcome {
+            Some(setup_window::Outcome::Closed) => {
+                // Nothing changes; the next Reveal asks again.
+                self.setup = None;
+                return;
+            }
+            Some(setup_window::Outcome::Done(new)) => {
+                self.setup = None;
+                self.apply_settings(*new);
+                lock(&self.model).generation += 1;
+                let _ = self.jobs.send(Job::Refresh);
+                self.reveal(ctx);
+                return;
+            }
+            None => {}
+        }
+        let over = if self.shown { ctx.input(|i| i.viewport().outer_rect) } else { None };
+        let builder = setup_window::builder(over);
+        ctx.show_viewport_deferred(setup_window::viewport_id(), builder, move |ui, _| {
+            setup_window::lock(&s).frame(ui);
+        });
+    }
+
+    /// New settings from setup (or, later, the Settings page): saved, and passed to everything
+    /// that reads them.
+    fn apply_settings(&mut self, s: ClayoSettings) {
+        let check_changed = s.update_check != self.settings.update_check;
+        s.save(&settings::default_path(&self.data));
+        {
+            let mut m = lock(&self.model);
+            m.use_claude = s.use_claude;
+            m.use_codex = s.use_codex;
+        }
+        self.screenshot_key_taken = self.island.set_settings(s.screenshot_hotkey, s.screenshot_offer);
+        self.status.set_settings(s.clone());
+        if check_changed {
+            // Off forgets what an earlier check found.
+            if !s.update_check && !self.update.waiting {
+                self.update.to = None;
+            }
+            self.updater.set_enabled(s.update_check);
+        }
+        self.settings = s;
+    }
+
+    // ------------------------------------------------------------------ update
+
+    /// The Update button: with sessions open, ask first; then wait for the busy ones. Pressed
+    /// again while waiting, it calls the update off and checks again.
+    fn update_clicked(&mut self) {
+        if self.update.waiting {
+            self.update.waiting = false;
+            self.updater.check_now();
+            return;
+        }
+        if !self.panes.is_empty() {
+            self.update.confirming = true;
+            return;
+        }
+        self.update_confirmed();
+    }
+
+    fn update_confirmed(&mut self) {
+        self.update.confirming = false;
+        self.update.waiting = true;
+        self.update_when_idle();
+    }
+
+    /// UpdateWhenIdle (on the click, every pane status change and every close): once no pane is
+    /// working or asking, start the install script and quit; it waits for this Clayo to exit,
+    /// swaps the folder and starts the new one.
+    fn update_when_idle(&mut self) {
+        if !self.update.waiting || !update::idle(self.panes.iter().map(|p| p.status)) {
+            return;
+        }
+        if let Some(v) = self.update.to {
+            if let Some(dir) = std::env::current_exe().ok().and_then(|e| e.parent().map(std::path::Path::to_path_buf)) {
+                let _ = update::install_command(v, &dir).spawn();
+            }
+        }
+        let ctx = self.revealer.ctx.clone();
+        self.quit(&ctx);
     }
 
     // ------------------------------------------------------------------ launching
@@ -383,7 +572,13 @@ impl ClayoApp {
         if !std::path::Path::new(folder).is_dir() {
             return;
         }
-        self.revealer.reveal();
+        self.folder = folder.to_string();
+        let ctx = self.revealer.ctx.clone();
+        // Setup came up instead: there may be no agent to start yet. New session will use the
+        // folder.
+        if !self.reveal(&ctx) {
+            return;
+        }
         self.spawn_in(folder, prefill.map_or(Typed::Nothing, Typed::Prefill));
     }
 
@@ -502,6 +697,7 @@ impl ClayoApp {
         if let Some(a) = self.active {
             self.activate(a);
         }
+        self.update_when_idle();
     }
 
     /// Resume a row's session in its folder (or the current one if that is gone), or switch to
@@ -669,8 +865,37 @@ impl ClayoApp {
                     #[cfg(not(windows))]
                     let _ = on;
                 }
+                Action::OpenSetup => self.show_setup(ctx),
+                Action::Update => self.update_clicked(),
+                Action::UpdateConfirmed => self.update_confirmed(),
                 Action::Quit => self.quit(ctx),
             }
+        }
+    }
+
+    /// "Update Clayo" (OK / Cancel), when sessions are open.
+    fn update_confirm(&mut self, ctx: &egui::Context) {
+        if !self.update.confirming {
+            return;
+        }
+        let resp = egui::Modal::new(Id::NULL.with("update-confirm")).frame(popup_frame(8, MENU_RIM).inner_margin(20)).show(ctx, |ui| {
+            ui.set_max_width(380.0);
+            ui.label(egui::RichText::new(update::CONFIRM_TITLE).font(semibold(14.0)).color(MENU_HOVER_FG));
+            ui.add_space(8.0);
+            ui.label(egui::RichText::new(update::CONFIRM_TEXT).font(ui_font(12.5)).color(TEXT_PRIMARY));
+            ui.add_space(16.0);
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if ghost_button(ui, None, "Cancel", false, Some(80.0)).clicked() {
+                    self.update.confirming = false;
+                }
+                ui.add_space(8.0);
+                if ghost_button(ui, None, "OK", true, Some(80.0)).clicked() {
+                    self.actions.push(Action::UpdateConfirmed);
+                }
+            });
+        });
+        if resp.should_close() {
+            self.update.confirming = false;
         }
     }
 
@@ -723,9 +948,11 @@ impl ClayoApp {
         let rect = ui.max_rect();
         ui.painter().rect_filled(rect, 0, SURFACE_BG);
         // The account's limits sit above the actions, 12 px apart; none, and the gap goes too.
+        // So does the Update button, when there is a release to offer.
         let limits_h = status_view::limits_height(ui, &self.status_frame.meters, self.settings.theme);
         let limits_gap = if limits_h > 0.0 { limits_h + 12.0 } else { 0.0 };
-        let footer_h = 12.0 + limits_gap + 30.0 + 14.0;
+        let update_gap = if self.update.button().is_some() { 30.0 + 12.0 } else { 0.0 };
+        let footer_h = 12.0 + limits_gap + update_gap + 30.0 + 14.0;
         let body = Rect::from_min_max(rect.min, Pos2::new(rect.right(), rect.bottom() - footer_h - 1.0));
         let footer = Rect::from_min_max(Pos2::new(rect.left(), body.bottom()), rect.max);
         ui.scope_builder(UiBuilder::new().max_rect(body), |ui| self.draw_sidebar_body(ui));
@@ -985,13 +1212,22 @@ impl ClayoApp {
         let rect = ui.max_rect();
         ui.painter().rect_filled(rect, 0, FOOTER_BAND);
         ui.painter().hline(rect.x_range(), rect.top() + 0.5, Stroke::new(1.0, HAIRLINE));
-        // The account's limits (LimitsView); the Update button (phase 6) goes under them.
+        // The account's limits (LimitsView), then the Update button, then the actions.
         let mut top = rect.top() + 1.0 + 12.0;
         let limits_h = status_view::limits_height(ui, &self.status_frame.meters, self.settings.theme);
         if limits_h > 0.0 {
             let r = Rect::from_min_max(Pos2::new(rect.left() + 14.0, top), Pos2::new(rect.right() - 14.0, top + limits_h));
             status_view::draw_limits(ui, r, &self.status_frame.meters, self.settings.theme);
             top += limits_h + 12.0;
+        }
+        if let Some((text, tip)) = self.update.button() {
+            let r = Rect::from_min_max(Pos2::new(rect.left() + 14.0, top), Pos2::new(rect.right() - 14.0, top + 30.0));
+            ui.scope_builder(UiBuilder::new().max_rect(r).layout(egui::Layout::left_to_right(egui::Align::Center)), |ui| {
+                if ghost_button(ui, Some('\u{E896}'), &text, false, None).on_hover_text(tip).clicked() {
+                    self.actions.push(Action::Update);
+                }
+            });
+            top += 30.0 + 12.0;
         }
         let row = Rect::from_min_max(Pos2::new(rect.left() + 14.0, top), Pos2::new(rect.right() - 14.0, top + 30.0));
         ui.scope_builder(UiBuilder::new().max_rect(row).layout(egui::Layout::left_to_right(egui::Align::Center)), |ui| {
@@ -1238,6 +1474,16 @@ impl ClayoApp {
             ui_font(12.5),
             MUTED_AA,
         );
+        // Settings › Agents is not a page: it opens the setup window (SettingsPane.Agents_Checked).
+        let agents = Rect::from_min_size(rect.left_top() + Vec2::new(36.0, 100.0), Vec2::new(200.0, 30.0));
+        ui.scope_builder(UiBuilder::new().max_rect(agents), |ui| {
+            if ghost_button(ui, None, "Agents…", false, None)
+                .on_hover_text("Opens setup: which agents Clayo uses, sign-in and install.")
+                .clicked()
+            {
+                self.actions.push(Action::OpenSetup);
+            }
+        });
         let close = Rect::from_min_size(Pos2::new(rect.right() - 50.0, rect.top() + 12.0), Vec2::new(40.0, 30.0));
         ui.scope_builder(UiBuilder::new().max_rect(close), |ui| {
             if quiet_button(ui, "✕", true, Vec2::new(9.0, 4.0), true).on_hover_text("Close (Esc)").clicked() {
@@ -1310,6 +1556,20 @@ impl ClayoApp {
                     // A status change fires once per real change, so a repeat cannot notify twice.
                     if was != s {
                         self.island.pane_status(id, &name, was, s);
+                    }
+                    self.update_when_idle();
+                }
+                AppEvent::Handoff(folder) => {
+                    if folder.is_empty() {
+                        self.reveal(ctx);
+                    } else {
+                        self.adopt_folder(&folder, None);
+                    }
+                }
+                AppEvent::UpdateFound(v) => {
+                    // A wait already under way keeps the release it was started for.
+                    if self.settings.update_check && !self.update.waiting {
+                        self.update.to = Some(v);
                     }
                 }
                 AppEvent::Island(cmd) => match cmd {
@@ -1487,10 +1747,12 @@ impl eframe::App for ClayoApp {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.handle_events(ctx);
         if self.reveal.swap(false, Ordering::SeqCst) {
-            ctx.send_viewport_cmd(ViewportCommand::Visible(true));
-            ctx.send_viewport_cmd(ViewportCommand::Minimized(false));
-            ctx.send_viewport_cmd(ViewportCommand::Focus);
-            self.shown = true;
+            self.reveal(ctx);
+        }
+        // The setup window's outcome (it wakes this pass) while the main window is hidden.
+        if self.setup.as_ref().is_some_and(|s| setup_window::lock(s).outcome.is_some()) {
+            ctx.send_viewport_cmd(ViewportCommand::RequestPaintWhileHidden);
+            ctx.request_repaint();
         }
         // The window's X only hides: sessions keep running, the island brings it back.
         if ctx.input(|i| i.viewport().close_requested()) && !self.quitting {
@@ -1514,6 +1776,13 @@ impl eframe::App for ClayoApp {
         }
         let ctx = ui.ctx().clone();
         self.shown = ctx.input(|i| i.viewport().visible()).unwrap_or(true) && self.shown;
+        self.setup_frame(&ctx);
+        if !self.shown {
+            // Here only for the setup window (or a paint asked for while hidden): nothing of
+            // the main window is drawn.
+            self.run_actions(&ctx, frame);
+            return;
+        }
         self.handle_keys(&ctx);
         self.status_frame = self.status_frame();
         let full = ui.max_rect();
@@ -1525,6 +1794,7 @@ impl eframe::App for ClayoApp {
         ui.painter().rect_filled(split, 0, Color32::TRANSPARENT);
         self.splitter(ui, split, full.width());
         ui.scope_builder(UiBuilder::new().max_rect(term), |ui| self.draw_terminal_side(ui));
+        self.update_confirm(&ctx);
         self.run_actions(&ctx, frame);
         self.set_visibility();
         // Ages ("3 min ago") and the Today bucket move with the clock, and the strip's and the

@@ -20,6 +20,40 @@ pub const TIMEOUT_SECS: u64 = 15;
 /// A dev build would update its own target folder with the release, so it never checks.
 pub const ENABLED: bool = !cfg!(debug_assertions);
 
+/// How often a running Clayo asks again (MainWindow's 12 h timer).
+pub const CHECK_EVERY: std::time::Duration = std::time::Duration::from_secs(12 * 60 * 60);
+
+/// The Update button over New session (and its Settings twin), once a newer release is out.
+pub fn button_text(to: Version) -> String {
+    format!("Update to {to}")
+}
+
+pub fn button_tooltip(to: Version, current: Version) -> String {
+    format!(
+        "Clayo {to} is out (you have {current}). Clayo closes, updates and opens again, once no session is working."
+    )
+}
+
+/// After the click, while a session is still busy.
+pub const WAITING_TEXT: &str = "Update waits for running sessions";
+pub const WAITING_TOOLTIP: &str =
+    "Clayo updates as soon as no session is working. Press to call it off.";
+
+/// The confirm box when sessions are open (OK / Cancel).
+pub const CONFIRM_TITLE: &str = "Update Clayo";
+pub const CONFIRM_TEXT: &str = "Clayo closes to update and opens again. Open sessions close and resume from the sidebar; any that are still working are waited for.";
+
+/// This build's version, from Cargo.toml.
+pub fn current() -> Version {
+    Version::parse(env!("CARGO_PKG_VERSION")).unwrap_or(Version::new(0, 0, 0))
+}
+
+/// UpdateWhenIdle: the update may go once no pane is working or asking something.
+pub fn idle(statuses: impl IntoIterator<Item = crate::pane_status::PaneStatus>) -> bool {
+    use crate::pane_status::PaneStatus::{NeedsInput, Working};
+    !statuses.into_iter().any(|s| matches!(s, Working | NeedsInput))
+}
+
 /// A release version, compared on its three parts: 1.0.0 and 1.0.0.0 are the same release.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Version {

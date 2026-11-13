@@ -6,9 +6,11 @@ mod fonts;
 mod island_host;
 mod model;
 mod pane;
+mod setup_window;
 mod status;
 mod status_view;
 mod theme;
+mod updater;
 mod win;
 
 /// Startup timing marks, written to the file named by `CLAYO_STARTUP_LOG` (for BENCH.md).
@@ -22,6 +24,25 @@ pub fn mark(what: &str) {
             let _ = writeln!(f, "{:>7.1} ms  {what}", t0.elapsed().as_secs_f64() * 1000.0);
         }
     }
+}
+
+/// Appends to `%LOCALAPPDATA%\Clayo\crash.log` (App.LogFatal). Failures are ignored: there is
+/// nowhere left to report them.
+pub fn log_fatal(what: &str) {
+    let _ = clayo_core::crash::append(data_dir(&OsEnv).path(), chrono::Local::now().naive_local(), what);
+}
+
+/// A panic anywhere leaves a record of why the window went away, then proceeds as it would
+/// have (release builds abort; the hook runs first).
+fn install_crash_log() {
+    let default = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let thread = std::thread::current();
+        let name = thread.name().unwrap_or("<unnamed>");
+        let trace = std::backtrace::Backtrace::force_capture();
+        log_fatal(&format!("thread '{name}' {info}\r\n{trace}"));
+        default(info);
+    }));
 }
 
 use clayo_core::paths::{data_dir, OsEnv};
@@ -38,17 +59,30 @@ fn main() {
         std::process::exit(code);
     }
 
+    mark("main");
+    install_crash_log();
     // Children must start as top-level sessions, not as children of a Claude Code session
     // Clayo itself may have been launched from.
-    mark("main");
     clayo_core::launch::scrub_inherited_session();
     let args: Vec<String> = std::env::args().skip(1).collect();
     let cwd = std::env::current_dir().unwrap_or_default();
     let exe_dir = std::env::current_exe().ok().and_then(|e| e.parent().map(std::path::Path::to_path_buf)).unwrap_or_default();
-    let windir = std::env::var_os("SystemRoot").or_else(|| std::env::var_os("WINDIR")).unwrap_or_else(|| "C:\\Windows".into());
+    let windir = std::env::var_os("SystemRoot").or_else(|| std::env::var_os("WINDIR")).unwrap_or_else(|| r"C:\Windows".into());
     let system_dir = std::path::Path::new(&windir).join("System32");
     let start = clayo_core::cli::parse(&args, &cwd, &exe_dir, &system_dir, |p| std::path::Path::new(p).is_dir());
+
+    // One Clayo per user session: a second launch hands its folder over and leaves.
+    #[cfg(windows)]
+    if !win::instance::acquire_mutex() {
+        if let (Some(text), Some(name)) = (start.handoff(), win::instance::pipe_name()) {
+            win::instance::allow_set_foreground_any();
+            let _ = win::instance::send(&name, &text, win::instance::CONNECT_TIMEOUT);
+        }
+        std::process::exit(0);
+    }
+
     let code = app::run(app::Startup { background: start.background, folder: start.folder });
-    // Hard exit: no stray thread (a PTY reader, a watcher) may keep the process alive.
+    // Hard exit: no stray thread (a PTY reader, a watcher) may keep the process alive, and with
+    // it the single-instance mutex.
     std::process::exit(code);
 }

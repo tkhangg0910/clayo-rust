@@ -2,7 +2,9 @@
 //! Assumes the default update repo (no CLAYO_UPDATE_REPO at build time).
 
 use clayo_core::system::updater::{
-    newer, newer_from_json, release_url, script_url, tag_from_json, Version,
+    button_text, button_tooltip, current, idle, install_command, newer, newer_from_json, release_url,
+    script_url, tag_from_json, Version, CHECK_EVERY, CONFIRM_TEXT, CONFIRM_TITLE, WAITING_TEXT,
+    WAITING_TOOLTIP,
 };
 
 // C#'s assembly version had four parts (1.0.0.0); release tags have three and a v.
@@ -80,4 +82,43 @@ fn tag_from_github_json() {
     assert_eq!(newer_from_json(body, CURRENT), Some(Version::new(1, 0, 7)));
     assert_eq!(tag_from_json(r#"{"message":"Not Found"}"#), None);
     assert_eq!(tag_from_json("<html>"), None);
+}
+
+#[test]
+fn button_and_tooltip_texts() {
+    let to = Version::new(1, 0, 7);
+    assert_eq!(button_text(to), "Update to 1.0.7");
+    assert_eq!(
+        button_tooltip(to, Version::new(1, 0, 6)),
+        "Clayo 1.0.7 is out (you have 1.0.6). Clayo closes, updates and opens again, once no session is working."
+    );
+    assert_eq!(WAITING_TEXT, "Update waits for running sessions");
+    assert_eq!(WAITING_TOOLTIP, "Clayo updates as soon as no session is working. Press to call it off.");
+    assert_eq!(CONFIRM_TITLE, "Update Clayo");
+    assert_eq!(
+        CONFIRM_TEXT,
+        "Clayo closes to update and opens again. Open sessions close and resume from the sidebar; any that are still working are waited for."
+    );
+    assert_eq!(current().to_string(), env!("CARGO_PKG_VERSION"));
+    assert_eq!(CHECK_EVERY.as_secs(), 12 * 3600);
+}
+
+#[test]
+fn idle_when_no_pane_works_or_asks() {
+    use clayo_core::pane_status::PaneStatus::*;
+    assert!(idle([]));
+    assert!(idle([Starting, Done, Error, Exited]));
+    assert!(!idle([Done, Working]));
+    assert!(!idle([NeedsInput]));
+}
+
+#[test]
+fn install_command_runs_the_tagged_script_with_clayo_dir() {
+    let c = install_command(Version::new(1, 0, 7), std::path::Path::new(r"C:\Apps\Clayo\"));
+    assert_eq!(c.get_program(), "powershell.exe");
+    let args: Vec<_> = c.get_args().map(|a| a.to_string_lossy().into_owned()).collect();
+    assert_eq!(args[..4], ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command"]);
+    assert!(args[4].contains("irm 'https://raw.githubusercontent.com/YogiOnCode/Clayo/v1.0.7/scripts/install.ps1' | iex"));
+    let env: Vec<_> = c.get_envs().collect();
+    assert_eq!(env, [(std::ffi::OsStr::new("CLAYO_DIR"), Some(std::ffi::OsStr::new(r"C:\Apps\Clayo\")))]);
 }

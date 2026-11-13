@@ -289,29 +289,29 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-001 `clayo --statusline` runs the status relay and exits, before any UI code loads (args[0] == "--statusline") — Program.cs:15
 - [x] MAIN-002 `clayo --statusline --pass ...` relay with pass=true (args[1] == "--pass") — Program.cs:15; consts StatusRelay.cs:22-23
 - [x] MAIN-003 Any other invocation runs the GUI app — Program.cs:16,21-26
-- [ ] MAIN-004 Unhandled UI-thread and AppDomain exceptions append to `%LOCALAPPDATA%\Clayo\crash.log` as `yyyy-MM-dd HH:mm:ss  <exception>\n\n`; log >1 MiB is moved to `crash.old.log` (overwrite) first; crash still proceeds (not swallowed) — App.xaml.cs:14-18,109-125
+- [x] MAIN-004 Unhandled UI-thread and AppDomain exceptions append to `%LOCALAPPDATA%\Clayo\crash.log` as `yyyy-MM-dd HH:mm:ss  <exception>\n\n`; log >1 MiB is moved to `crash.old.log` (overwrite) first; crash still proceeds (not swallowed) — App.xaml.cs:14-18,109-125
 - [x] MAIN-005 On start, inherited Claude Code session env markers are removed from process env (SessionLauncher.ScrubInheritedSession) so every pane is top-level — App.xaml.cs:22
 - [x] MAIN-006 `--background` arg (LoginStartup.BackgroundArg) = login start: no main window, island only, island Greet() — App.xaml.cs:25,62,67
 - [x] MAIN-007 Folder = first arg that is an existing directory (any position); else, unless background, the current working directory — App.xaml.cs:30-31
 - [x] MAIN-008 CWD is ignored (treated as "no folder") when it equals the exe's own folder (AppContext.BaseDirectory) or the System32 dir (Start menu/shortcut launches); compare is full-path, trailing separator trimmed, case-insensitive — App.xaml.cs:79-86
-- [ ] MAIN-009 `clayo` typed in Explorer's address bar works because Explorer runs the command with the current folder as CWD and the exe folder is on the user PATH (no App Paths registry key anywhere) — App.xaml.cs:27-31, UserPath.cs:7-10
+- [x] MAIN-009 `clayo` typed in Explorer's address bar works because Explorer runs the command with the current folder as CWD and the exe folder is on the user PATH (no App Paths registry key anywhere) — App.xaml.cs:27-31, UserPath.cs:7-10
 - [x] MAIN-010 Main window opens on the folder if given (and auto-starts a new session in it), else on %USERPROFILE% with no session — App.xaml.cs:46-48, MainWindow.xaml.cs:381
-- [ ] MAIN-011 Second instance: hands folder (or "" when no folder; nothing when --background) to the running instance via pipe and exits — App.xaml.cs:33-40
-- [ ] MAIN-012 Running instance on receipt: "" -> Reveal(); path -> AdoptFolder(path) (on UI thread) — App.xaml.cs:51-55
-- [ ] MAIN-013 Windows sign-out (SessionEnding) performs a real Quit (panes closed) — App.xaml.cs:59
-- [ ] MAIN-014 Non-background start calls Reveal() (setup window first if setup needed) — App.xaml.cs:62
+- [x] MAIN-011 Second instance: hands folder (or "" when no folder; nothing when --background) to the running instance via pipe and exits — App.xaml.cs:33-40
+- [x] MAIN-012 Running instance on receipt: "" -> Reveal(); path -> AdoptFolder(path) (on UI thread) — App.xaml.cs:51-55
+- [x] MAIN-013 Windows sign-out (SessionEnding) performs a real Quit (panes closed) — App.xaml.cs:59
+- [x] MAIN-014 Non-background start calls Reveal() (setup window first if setup needed) — App.xaml.cs:62
 - [x] MAIN-015 Island window is created after main window; never keeps process alive (ShutdownMode=OnMainWindowClose) — App.xaml.cs:64-66, App.xaml:4
-- [ ] MAIN-016 Every start re-registers the Run key to the current exe unless opted out — App.xaml.cs:71, LoginStartup.cs:44-47
-- [ ] MAIN-017 On exit: dispose single instance, then hard `Environment.Exit(code)` so no stray foreground threads keep the mutex — App.xaml.cs:88-101
+- [x] MAIN-016 Every start re-registers the Run key to the current exe unless opted out — App.xaml.cs:71, LoginStartup.cs:44-47
+- [x] MAIN-017 On exit: dispose single instance, then hard `Environment.Exit(code)` so no stray foreground threads keep the mutex — App.xaml.cs:88-101
 
 #### Single instance (System/SingleInstance.cs)
-- [ ] MAIN-018 Mutex name Release: `Local\CcxShell.SingleInstance`; Debug: `Local\CcxShell.SingleInstance.Dev`; created initiallyOwned; createdNew => we are primary — SingleInstance.cs:16,19,43-48
-- [ ] MAIN-019 Pipe name: `CcxShell.Handoff.<user SID>` (Debug `CcxShell.Handoff.Dev.<SID>`), i.e. `\\.\pipe\CcxShell.Handoff.S-1-5-...` — SingleInstance.cs:17,20,25-26
-- [ ] MAIN-020 Server: loop; inbound byte pipe, max 1 instance, async, CurrentUserOnly; read whole stream to EOF as UTF-8, Trim(), fire FolderReceived; IOException -> keep serving; UnauthorizedAccess -> stop; cancel on dispose — SingleInstance.cs:55-83
-- [ ] MAIN-021 Protocol: client connects (2000 ms timeout), writes folder path UTF-8 (no BOM effectively via StreamWriter default? .NET StreamWriter(Stream, UTF8) emits BOM — note: Encoding.UTF8 has BOM preamble; server StreamReader strips it), flushes, closes. No reply. Empty string = "just show window" — SingleInstance.cs:85-102
-- [ ] MAIN-022 Client calls AllowSetForegroundWindow(ASFW_ANY=-1) before sending so the primary can come to front — SingleInstance.cs:90,104-107
-- [ ] MAIN-023 Null folder (background launch) sends nothing — SingleInstance.cs:51
-- [ ] MAIN-024 Timeout/IO/Unauthorized errors on send are swallowed; second instance just exits — SingleInstance.cs:99-101
+- [x] MAIN-018 Mutex name Release: `Local\CcxShell.SingleInstance`; Debug: `Local\CcxShell.SingleInstance.Dev`; created initiallyOwned; createdNew => we are primary — SingleInstance.cs:16,19,43-48
+- [x] MAIN-019 Pipe name: `CcxShell.Handoff.<user SID>` (Debug `CcxShell.Handoff.Dev.<SID>`), i.e. `\\.\pipe\CcxShell.Handoff.S-1-5-...` — SingleInstance.cs:17,20,25-26
+- [x] MAIN-020 Server: loop; inbound byte pipe, max 1 instance, async, CurrentUserOnly; read whole stream to EOF as UTF-8, Trim(), fire FolderReceived; IOException -> keep serving; UnauthorizedAccess -> stop; cancel on dispose — SingleInstance.cs:55-83
+- [x] MAIN-021 Protocol: client connects (2000 ms timeout), writes folder path UTF-8 (no BOM effectively via StreamWriter default? .NET StreamWriter(Stream, UTF8) emits BOM — note: Encoding.UTF8 has BOM preamble; server StreamReader strips it), flushes, closes. No reply. Empty string = "just show window" — SingleInstance.cs:85-102
+- [x] MAIN-022 Client calls AllowSetForegroundWindow(ASFW_ANY=-1) before sending so the primary can come to front — SingleInstance.cs:90,104-107
+- [x] MAIN-023 Null folder (background launch) sends nothing — SingleInstance.cs:51
+- [x] MAIN-024 Timeout/IO/Unauthorized errors on send are swallowed; second instance just exits — SingleInstance.cs:99-101
 
 #### Window chrome / placement / theme
 - [x] MAIN-025 Title "C L A Y O" (spaced; also Alt-Tab/taskbar label) — MainWindow.xaml:5
@@ -335,7 +335,7 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-041 Session item: 2px left selection rule (Working color when selected), content margin 34,7,10,7, hover #1F242C, selected #232935; row: 14px status column w/ 7px dot, name 12.5, subtitle 10.5 faint; branch indent Depth*15px — App.xaml:379-405, MainWindow.xaml:183-248, MainWindow.xaml.cs:132
 - [x] MAIN-042 Section header (Open/Today/Earlier): chevron rotates 90 when expanded, label 11.5 semibold + count 11 faint, padding 10,7 — App.xaml:447-498, MainWindow.xaml:121-156
 - [x] MAIN-043 Folder sub-header: margin 26,10,10,4, name 11 TextMuted + count — MainWindow.xaml:159-179
-- [ ] MAIN-044 Footer: margin 14,12,14,14; LimitsView, Update button, then New session | Open | (right) gear 30px wide glyph E713 size 15 — MainWindow.xaml:252-349
+- [x] MAIN-044 Footer: margin 14,12,14,14; LimitsView, Update button, then New session | Open | (right) gear 30px wide glyph E713 size 15 — MainWindow.xaml:252-349
 - [ ] MAIN-045 Header bar: SurfaceBg, bottom hairline, margin 14,0; status dot 7px, title (margin 10,13, 12 TextMuted), status strip, chips, Attach, Branch, ✕ — MainWindow.xaml:366-488
 
 #### Sidebar
@@ -373,7 +373,7 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-075 Picking a recent folder or browsing (OpenFolderDialog title "Start a session in", initial = current folder) -> sets current folder + header and starts a new session there — MainWindow.xaml.cs:986-1017
 - [x] MAIN-076 New session agent: settings NewSessionKind (Claude if Codex unused; Codex if Claude unused; else DefaultAgent Claude/Codex; Ask => null). Null -> context menu above New session button with "Claude Code" / "Codex"; dismissing starts nothing — MainWindow.xaml.cs:1024-1046, ClayoSettings.cs:56-64
 - [x] MAIN-077 "Open" (glyph E8B7): OpenFileDialog "Open a file in a new session"; starts new session in the file's folder and, on that pane's first Done status, inserts the file path at the prompt (unsent) — MainWindow.xaml.cs:1054-1076
-- [ ] MAIN-078 Update button (glyph E896) hidden until a newer release is found (see Updater) — MainWindow.xaml:258-262
+- [x] MAIN-078 Update button (glyph E896) hidden until a newer release is found (see Updater) — MainWindow.xaml:258-262
 - [x] MAIN-079 Gear button (E713, tooltip "Settings"): left click opens menu above it: "Settings…" (gesture Ctrl+,), "Start at login" (checkable; state read fresh from registry on open; disabled if !CanWrite), separator, "Quit Clayo" — MainWindow.xaml:329-346, MainWindow.xaml.cs:1616-1637,1682-1684
 
 #### Pane header / panes
@@ -398,7 +398,7 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-096 Git poll 3 s, only when window visible, for each pane cwd — MainWindow.xaml.cs:259,261,353-358
 - [x] MAIN-097 Clock 30 s: refresh strip if visible; reserve check always — MainWindow.xaml.cs:263,360-365
 - [ ] MAIN-098 Image poll 1 s; image popup hide check 300 ms — MainWindow.xaml.cs:266-267,366-373
-- [ ] MAIN-099 Update check at load and every 12 h — MainWindow.xaml.cs:270,375-377
+- [x] MAIN-099 Update check at load and every 12 h — MainWindow.xaml.cs:270,375-377
 - [x] MAIN-100 On load: refresh sessions, start transcript watchers, status store, prune screenshots older than KeepFor — MainWindow.xaml.cs:345-350
 
 #### Keyboard shortcuts
@@ -407,7 +407,7 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-103 F2 rename, Enter open (sidebar) — MainWindow.xaml.cs:932-933
 - [x] MAIN-104 Rename: Enter commit / Esc cancel — MainWindow.xaml.cs:1208-1217
 - [ ] MAIN-105 Image overlay: Esc closes — MainWindow.xaml.cs:1455-1458
-- [ ] MAIN-106 Setup: Enter = Open Clayo (IsDefault) — SetupWindow.xaml:125
+- [x] MAIN-106 Setup: Enter = Open Clayo (IsDefault) — SetupWindow.xaml:125
 
 #### Settings view
 - [ ] MAIN-107 Settings replaces the terminal side (over header + panes), panes hidden but running; popups closed; Refresh(settings, screenshotKeyTaken, updateTo) — MainWindow.xaml.cs:1645-1654, MainWindow.xaml:502
@@ -419,65 +419,65 @@ Scope read fully: src/Clayo/Program.cs, App.xaml(+.cs), MainWindow.xaml(+.cs, 17
 - [x] MAIN-111 Window X only hides (sessions keep running; island brings it back) — MainWindow.xaml.cs:1754-1761
 - [x] MAIN-112 Quit (gear "Quit Clayo", island Quit, update, sign-out): stop watchers, dispose status, stop timers, close all panes, then app exits — MainWindow.xaml.cs:1602-1606,1762-1769
 - [x] MAIN-113 No tray icon (the island is the background presence) — App.xaml.cs:24,64-67
-- [ ] MAIN-114 Reveal: if hidden and setup needed -> show setup window instead; else Show, restore if minimized (keeps prior maximized), Activate — MainWindow.xaml.cs:530-540
-- [ ] MAIN-115 NeedsSetup = !SetupDone || no in-use agent locatable (file check only, no run) — MainWindow.xaml.cs:546-555
+- [x] MAIN-114 Reveal: if hidden and setup needed -> show setup window instead; else Show, restore if minimized (keeps prior maximized), Activate — MainWindow.xaml.cs:530-540
+- [x] MAIN-115 NeedsSetup = !SetupDone || no in-use agent locatable (file check only, no run) — MainWindow.xaml.cs:546-555
 - [x] MAIN-116 AdoptFolder(folder, prefill): if dir exists -> set current folder, Reveal; if main window is visible start a new session with optional prefill text typed (not sent) — MainWindow.xaml.cs:511-521
 - [x] MAIN-117 Screenshot send (island): to chosen live non-exited pane -> reveal, switch, paste image path (Codex: track image); else new session in that pane's / last-used / current folder with pasted prefill — MainWindow.xaml.cs:1539-1554
 - [x] MAIN-118 RecentSessions(max) for screenshot picker: MRU then others, distinct, live only; name/project/status ("new session" + cwd leaf if no row) — MainWindow.xaml.cs:1524-1532
 
 #### Updater (System/Updater.cs + MainWindow)
-- [c] MAIN-119 GET `https://api.github.com/repos/YogiOnCode/Clayo/releases/latest`, User-Agent "Clayo", 15 s timeout; reads `tag_name`; errors -> null; disabled in Debug — Updater.cs:24,35-49
-- [c] MAIN-120 Newer: strip leading v/V, parse version, compare as (major, minor, max(build,0)) — Updater.cs:52-59
-- [ ] MAIN-121 If settings UpdateCheck off: no request, hide button, clear offer — MainWindow.xaml.cs:1698-1704
+- [x] MAIN-119 GET `https://api.github.com/repos/YogiOnCode/Clayo/releases/latest`, User-Agent "Clayo", 15 s timeout; reads `tag_name`; errors -> null; disabled in Debug — Updater.cs:24,35-49
+- [x] MAIN-120 Newer: strip leading v/V, parse version, compare as (major, minor, max(build,0)) — Updater.cs:52-59
+- [x] MAIN-121 If settings UpdateCheck off: no request, hide button, clear offer — MainWindow.xaml.cs:1698-1704
 - [ ] MAIN-122 Found: button text "Update to X.Y.Z", tooltip "Clayo X.Y.Z is out (you have A.B.C). Clayo closes, updates and opens again, once no session is working."; Settings shows it too — MainWindow.xaml.cs:1706-1712
-- [ ] MAIN-123 Click with panes open: confirm box title "Update Clayo", text "Clayo closes to update and opens again. Open sessions close and resume from the sidebar; any that are still working are waited for." OK/Cancel — MainWindow.xaml.cs:1729-1733
-- [ ] MAIN-124 Then waiting: button "Update waits for running sessions", tooltip "Clayo updates as soon as no session is working. Press to call it off."; clicking again cancels and re-checks — MainWindow.xaml.cs:1722-1738
-- [ ] MAIN-125 UpdateWhenIdle (called on click, every pane status change, pane close): when no pane is Working or NeedsInput -> Updater.Start(version) and Quit — MainWindow.xaml.cs:1742-1748
-- [c] MAIN-126 Start: `powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "try { irm '<ScriptUrl>' | iex } catch { Write-Host $_ -ForegroundColor Red; pause }"` with env CLAYO_DIR=exe folder (AppContext.BaseDirectory, has trailing \), visible window — Updater.cs:62-73
-- [c] MAIN-127 ScriptUrl = `https://raw.githubusercontent.com/YogiOnCode/Clayo/v{X.Y.Z}/scripts/install.ps1`; ReleaseUrl = `https://github.com/YogiOnCode/Clayo/releases/tag/v{X.Y.Z}` — Updater.cs:19-23
+- [x] MAIN-123 Click with panes open: confirm box title "Update Clayo", text "Clayo closes to update and opens again. Open sessions close and resume from the sidebar; any that are still working are waited for." OK/Cancel — MainWindow.xaml.cs:1729-1733
+- [x] MAIN-124 Then waiting: button "Update waits for running sessions", tooltip "Clayo updates as soon as no session is working. Press to call it off."; clicking again cancels and re-checks — MainWindow.xaml.cs:1722-1738
+- [x] MAIN-125 UpdateWhenIdle (called on click, every pane status change, pane close): when no pane is Working or NeedsInput -> Updater.Start(version) and Quit — MainWindow.xaml.cs:1742-1748
+- [x] MAIN-126 Start: `powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "try { irm '<ScriptUrl>' | iex } catch { Write-Host $_ -ForegroundColor Red; pause }"` with env CLAYO_DIR=exe folder (AppContext.BaseDirectory, has trailing \), visible window — Updater.cs:62-73
+- [x] MAIN-127 ScriptUrl = `https://raw.githubusercontent.com/YogiOnCode/Clayo/v{X.Y.Z}/scripts/install.ps1`; ReleaseUrl = `https://github.com/YogiOnCode/Clayo/releases/tag/v{X.Y.Z}` — Updater.cs:19-23
 
 #### install.ps1 / publish.ps1
-- [ ] MAIN-128 Install dir: $env:CLAYO_DIR (trimmed \) or `%LOCALAPPDATA%\Programs\Clayo`; exe `clayo.exe` — install.ps1:9-11
-- [ ] MAIN-129 Run by hand while that Clayo runs: prints "Clayo is running. Quit it from the gear menu, then run this again." and stops — install.ps1:17-24
-- [ ] MAIN-130 Downloads latest release asset `*-win-x64.zip` and `<zip>.sha256`; first token of sha file must equal SHA-256 (case-insensitive -ne compare) else abort — install.ps1:27-41
-- [ ] MAIN-131 Staging `<parent>\Clayo-update-<guidN>`; expand; wait up to 10 s for running Clayo at that path, force kill, wait 10 s — install.ps1:13-15,42-52
-- [ ] MAIN-132 Swap: rename old dir to `<staging>-old`, move `<staging>\Clayo` -> dir, delete old; on failure restore old; always clean temp and start `clayo.exe` if present — install.ps1:57-71
-- [ ] MAIN-133 publish.ps1: reads <Version> from csproj; `dotnet publish -c Release -r win-x64 --self-contained -p:SatelliteResourceLanguages=en -o publish\Clayo`; asserts clayo.exe, Assets\terminal.html, Assets\xterm\xterm.js; zip `publish\clayo-<ver>-win-x64.zip` entries `Clayo/<rel path with />`; writes `<zip>.sha256` = "<lowerhex>  <zipname>" ascii no newline — publish.ps1:6-44
+- [x] MAIN-128 Install dir: $env:CLAYO_DIR (trimmed \) or `%LOCALAPPDATA%\Programs\Clayo`; exe `clayo.exe` — install.ps1:9-11
+- [x] MAIN-129 Run by hand while that Clayo runs: prints "Clayo is running. Quit it from the gear menu, then run this again." and stops — install.ps1:17-24
+- [x] MAIN-130 Downloads latest release asset `*-win-x64.zip` and `<zip>.sha256`; first token of sha file must equal SHA-256 (case-insensitive -ne compare) else abort — install.ps1:27-41
+- [x] MAIN-131 Staging `<parent>\Clayo-update-<guidN>`; expand; wait up to 10 s for running Clayo at that path, force kill, wait 10 s — install.ps1:13-15,42-52
+- [x] MAIN-132 Swap: rename old dir to `<staging>-old`, move `<staging>\Clayo` -> dir, delete old; on failure restore old; always clean temp and start `clayo.exe` if present — install.ps1:57-71
+- [x] MAIN-133 publish.ps1: reads <Version> from csproj; `dotnet publish -c Release -r win-x64 --self-contained -p:SatelliteResourceLanguages=en -o publish\Clayo`; asserts clayo.exe, Assets\terminal.html, Assets\xterm\xterm.js; zip `publish\clayo-<ver>-win-x64.zip` entries `Clayo/<rel path with />`; writes `<zip>.sha256` = "<lowerhex>  <zipname>" ascii no newline — publish.ps1:6-44
 
 #### Login startup (System/LoginStartup.cs)
-- [c] MAIN-134 Registry: HKCU `Software\Microsoft\Windows\CurrentVersion\Run`, value `Clayo` (REG_SZ) = `"<exe path>" --background` — LoginStartup.cs:13,15,17,64-69
-- [c] MAIN-135 On by default: every start Keep() writes it unless opt-out marker `%LOCALAPPDATA%\Clayo\no-login-start` exists; only rewrites when value differs — LoginStartup.cs:44-47,68
-- [c] MAIN-136 Set(on): delete marker + write; Set(off): create marker (empty) + delete value — LoginStartup.cs:49-62
-- [c] MAIN-137 IsOn = value present — LoginStartup.cs:31-38
-- [c] MAIN-138 Debug build never writes the real Run key (CanWrite false only for the real key) — LoginStartup.cs:24-29
-- [ ] MAIN-139 Exposed in gear menu, island menu, and setup window ("Start Clayo when I sign in", written immediately on click) — MainWindow.xaml.cs:1610-1627, SetupWindow.xaml.cs:173-176
+- [x] MAIN-134 Registry: HKCU `Software\Microsoft\Windows\CurrentVersion\Run`, value `Clayo` (REG_SZ) = `"<exe path>" --background` — LoginStartup.cs:13,15,17,64-69
+- [x] MAIN-135 On by default: every start Keep() writes it unless opt-out marker `%LOCALAPPDATA%\Clayo\no-login-start` exists; only rewrites when value differs — LoginStartup.cs:44-47,68
+- [x] MAIN-136 Set(on): delete marker + write; Set(off): create marker (empty) + delete value — LoginStartup.cs:49-62
+- [x] MAIN-137 IsOn = value present — LoginStartup.cs:31-38
+- [x] MAIN-138 Debug build never writes the real Run key (CanWrite false only for the real key) — LoginStartup.cs:24-29
+- [x] MAIN-139 Exposed in gear menu, island menu, and setup window ("Start Clayo when I sign in", written immediately on click) — MainWindow.xaml.cs:1610-1627, SetupWindow.xaml.cs:173-176
 
 #### PATH (System/UserPath.cs)
-- [c] MAIN-140 HKCU\Environment value `Path`, read raw (DoNotExpandEnvironmentNames); kind kept REG_SZ if it was REG_SZ, else REG_EXPAND_SZ (also when missing) — UserPath.cs:51-57
-- [c] MAIN-141 Entries split on ';', empty/whitespace dropped (so a trailing ';' disappears on write); add appends at end; remove deletes all matching; no-op if already in desired state — UserPath.cs:34-48,59-60
-- [c] MAIN-142 Match: expand %VARS% in entry, trim spaces, trim quotes, trim trailing \ or /, case-insensitive — UserPath.cs:63-66
-- [ ] MAIN-143 After writing the real key: SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE 0x1A, 0, "Environment", SMTO_ABORTIFHUNG, 2000) — UserPath.cs:47,69-78
-- [c] MAIN-144 Folder = directory of the running exe; Debug never writes real key — UserPath.cs:19,25-30
-- [ ] MAIN-145 Written only on setup's "Open Clayo" (PathTick) — SetupWindow.xaml.cs:189-190
+- [x] MAIN-140 HKCU\Environment value `Path`, read raw (DoNotExpandEnvironmentNames); kind kept REG_SZ if it was REG_SZ, else REG_EXPAND_SZ (also when missing) — UserPath.cs:51-57
+- [x] MAIN-141 Entries split on ';', empty/whitespace dropped (so a trailing ';' disappears on write); add appends at end; remove deletes all matching; no-op if already in desired state — UserPath.cs:34-48,59-60
+- [x] MAIN-142 Match: expand %VARS% in entry, trim spaces, trim quotes, trim trailing \ or /, case-insensitive — UserPath.cs:63-66
+- [x] MAIN-143 After writing the real key: SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE 0x1A, 0, "Environment", SMTO_ABORTIFHUNG, 2000) — UserPath.cs:47,69-78
+- [x] MAIN-144 Folder = directory of the running exe; Debug never writes real key — UserPath.cs:19,25-30
+- [x] MAIN-145 Written only on setup's "Open Clayo" (PathTick) — SetupWindow.xaml.cs:189-190
 
 #### Setup window flow
-- [ ] MAIN-146 Window "Clayo setup", fixed content 760x524, padding 36,28,36,22, no resize, centered (on owner if main window visible), dark caption — SetupWindow.xaml:6-15,62, MainWindow.xaml.cs:571-576
-- [ ] MAIN-147 Only one setup window at a time (re-activates existing) — MainWindow.xaml.cs:565-569
-- [ ] MAIN-148 Layout: mascot 44x44 + headline (21 semibold #E6E9EE) + intro; agent card (Claude row, hairline, Codex row); options (picker, Start-at-login tick, PATH tick); footer: "Check again" | note | "Open Clayo" — SetupWindow.xaml:62-131
-- [ ] MAIN-149 Init: Use ticks from settings; picker selected from DefaultAgent (Codex/Ask/Claude); login tick = IsOn, disabled + " Only the installed Clayo can change this." if !CanWrite; PATH tick = (SetupDone or !CanWrite) ? currently on PATH : true; disabled + same suffix if !CanWrite — SetupWindow.xaml.cs:37-66
-- [ ] MAIN-150 On load: Detect() -> shows Checking view, async AgentDetector.DetectAsync(claudePath, codexPath); stale runs ignored (run counter) — SetupWindow.xaml.cs:68,77-86
-- [ ] MAIN-151 Mascot move: Peek while looking, Walk while installing/signing in, Jump when CanOpen, else Idle; only on change — SetupWindow.xaml.cs:96-109
-- [ ] MAIN-152 Picker visible only when both Ready; Options enabled only when CanOpen; Open enabled = CanOpen; Check again disabled while busy — SetupWindow.xaml.cs:115-118
-- [ ] MAIN-153 Toggling a Use tick recomputes view — SetupWindow.xaml.cs:39-40
-- [ ] MAIN-154 Install / Sign in: runs AgentHelper command in visible powershell window (`-NoProfile -ExecutionPolicy Bypass -Command "<cmd>; Read-Host 'Done. Press Enter to close'"`), shows Installing/SigningIn view, one at a time, waits for exit, then re-activates window and re-detects — SetupWindow.xaml.cs:127-147, AgentHelper.cs:26-42
-- [ ] MAIN-155 Locate…: OpenFileDialog "Where is <Name>?" filter "Programs (*.exe;*.cmd)"; runs `<file> --version`; failure -> note "That program didn't run. Pick <Name>'s claude.exe|codex.cmd."; success -> set ClaudePath/CodexPath (saved only on Open) and re-detect — SetupWindow.xaml.cs:153-171
-- [ ] MAIN-156 Open Clayo: DefaultAgent = picker choice if visible, else Claude if Claude Ready && Use else Codex; write PATH per tick; emit settings with SetupDone=true, UseClaude, UseCodex, DefaultAgent; close. MainWindow saves settings.json, syncs Codex rules, notifies island, refreshes Settings/sessions, Reveal() — SetupWindow.xaml.cs:178-200, MainWindow.xaml.cs:577-586
-- [ ] MAIN-157 Closing setup without Open changes nothing; next Reveal asks again — MainWindow.xaml.cs:559-562,587
-- [ ] MAIN-158 Agent row: badge "CC"/"CX" 36x36 radius 9 (lit colors only for Ready/SignIn/SigningIn: Claude bg #2A221F border #4A3329 fg #E39A7E; Codex bg #1C2530 border #2B3D52 fg #7DBBEB; unlit bg #1B1F26 border #2F3641 fg #8A929F); name 15 semibold; meta 12.5 MutedAA — AgentRow.xaml.cs:36-45, AgentRow.xaml:12-37
-- [ ] MAIN-159 Pill text/color: Looking… #D4A24C, Ready #6BBF8A, Not signed in #D4A24C, Installing… #D4A24C, Signing in… #D4A24C, Not installed #8A929F; pill bg = color at alpha 0x1F — AgentRow.xaml.cs:47-59
-- [ ] MAIN-160 Use tick visible only when Ready; Sign in button (amber filled) only when SignIn; fix line (install command box, Install, Locate…) only when Missing; Codex with no npm shows "Get Node.js first" link (https://nodejs.org) instead of Install — AgentRow.xaml.cs:61-68, AgentRow.xaml:41-58
-- [ ] MAIN-161 Install command displayed: Claude `irm https://claude.ai/install.ps1 | iex`; Codex `npm install -g @openai/codex` — AgentRow.xaml.cs:65
-- [c] MAIN-162 Setup texts (SetupScreen.cs:30-112): see section 5 checks for exact strings
+- [x] MAIN-146 Window "Clayo setup", fixed content 760x524, padding 36,28,36,22, no resize, centered (on owner if main window visible), dark caption — SetupWindow.xaml:6-15,62, MainWindow.xaml.cs:571-576
+- [x] MAIN-147 Only one setup window at a time (re-activates existing) — MainWindow.xaml.cs:565-569
+- [x] MAIN-148 Layout: mascot 44x44 + headline (21 semibold #E6E9EE) + intro; agent card (Claude row, hairline, Codex row); options (picker, Start-at-login tick, PATH tick); footer: "Check again" | note | "Open Clayo" — SetupWindow.xaml:62-131
+- [x] MAIN-149 Init: Use ticks from settings; picker selected from DefaultAgent (Codex/Ask/Claude); login tick = IsOn, disabled + " Only the installed Clayo can change this." if !CanWrite; PATH tick = (SetupDone or !CanWrite) ? currently on PATH : true; disabled + same suffix if !CanWrite — SetupWindow.xaml.cs:37-66
+- [x] MAIN-150 On load: Detect() -> shows Checking view, async AgentDetector.DetectAsync(claudePath, codexPath); stale runs ignored (run counter) — SetupWindow.xaml.cs:68,77-86
+- [x] MAIN-151 Mascot move: Peek while looking, Walk while installing/signing in, Jump when CanOpen, else Idle; only on change — SetupWindow.xaml.cs:96-109
+- [x] MAIN-152 Picker visible only when both Ready; Options enabled only when CanOpen; Open enabled = CanOpen; Check again disabled while busy — SetupWindow.xaml.cs:115-118
+- [x] MAIN-153 Toggling a Use tick recomputes view — SetupWindow.xaml.cs:39-40
+- [x] MAIN-154 Install / Sign in: runs AgentHelper command in visible powershell window (`-NoProfile -ExecutionPolicy Bypass -Command "<cmd>; Read-Host 'Done. Press Enter to close'"`), shows Installing/SigningIn view, one at a time, waits for exit, then re-activates window and re-detects — SetupWindow.xaml.cs:127-147, AgentHelper.cs:26-42
+- [x] MAIN-155 Locate…: OpenFileDialog "Where is <Name>?" filter "Programs (*.exe;*.cmd)"; runs `<file> --version`; failure -> note "That program didn't run. Pick <Name>'s claude.exe|codex.cmd."; success -> set ClaudePath/CodexPath (saved only on Open) and re-detect — SetupWindow.xaml.cs:153-171
+- [x] MAIN-156 Open Clayo: DefaultAgent = picker choice if visible, else Claude if Claude Ready && Use else Codex; write PATH per tick; emit settings with SetupDone=true, UseClaude, UseCodex, DefaultAgent; close. MainWindow saves settings.json, syncs Codex rules, notifies island, refreshes Settings/sessions, Reveal() — SetupWindow.xaml.cs:178-200, MainWindow.xaml.cs:577-586
+- [x] MAIN-157 Closing setup without Open changes nothing; next Reveal asks again — MainWindow.xaml.cs:559-562,587
+- [x] MAIN-158 Agent row: badge "CC"/"CX" 36x36 radius 9 (lit colors only for Ready/SignIn/SigningIn: Claude bg #2A221F border #4A3329 fg #E39A7E; Codex bg #1C2530 border #2B3D52 fg #7DBBEB; unlit bg #1B1F26 border #2F3641 fg #8A929F); name 15 semibold; meta 12.5 MutedAA — AgentRow.xaml.cs:36-45, AgentRow.xaml:12-37
+- [x] MAIN-159 Pill text/color: Looking… #D4A24C, Ready #6BBF8A, Not signed in #D4A24C, Installing… #D4A24C, Signing in… #D4A24C, Not installed #8A929F; pill bg = color at alpha 0x1F — AgentRow.xaml.cs:47-59
+- [x] MAIN-160 Use tick visible only when Ready; Sign in button (amber filled) only when SignIn; fix line (install command box, Install, Locate…) only when Missing; Codex with no npm shows "Get Node.js first" link (https://nodejs.org) instead of Install — AgentRow.xaml.cs:61-68, AgentRow.xaml:41-58
+- [x] MAIN-161 Install command displayed: Claude `irm https://claude.ai/install.ps1 | iex`; Codex `npm install -g @openai/codex` — AgentRow.xaml.cs:65
+- [x] MAIN-162 Setup texts (SetupScreen.cs:30-112): see section 5 checks for exact strings
 
 ### 3. DATA
 
@@ -633,30 +633,30 @@ Paths below are relative to D:\Clayo\Clayo. Namespace in C# is `CcxShell.Core` t
 ### 2. BEHAVIORS
 
 #### Detection (setup window)
-- [c] SES-001 Detect both agents concurrently off-thread (`DetectAsync`, Task.WhenAll) — Agents/AgentDetector.cs:34
-- [c] SES-002 Locate order: saved path (if file exists) -> PATH -> known install places; first hit wins — Agents/AgentDetector.cs:97-103
-- [c] SES-003 PATH search iterates names outer, PATH dirs inner: Claude tries `claude.exe` across the whole PATH, then `claude.cmd`; Codex tries `codex.cmd` then `codex.exe` — Agents/AgentDetector.cs:66,100-101
-- [c] SES-004 PATH lookup: split on `;`, drop empty entries, strip `"` from each entry, Path.Combine(dir, exe), File.Exists; malformed entries skipped — Sessions/SessionLauncher.cs:92-108
-- [c] SES-005 Claude known places in order: `%USERPROFILE%\.local\bin\claude.exe`, `%APPDATA%\npm\claude.cmd`, `%LOCALAPPDATA%\Microsoft\WinGet\Links\claude.exe` — Agents/AgentDetector.cs:106
-- [c] SES-006 Codex known places: `%APPDATA%\npm\codex.cmd`, `%LOCALAPPDATA%\Microsoft\WinGet\Links\codex.exe` — Agents/AgentDetector.cs:107
-- [c] SES-007 Env var that is unset/empty makes its known place null (skipped); USERPROFILE missing -> "" root — Agents/AgentDetector.cs:109-112
-- [c] SES-008 Found exe must run: `<exe> --version`; version = first non-empty trimmed line; if null (fail/non-zero/timeout) exe is reported as null — Agents/AgentDetector.cs:45-46,114-115
-- [c] SES-009 Signed-in: Claude runs `<exe> auth status`, parses JSON from first `{` to end, `loggedIn == true`; any parse error -> false — Agents/AgentDetector.cs:49,118-128
-- [c] SES-010 Signed-in: Codex runs `<exe> login status`; true iff any line (trimmed) starts with "Logged in" (ordinal); Codex prints on stderr — Agents/AgentDetector.cs:50,131-132
-- [c] SES-011 Data folder: Claude `%CLAUDE_CONFIG_DIR%` else `%USERPROFILE%\.claude`; Codex `%CODEX_HOME%` else `%USERPROFILE%\.codex` (note: `env()` returning "" is NOT treated as unset here, unlike CodexSessionStore.ForThisUser) — Agents/AgentDetector.cs:52-54
-- [c] SES-012 Claude counts: for each dir under `<data>\projects`, n = count of `*.jsonl` directly in it; sessions += n; projects++ if n>0 (subfolders like subagents NOT counted since non-recursive) — Agents/AgentDetector.cs:135-147
-- [c] SES-013 Codex counts: every `rollout-*.jsonl` under `<data>\sessions` recursively is a session; projects = distinct `payload.cwd` of line 0 (TrimEndingDirectorySeparator, case-insensitive); unreadable/non-JSON lines still count as sessions — Agents/AgentDetector.cs:150-172
-- [c] SES-014 IO/UnauthorizedAccess while counting -> (0,0), never fails setup — Agents/AgentDetector.cs:56-58
-- [c] SES-015 npm (Codex only): PATH `npm.cmd`, then `%ProgramFiles%\nodejs\npm.cmd`; null for Claude — Agents/AgentDetector.cs:60
-- [c] SES-016 Runner: UseShellExecute=false, CreateNoWindow, redirect stdout+stderr, default timeout 3000 ms, on timeout Kill(entireProcessTree) and return null; returns stdout+stderr concatenated only when ExitCode==0; Win32Exception (missing exe) -> null — Agents/AgentDetector.cs:72-94
+- [x] SES-001 Detect both agents concurrently off-thread (`DetectAsync`, Task.WhenAll) — Agents/AgentDetector.cs:34
+- [x] SES-002 Locate order: saved path (if file exists) -> PATH -> known install places; first hit wins — Agents/AgentDetector.cs:97-103
+- [x] SES-003 PATH search iterates names outer, PATH dirs inner: Claude tries `claude.exe` across the whole PATH, then `claude.cmd`; Codex tries `codex.cmd` then `codex.exe` — Agents/AgentDetector.cs:66,100-101
+- [x] SES-004 PATH lookup: split on `;`, drop empty entries, strip `"` from each entry, Path.Combine(dir, exe), File.Exists; malformed entries skipped — Sessions/SessionLauncher.cs:92-108
+- [x] SES-005 Claude known places in order: `%USERPROFILE%\.local\bin\claude.exe`, `%APPDATA%\npm\claude.cmd`, `%LOCALAPPDATA%\Microsoft\WinGet\Links\claude.exe` — Agents/AgentDetector.cs:106
+- [x] SES-006 Codex known places: `%APPDATA%\npm\codex.cmd`, `%LOCALAPPDATA%\Microsoft\WinGet\Links\codex.exe` — Agents/AgentDetector.cs:107
+- [x] SES-007 Env var that is unset/empty makes its known place null (skipped); USERPROFILE missing -> "" root — Agents/AgentDetector.cs:109-112
+- [x] SES-008 Found exe must run: `<exe> --version`; version = first non-empty trimmed line; if null (fail/non-zero/timeout) exe is reported as null — Agents/AgentDetector.cs:45-46,114-115
+- [x] SES-009 Signed-in: Claude runs `<exe> auth status`, parses JSON from first `{` to end, `loggedIn == true`; any parse error -> false — Agents/AgentDetector.cs:49,118-128
+- [x] SES-010 Signed-in: Codex runs `<exe> login status`; true iff any line (trimmed) starts with "Logged in" (ordinal); Codex prints on stderr — Agents/AgentDetector.cs:50,131-132
+- [x] SES-011 Data folder: Claude `%CLAUDE_CONFIG_DIR%` else `%USERPROFILE%\.claude`; Codex `%CODEX_HOME%` else `%USERPROFILE%\.codex` (note: `env()` returning "" is NOT treated as unset here, unlike CodexSessionStore.ForThisUser) — Agents/AgentDetector.cs:52-54
+- [x] SES-012 Claude counts: for each dir under `<data>\projects`, n = count of `*.jsonl` directly in it; sessions += n; projects++ if n>0 (subfolders like subagents NOT counted since non-recursive) — Agents/AgentDetector.cs:135-147
+- [x] SES-013 Codex counts: every `rollout-*.jsonl` under `<data>\sessions` recursively is a session; projects = distinct `payload.cwd` of line 0 (TrimEndingDirectorySeparator, case-insensitive); unreadable/non-JSON lines still count as sessions — Agents/AgentDetector.cs:150-172
+- [x] SES-014 IO/UnauthorizedAccess while counting -> (0,0), never fails setup — Agents/AgentDetector.cs:56-58
+- [x] SES-015 npm (Codex only): PATH `npm.cmd`, then `%ProgramFiles%\nodejs\npm.cmd`; null for Claude — Agents/AgentDetector.cs:60
+- [x] SES-016 Runner: UseShellExecute=false, CreateNoWindow, redirect stdout+stderr, default timeout 3000 ms, on timeout Kill(entireProcessTree) and return null; returns stdout+stderr concatenated only when ExitCode==0; Win32Exception (missing exe) -> null — Agents/AgentDetector.cs:72-94
 - [c] SES-017 Locate (cheap, no run) used at every pane launch; fallback literal "claude"/"codex" when not found — Agents/ClaudeAgent.cs:16, Agents/CodexAgent.cs:11
 
 #### Install / sign-in helper
-- [c] SES-018 Claude install command: `irm https://claude.ai/install.ps1 | iex` — Agents/AgentHelper.cs:14
-- [c] SES-019 Codex install command: `& '<npm.cmd>' install -g @openai/codex`; null (not installable) when npm not found — Agents/AgentHelper.cs:15
-- [c] SES-020 Sign-in: Claude `& '<exe>' auth login`; Codex `& '<exe>' login`; null when exe not found — Agents/AgentHelper.cs:18-20
-- [c] SES-021 Runs in visible `powershell.exe` with args `-NoProfile -ExecutionPolicy Bypass -Command "<cmd>; Read-Host 'Done. Press Enter to close'"` (ArgumentList quoting), never elevated/hidden; awaits exit — Agents/AgentHelper.cs:26-42
-- [c] SES-022 PS quoting: wrap in `'...'`, double each of `'` U+2018 `‘` U+2019 `’` U+201A `‚` U+201B `‛` — Agents/AgentHelper.cs:48-57
+- [x] SES-018 Claude install command: `irm https://claude.ai/install.ps1 | iex` — Agents/AgentHelper.cs:14
+- [x] SES-019 Codex install command: `& '<npm.cmd>' install -g @openai/codex`; null (not installable) when npm not found — Agents/AgentHelper.cs:15
+- [x] SES-020 Sign-in: Claude `& '<exe>' auth login`; Codex `& '<exe>' login`; null when exe not found — Agents/AgentHelper.cs:18-20
+- [x] SES-021 Runs in visible `powershell.exe` with args `-NoProfile -ExecutionPolicy Bypass -Command "<cmd>; Read-Host 'Done. Press Enter to close'"` (ArgumentList quoting), never elevated/hidden; awaits exit — Agents/AgentHelper.cs:26-42
+- [x] SES-022 PS quoting: wrap in `'...'`, double each of `'` U+2018 `‘` U+2019 `’` U+201A `‚` U+201B `‛` — Agents/AgentHelper.cs:48-57
 
 #### Launch command lines (typed into pane's PowerShell)
 - [c] SES-023 Shell: `"<full path of pwsh.exe>" -NoLogo` if pwsh.exe on PATH, else `powershell.exe -NoLogo` — Sessions/SessionLauncher.cs:30-35

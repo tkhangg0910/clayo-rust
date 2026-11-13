@@ -35,6 +35,21 @@ pub fn parse(
     StartArgs { background, folder }
 }
 
+impl StartArgs {
+    /// What a second launch hands the running Clayo: its folder, "" for none (just show the
+    /// window), nothing at all for a login start (it has nothing to add).
+    pub fn handoff(&self) -> Option<String> {
+        (!self.background).then(|| self.folder.clone().unwrap_or_default())
+    }
+}
+
+/// A handoff message as the running Clayo reads it: UTF-8 to the end, a BOM (which the C#
+/// client wrote) dropped, trimmed.
+pub fn decode_handoff(bytes: &[u8]) -> String {
+    let bytes = bytes.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(bytes);
+    String::from_utf8_lossy(bytes).trim().to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -63,6 +78,20 @@ mod tests {
         assert_eq!(run(&[], r"c:\users\ME\AppData\Local\Programs\Clayo").folder, None);
         assert_eq!(run(&[], r"C:\Windows\System32\").folder, None);
         assert_eq!(run(&["nope"], r"C:\Windows\System32").folder, None);
+    }
+
+    #[test]
+    fn handoff_is_the_folder_or_empty_and_nothing_from_login() {
+        assert_eq!(run(&[], r"C:\proj").handoff().as_deref(), Some(r"C:\proj"));
+        assert_eq!(run(&[], r"C:\Windows\System32").handoff().as_deref(), Some(""));
+        assert_eq!(run(&["--background", r"D:\w"], r"C:\proj").handoff(), None);
+    }
+
+    #[test]
+    fn decode_strips_the_bom_and_trims() {
+        assert_eq!(decode_handoff(b"\xEF\xBB\xBF C:\\x \r\n"), r"C:\x");
+        assert_eq!(decode_handoff(b""), "");
+        assert_eq!(decode_handoff("D:\\Đồ".as_bytes()), "D:\\Đồ");
     }
 
     #[test]

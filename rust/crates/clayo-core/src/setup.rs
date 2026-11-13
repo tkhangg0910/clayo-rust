@@ -6,6 +6,7 @@ use std::sync::LazyLock;
 use regex::Regex;
 
 use crate::agent::{AgentInfo, AgentKind};
+use crate::settings::{ClayoSettings, NewSessionAgent};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum AgentRowState {
@@ -226,6 +227,171 @@ pub fn short_version(version: Option<&str>) -> String {
             Some(m) => format!("v{}", m.as_str()),
             None => v.to_string(),
         },
+    }
+}
+
+// ------------------------------------------------------------------ the window around the view
+
+/// The mascot's move for a view (SetupWindow.Show): peeking while it looks, walking while an
+/// install or sign-in runs, a jump once Clayo can open, else at ease.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum SetupMove {
+    Peek,
+    Walk,
+    Jump,
+    Idle,
+}
+
+pub fn mascot_move(view: &SetupView) -> SetupMove {
+    let busy = |s: AgentRowState| matches!(s, AgentRowState::Installing | AgentRowState::SigningIn);
+    if view.claude.state == AgentRowState::Looking {
+        SetupMove::Peek
+    } else if busy(view.claude.state) || busy(view.codex.state) {
+        SetupMove::Walk
+    } else if view.can_open {
+        SetupMove::Jump
+    } else {
+        SetupMove::Idle
+    }
+}
+
+/// The pill's text and colour (0xRRGGBB); its background is the colour at alpha 0x1F.
+pub fn pill(state: AgentRowState) -> (&'static str, u32) {
+    match state {
+        AgentRowState::Looking => ("Looking…", 0xD4A24C),
+        AgentRowState::Ready => ("Ready", 0x6BBF8A),
+        AgentRowState::SignIn => ("Not signed in", 0xD4A24C),
+        AgentRowState::Installing => ("Installing…", 0xD4A24C),
+        AgentRowState::SigningIn => ("Signing in…", 0xD4A24C),
+        AgentRowState::Missing => ("Not installed", 0x8A929F),
+    }
+}
+
+/// The 36x36 badge: "CC" / "CX", in its agent's colours only once the agent is there.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Badge {
+    pub text: &'static str,
+    pub bg: u32,
+    pub border: u32,
+    pub fg: u32,
+}
+
+pub fn badge(kind: AgentKind, state: AgentRowState) -> Badge {
+    let claude = kind == AgentKind::Claude;
+    let lit = matches!(state, AgentRowState::Ready | AgentRowState::SignIn | AgentRowState::SigningIn);
+    let text = if claude { "CC" } else { "CX" };
+    match (lit, claude) {
+        (false, _) => Badge { text, bg: 0x1B1F26, border: 0x2F3641, fg: 0x8A929F },
+        (true, true) => Badge { text, bg: 0x2A221F, border: 0x4A3329, fg: 0xE39A7E },
+        (true, false) => Badge { text, bg: 0x1C2530, border: 0x2B3D52, fg: 0x7DBBEB },
+    }
+}
+
+/// What a row shows besides its texts (AgentRow.Show).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RowParts {
+    /// The Use tick: only for a ready agent.
+    pub use_tick: bool,
+    /// The amber Sign in button: only for a signed-out one.
+    pub sign_in: bool,
+    /// The fix line (command, Install, Locate…): only for a missing one.
+    pub fix: bool,
+    /// Codex with no npm gets "Get Node.js first" in place of Install.
+    pub get_node: bool,
+}
+
+pub fn row_parts(row: &AgentRowView, found: Option<&AgentInfo>) -> RowParts {
+    RowParts {
+        use_tick: row.state == AgentRowState::Ready,
+        sign_in: row.state == AgentRowState::SignIn,
+        fix: row.state == AgentRowState::Missing,
+        get_node: row.kind == AgentKind::Codex && found.is_some_and(|f| f.npm.is_none()),
+    }
+}
+
+/// The install command the fix line shows (what Install runs, spelled the short way).
+pub fn install_shown(kind: AgentKind) -> &'static str {
+    match kind {
+        AgentKind::Claude => "irm https://claude.ai/install.ps1 | iex",
+        AgentKind::Codex => "npm install -g @openai/codex",
+    }
+}
+
+pub const NODE_URL: &str = "https://nodejs.org";
+
+/// Added to an option a dev build may not write (the Run key, the user PATH).
+pub const INSTALLED_ONLY: &str = " Only the installed Clayo can change this.";
+
+pub const LOGIN_TITLE: &str = "Start Clayo when I sign in";
+pub const LOGIN_TEXT: &str = "Starts hidden; the island is ready at the top of the screen.";
+pub const PATH_TITLE: &str = "Add clayo to my PATH";
+
+/// Locate…'s file dialog title.
+pub fn locate_title(kind: AgentKind) -> String {
+    format!("Where is {}?", kind.name())
+}
+
+/// The note when the picked program did not answer `--version`.
+pub fn locate_failed(kind: AgentKind) -> String {
+    let file = match kind {
+        AgentKind::Claude => "claude.exe",
+        AgentKind::Codex => "codex.cmd",
+    };
+    format!("That program didn't run. Pick {}'s {file}.", kind.name())
+}
+
+/// The PATH tick starts ticked until setup was done once (or when it can't be written); after
+/// that it says whether the folder is on PATH now.
+pub fn path_tick(setup_done: bool, can_write: bool, on_path: impl FnOnce() -> bool) -> bool {
+    if setup_done || !can_write {
+        on_path()
+    } else {
+        true
+    }
+}
+
+/// Open Clayo's "New sessions use": the picker's choice when it shows, else the one agent
+/// there is: Claude if it is ready and used, else Codex.
+pub fn default_agent_on_open(
+    picker_shown: bool,
+    picked: NewSessionAgent,
+    claude: Option<&AgentInfo>,
+    use_claude: bool,
+) -> NewSessionAgent {
+    if picker_shown {
+        return picked;
+    }
+    if claude.is_some_and(|c| state_of(c) == AgentRowState::Ready) && use_claude {
+        NewSessionAgent::Claude
+    } else {
+        NewSessionAgent::Codex
+    }
+}
+
+/// NeedsSetup (docs/SETUP.md D6): never set up, or none of the agents in use is where it was.
+/// `locate` only finds, it doesn't run anything.
+pub fn needs_setup(
+    settings: &ClayoSettings,
+    locate: impl Fn(AgentKind, Option<&str>) -> Option<String>,
+) -> bool {
+    !settings.setup_done
+        || !(settings.use_claude && locate(AgentKind::Claude, settings.claude_path.as_deref()).is_some()
+            || settings.use_codex && locate(AgentKind::Codex, settings.codex_path.as_deref()).is_some())
+}
+
+/// What Open Clayo hands back: the settings with the choices made here.
+pub fn done_settings(
+    settings: &ClayoSettings,
+    use_claude: bool,
+    use_codex: bool,
+    default_agent: NewSessionAgent,
+) -> ClayoSettings {
+    ClayoSettings {
+        setup_done: true,
+        use_claude,
+        use_codex,
+        default_agent,
+        ..settings.clone()
     }
 }
 

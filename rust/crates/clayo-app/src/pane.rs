@@ -26,6 +26,10 @@ pub enum AppEvent {
     Status(u64, PaneStatus),
     /// The island asks the main window for something.
     Island(crate::island_host::IslandCmd),
+    /// A second launch handed its folder over ("" = just show the window).
+    Handoff(String),
+    /// The update check found a newer release.
+    UpdateFound(clayo_core::system::updater::Version),
 }
 
 /// Wakes the UI from any thread.

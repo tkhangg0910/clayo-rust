@@ -3,6 +3,13 @@
 
 use std::path::{Path, PathBuf};
 
+#[cfg(windows)]
+pub mod http;
+#[cfg(windows)]
+pub mod instance;
+#[cfg(windows)]
+pub mod shell;
+
 /// Map a font file read-only and keep it mapped for the life of the process. The bytes are
 /// file-backed, so they count as shared, not private, memory (PORTING.md §1 fonts).
 pub fn map_font(path: &Path) -> Option<&'static [u8]> {
